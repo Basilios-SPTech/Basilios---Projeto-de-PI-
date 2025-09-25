@@ -1,0 +1,201 @@
+/* Reset + base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  background-color: #111; /* fundo escuro */
+  color: #fff;
+  line-height: 1.6;
+  padding: 20px;
+}
+
+/* Container principal */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: #ffffff;
+  padding: 30px 40px;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+}
+
+/* Cabeçalho */
+.cabecalho {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.titulo-principal {
+  font-size: 2.8rem;
+  color: #a22d2e;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* Títulos */
+.titulo-formulario,
+.titulo-lista {
+  font-size: 1.8rem;
+  color: #000;
+  margin-bottom: 20px;
+  border-bottom: 3px solid #a22d2e;
+  padding-bottom: 6px;
+}
+
+/* Formulário */
+.formulario form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.gradegrade {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.grade-1-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.campoborda {
+  padding: 12px 15px;
+  border: 2px solid #555;
+  border-radius: 6px;
+  font-size: 1rem;
+  background-color: #fff;
+  color: #000;
+  transition: all 0.3s ease;
+}
+
+.campoborda:focus {
+  outline: none;
+  border-color: #a22d2e;
+  box-shadow: 0 0 6px rgba(162, 45, 46, 0.6);
+}
+
+/* Botões */
+.btn-salvar,
+.btn-cancelar,
+.btn-editar,
+.btn-deletar {
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 10px 18px;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.btn-salvar {
+  background-color: #a22d2e;
+  color: #fff;
+}
+.btn-salvar:hover {
+  background-color: #7a2122;
+}
+
+.btn-cancelar {
+  background-color: #444;
+  color: #fff;
+}
+.btn-cancelar:hover {
+  background-color: #666;
+}
+
+.btn-editar {
+  background-color: #000;
+  color: #fff;
+}
+.btn-editar:hover {
+  background-color: #333;
+}
+
+.btn-deletar {
+  background-color: #a22d2e;
+  color: #fff;
+}
+.btn-deletar:hover {
+  background-color: #7a2122;
+}
+
+/* Cards */
+.grade-produtos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.card-produto {
+  background-color: #fff;
+  border-radius: 10px;
+  border: 2px solid #a22d2e;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-produto:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.25);
+}
+
+.card-produto img {
+  width: 100%;
+  height: 200px;
+  object-fit: contain;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  background-color: #000;
+}
+
+/* Textos */
+.texto-lg {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #000;
+  margin-bottom: 6px;
+}
+
+.texto-cinza {
+  color: #444;
+  font-size: 0.95rem;
+  margin-bottom: 10px;
+}
+
+.texto-vermelho {
+  color: #a22d2e;
+  font-weight: 700;
+  font-size: 1.2rem;
+  margin-top: auto;
+}
+
+.msg-sem-produtos {
+  text-align: center;
+  font-size: 1.1rem;
+  color: #777;
+  margin-top: 20px;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+  .grade-produtos {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .grade-produtos {
+    grid-template-columns: 1fr;
+  }
+}
