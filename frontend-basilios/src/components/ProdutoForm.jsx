@@ -1,12 +1,15 @@
-
-import React from "react";
-
+import logo from "../assets/logo.png";
 export default function ProdutoForm({ formData, indiceEdicao, onChange, onSubmit, onCancel }) {
   return (
     <div className="formulario">
-      <h2 id="titulo-form" className="titulo-formulario">
-        {indiceEdicao !== null ? "Editar Produto" : "Cadastrar Produtos"}
-      </h2>
+      <div className="header-container">
+        <div className="logo-container">
+          <img src={logo} alt="Logo Basilios" className="logo-imagem" />
+        </div>
+        <h2 id="titulo-form" className="titulo-formulario">
+          {indiceEdicao !== null ? "Editar Produto" : "Cadastrar Produtos"}
+        </h2>
+      </div>
       <form id="form-produto" className="espaco" onSubmit={onSubmit}>
         <div className="gradegrade">
           <input
@@ -57,7 +60,7 @@ export default function ProdutoForm({ formData, indiceEdicao, onChange, onSubmit
                   onChange({
                     target: {
                       id: "imagem",
-                      value: reader.result, 
+                      value: reader.result,
                     },
                   });
                 };

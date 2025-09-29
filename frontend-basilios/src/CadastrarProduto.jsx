@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import "./App.css";
 import ProdutoForm from "./components/ProdutoForm";
@@ -8,110 +7,98 @@ const CHAVE_STORAGE = "produtos-basilios";
 
 export default function CadastrarProduto() {
   const [produtos, setProdutos] = useState([]);
-  const [indiceEdicao, setIndiceEdicao] = useState(null);
   const [formData, setFormData] = useState({
     nome: "",
     descricao: "",
     preco: "",
     imagem: "",
-    categoria: ""
+    categoria: "",
+    pausado: false,
   });
 
+  // Carrega do localStorage
   useEffect(() => {
-    const armazenados = JSON.parse(localStorage.getItem(CHAVE_STORAGE)) || [];
-    setProdutos(armazenados);
+    const salvos = localStorage.getItem(CHAVE_STORAGE);
+    if (salvos) setProdutos(JSON.parse(salvos));
   }, []);
 
+  // Salva no localStorage
   useEffect(() => {
     localStorage.setItem(CHAVE_STORAGE, JSON.stringify(produtos));
   }, [produtos]);
 
-  function handleChange(e) {
+  // Handle change (para formulário principal)
+  const handleChange = (e) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
-  }
+  };
 
-  function salvarProduto(e) {
+  // Adicionar produto
+  const handleSubmit = (e) => {
     e.preventDefault();
-    const { nome, descricao, preco, imagem, categoria } = formData;
+    setProdutos((prev) => [
+      ...prev,
+      { ...formData, index: prev.length, pausado: false },
+    ]);
+    setFormData({
+      nome: "",
+      descricao: "",
+      preco: "",
+      imagem: "",
+      categoria: "",
+      pausado: false,
+    });
+  };
 
-    if (!nome || !descricao || !preco || !categoria) {
-      alert("Preencha todos os campos obrigatórios.");
-      return;
-    }
+  // Editar produto (vem do modal)
+  const handleEditar = (index, atualizado) => {
+    setProdutos((prev) =>
+      prev.map((p, i) => (i === index ? { ...atualizado, index: i } : p))
+    );
+  };
 
-    const novoProduto = {
-      nome: nome.trim(),
-      descricao: descricao.trim(),
-      preco: parseFloat(preco),
-      imagem: imagem.trim(),
-      categoria: categoria.trim()
-    };
+  // Deletar
+  const handleDeletar = (index) => {
+    setProdutos((prev) => prev.filter((_, i) => i !== index));
+  };
 
-    if (indiceEdicao !== null) {
-      const copia = [...produtos];
-      copia[indiceEdicao] = novoProduto;
-      setProdutos(copia);
-      setIndiceEdicao(null);
-    } else {
-      setProdutos((prev) => [...prev, novoProduto]);
-    }
+  // Pausar
+  const handlePausar = (index) => {
+    setProdutos((prev) =>
+      prev.map((p, i) =>
+        i === index ? { ...p, pausado: !p.pausado } : p
+      )
+    );
+  };
 
-    resetarFormulario();
-  }
-
-  function editarProduto(i) {
-    setFormData({ ...produtos[i] });
-    setIndiceEdicao(i);
-  }
-
-  function deletarProduto(i) {
-    if (window.confirm("Tem certeza que deseja deletar este produto?")) {
-      const copia = [...produtos];
-      copia.splice(i, 1);
-      setProdutos(copia);
-      if (indiceEdicao !== null && indiceEdicao === i) {
-        resetarFormulario();
-        setIndiceEdicao(null);
-      }
-    }
-  }
-
-  function cancelarEdicao() {
-    resetarFormulario();
-    setIndiceEdicao(null);
-  }
-
-  function resetarFormulario() {
-    setFormData({ nome: "", descricao: "", preco: "", imagem: "", categoria: "" });
-  }
-
-  const categoriasAgrupadas = produtos.reduce((acc, produto, i) => {
+  // Agrupa por categoria
+  const categoriasAgrupadas = produtos.reduce((acc, produto) => {
     if (!acc[produto.categoria]) acc[produto.categoria] = [];
-    acc[produto.categoria].push({ ...produto, index: i });
+    acc[produto.categoria].push(produto);
     return acc;
   }, {});
 
   return (
     <div className="container">
-      <header className="cabecalho">
-        <h1 className="titulo-principal">Basilios</h1>
-      </header>
+      <div className="cabecalho">
+        <h1 className="titulo-principal">Cadastro de Produtos</h1>
+      </div>
 
+      {/* Formulário principal (cadastrar novo produto) */}
       <ProdutoForm
         formData={formData}
-        indiceEdicao={indiceEdicao}
+        indiceEdicao={null}
         onChange={handleChange}
-        onSubmit={salvarProduto}
-        onCancel={cancelarEdicao}
+        onSubmit={handleSubmit}
       />
 
+      {/* Lista de produtos */}
       <ListaProdutos
         categoriasAgrupadas={categoriasAgrupadas}
-        onEditar={editarProduto}
-        onDeletar={deletarProduto}
+        onEditar={handleEditar}
+        onDeletar={handleDeletar}
+        onPausar={handlePausar}
       />
     </div>
   );
 }
-

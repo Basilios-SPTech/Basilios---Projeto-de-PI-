@@ -1,15 +1,20 @@
+import React, { useState } from "react";
+import ProdutoCard from "./ProdutoCard";
+import Modal from "./Modal";
+import ProdutoForm from "./ProdutoForm";
 
-import React from "react";
-import ProdutoCard from "./ProdutoCard"; 
+export default function ListaProdutos({ categoriasAgrupadas, onEditar, onDeletar, onPausar }) {
+  const [produtoEditando, setProdutoEditando] = useState(null);
 
-export default function ListaProdutos({ categoriasAgrupadas, onEditar, onDeletar }) {
   const categorias = Object.keys(categoriasAgrupadas);
 
   if (categorias.length === 0) {
     return (
       <div className="lista-produtos">
         <h2 className="titulo-lista">Produtos Cadastrados</h2>
-        <div id="msg-sem-produtos" className="msg-sem-produtos">Nenhum produto cadastrado ainda.</div>
+        <div id="msg-sem-produtos" className="msg-sem-produtos">
+          Nenhum produto cadastrado ainda.
+        </div>
       </div>
     );
   }
@@ -25,13 +30,37 @@ export default function ListaProdutos({ categoriasAgrupadas, onEditar, onDeletar
               <ProdutoCard
                 key={produto.index}
                 produto={produto}
-                onEditar={() => onEditar(produto.index)}
+                onEditar={() => setProdutoEditando(produto)}
                 onDeletar={() => onDeletar(produto.index)}
+                onPausar={() => onPausar(produto.index)}
               />
             ))}
           </div>
         </div>
       ))}
+
+      {/* Modal de edição */}
+      <Modal
+        isOpen={!!produtoEditando}
+        onClose={() => setProdutoEditando(null)}
+      >
+        {produtoEditando && (
+          <ProdutoForm
+            formData={produtoEditando}
+            indiceEdicao={produtoEditando.index}
+            onChange={(e) => {
+              const { id, value } = e.target;
+              setProdutoEditando((prev) => ({ ...prev, [id]: value }));
+            }}
+            onSubmit={(e) => {
+              e.preventDefault();
+              onEditar(produtoEditando.index, produtoEditando);
+              setProdutoEditando(null);
+            }}
+            onCancel={() => setProdutoEditando(null)}
+          />
+        )}
+      </Modal>
     </div>
   );
 }

@@ -1,21 +1,34 @@
+import React, { useState } from "react";
 
-import React from "react";
+export default function ProdutoCard({ produto, onEditar, onDeletar, onPausar }) {
+  const [imageError, setImageError] = useState(false);
+  const placeholder = "https://placehold.co/400x300/orange/white?text=Imagem+Indisponivel";
 
-export default function ProdutoCard({ produto, onEditar, onDeletar }) {
-  const placeholder = "https://placehold.co/400x300/orange/";
+  const handleImageError = (e) => {
+    setImageError(true);
+    e.target.src = placeholder;
+  };
+
   return (
-    <div className="card-produto">
+    <div className={`card-produto ${produto.pausado ? "pausado" : ""}`}>
       <img
-        src={produto.imagem || placeholder}
+        src={!imageError ? (produto.imagem || placeholder) : placeholder}
         alt={`Produto: ${produto.nome}`}
-        onError={(e) => (e.target.src = "https://placehold.co/400x300/orange/white?text=Imagem+Indisponivel")}
+        onError={handleImageError}
       />
       <h3 className="texto-lg">{produto.nome}</h3>
       <p className="texto-cinza">{produto.descricao}</p>
       <p className="texto-vermelho">R$ {produto.preco}</p>
       <div className="flex gap-2 mt-4">
-        <button onClick={onEditar} className="btn-editar">Editar</button>
-        <button onClick={onDeletar} className="btn-deletar">Deletar</button>
+        <button onClick={onEditar} className="btn-editar">
+          Editar
+        </button>
+        <button onClick={onDeletar} className="btn-deletar">
+          Deletar
+        </button>
+        <button onClick={onPausar} className="btn-pausar">
+          {produto.pausado ? "Ativar" : "Pausar"}
+        </button>
       </div>
     </div>
   );
