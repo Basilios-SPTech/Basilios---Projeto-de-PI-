@@ -1,0 +1,115 @@
+/* Ativa tokens alternativos só quando hc = 1 (sem tocar no theme.css) */
+:root[data-hc="1"]{
+  --color-brand: #000000;     /* botões que usam bg-brand ficam p&b */
+  --color-terracotta: #FFD400;/* destaque amarelo forte */
+  --color-success: #FFD400;   /* tudo no mesmo espectro pra não confundir matiz */
+  --color-danger:  #FFD400;
+  --color-gray-light: #EDEDED;
+  --color-blackx: #000000;
+  --color-whitex: #FFFFFF;
+}
+
+/* Modo alto contraste (daltônico): preto & amarelo */
+body.hc {
+  background: #000 !important;
+  color: #FFD400 !important;
+  /* ajuda leitores de tela a pegarem contraste no foco */
+  -webkit-text-size-adjust: 100%;
+}
+
+/* texto padrão em amarelo */
+body.hc * { color: #FFD400 !important; }
+
+/* superfícies típicas do teu layout */
+body.hc .bg-white,
+body.hc .bg-gray-50,
+body.hc .bg-gray-100,
+body.hc .bg-brand,
+body.hc .bg-black,
+body.hc .bg-neutral-50,
+body.hc [class*="bg-"] {
+  background: #000 !important;
+}
+
+/* bordas e divisórias ficam amarelas */
+body.hc .border,
+body.hc [class*="border-"],
+body.hc hr {
+  border-color: #FFD400 !important;
+  color: #FFD400 !important;
+}
+
+/* inputs / selects / textareas */
+body.hc input,
+body.hc select,
+body.hc textarea {
+  background: #000 !important;
+  color: #FFD400 !important;
+  border: 2px solid #FFD400 !important;
+}
+body.hc input::placeholder,
+body.hc textarea::placeholder {
+  color: #E6C200 !important; /* amarelo um pouco mais escuro pro placeholder */
+}
+
+/* botões: deixar claros e óbvios */
+body.hc .btn,
+body.hc button,
+body.hc [role="button"] {
+  background: #000 !important;
+  color: #FFD400 !important;
+  border: 2px solid #FFD400 !important;
+  box-shadow: none !important;
+}
+body.hc .btn-primary {
+  /* garante legibilidade mesmo se tema tentar pintar */
+  background: #000 !important;
+  color: #FFD400 !important;
+}
+
+/* links sublinhados e evidentes */
+body.hc a, body.hc .link, body.hc [role="link"] {
+  color: #FFD400 !important;
+  text-decoration: underline !important;
+}
+
+/* foco MUITO visível */
+body.hc *:focus-visible {
+  outline: 3px solid #FFD400 !important;
+  outline-offset: 2px !important;
+  border-radius: 4px;
+}
+
+/* ícones/imagens: reduzir ruído de cor (opcional) */
+body.hc img:not([aria-hidden="true"]) {
+  filter: grayscale(100%) contrast(1.15) brightness(0.9);
+}
+
+/* tabelas/listas: linhas divisórias claras */
+body.hc table, body.hc th, body.hc td {
+  border: 2px solid #FFD400 !important;
+}
+
+/* utilitários que você usou no card/login */
+body.hc .border-gray-300 { border-color: #FFD400 !important; }
+body.hc .placeholder\:text-gray-400::placeholder { color: #E6C200 !important; }
+
+/* 1) Alvo maior já está ok se usar .hc-btn 48-52px, mas aqui vai o caret e seleção */
+body.hc input, body.hc textarea { caret-color: #FFD400 !important; }
+body.hc ::selection { background: #FFD400; color: #000; }
+
+/* 2) Links visitados continuam amarelos */
+body.hc a:visited { color: #FFD400 !important; }
+
+/* 3) Logo sem filtro (adicione class="no-hc-filter" no <img> do logo) */
+body.hc .no-hc-filter { filter: none !important; }
+
+/* 4) Inputs disabled ainda com borda visível */
+body.hc input:disabled,
+body.hc select:disabled,
+body.hc textarea:disabled {
+  background: #111 !important;
+  color: #C8A800 !important;
+  border-color: #FFD400 !important;
+  opacity: 1 !important;
+}

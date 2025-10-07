@@ -1,0 +1,45 @@
+.hc-toggle {
+  position: fixed;
+  z-index: 9999;
+  inset-inline-end: 9px; /* lado direito por padrão */
+  bottom: 120px;          /* ajustável via config */
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  font-family: var(--font-sans, ui-sans-serif);
+}
+.hc-btn {
+  width: 44px; height: 44px;
+  border-radius: 999px;
+  background: #000;
+  border: 2px solid #FFD400;
+  display: grid; place-items: center;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0,0,0,.35);
+}
+.hc-btn img { width: 24px; height: 24px; filter: invert(86%) sepia(92%) saturate(716%) hue-rotate(3deg) brightness(105%) contrast(104%); }
+
+.hc-pop {
+  position: absolute;
+  display: none;
+  min-width: 210px;
+  background: #000;
+  color: #FFD400;
+  border: 2px solid #FFD400;
+  border-radius: 10px;
+  padding: 8px;
+  box-shadow: 0 10px 24px rgba(0,0,0,.5);
+  right: 50px;
+}
+
+.hc-pop.open { display: block; }
+
+.hc-item {
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  outline: none;
+}
+.hc-item:hover, .hc-item:focus { background: #111; }
+.hc-sep { height: 1px; background: #FFD400; opacity: .4; margin: 6px 0; }

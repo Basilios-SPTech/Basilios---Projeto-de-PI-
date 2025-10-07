@@ -1,0 +1,5 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/forms";
+
+/* Optional: normalize font rendering */
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
