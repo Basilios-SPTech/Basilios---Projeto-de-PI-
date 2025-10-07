@@ -1,13 +1,56 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="pt-br">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="./src/assets/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend-basilios</title>
+    <title>Cadastrar Produto</title>
   </head>
   <body>
     <div id="root"></div>
+
+    <div vw class="enabled">
+      <div vw-access-button class="active"></div>
+      <div vw-plugin-wrapper>
+        <div class="vw-plugin-top-wrapper"></div>
+      </div>
+    </div>
+    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+    <script>
+      // Objeto de configuração completo para o Widget VLibras
+      const vlibrasConfig = {
+        // Caminho obrigatório para os arquivos do widget. Não altere.
+        rootPath: 'https://vlibras.gov.br/app',
+
+        // Escolha o personagem (avatar). Opções: 'guga' (padrão), 'hozana', 'calvin'.
+        avatar: 'hozana',
+
+        // Posição do ícone na tela. 'R' para direita (Right), 'L' para esquerda (Left).
+        position: 'R',
+
+        // Opacidade do botão flutuante quando não está em uso (valor entre 0 e 1).
+        opacity: 0.7,
+
+        // Define um brilho ao redor do avatar para destacá-lo.
+        glow: {
+          enabled: true,    // Ativar ou desativar o brilho.
+          color: '#007bff'  // Cor do brilho (aceita hexadecimal, rgb, etc.).
+        },
+
+        // Personaliza o tamanho do botão de acessibilidade.
+        button: {
+          // Largura do botão (ex: '60px'). Use unidades CSS.
+          width: '50px',
+          // Altura do botão (ex: '60px'). Use unidades CSS.
+          height: '50px',
+          // Ícone do botão. Opções: 'default', 'simple', 'round'.
+          icon: 'default'
+        }
+      };
+
+      // Inicializa o widget com as configurações personalizadas
+      new window.VLibras.Widget(vlibrasConfig);
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

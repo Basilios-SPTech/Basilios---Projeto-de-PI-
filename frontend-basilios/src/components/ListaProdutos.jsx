@@ -10,9 +10,9 @@ export default function ListaProdutos({ categoriasAgrupadas, onEditar, onDeletar
 
   if (categorias.length === 0) {
     return (
-      <div className="lista-produtos">
+      <div>
         <h2 className="titulo-lista">Produtos Cadastrados</h2>
-        <div id="msg-sem-produtos" className="msg-sem-produtos">
+        <div id="msg-sem-produtos">
           Nenhum produto cadastrado ainda.
         </div>
       </div>
@@ -20,11 +20,13 @@ export default function ListaProdutos({ categoriasAgrupadas, onEditar, onDeletar
   }
 
   return (
-    <div className="lista-produtos">
+    <div>
       <h2 className="titulo-lista">Produtos Cadastrados</h2>
+
       {categorias.map((categoria) => (
-        <div key={categoria} className="secao-categoria">
-          <h3 className="titulo-categoria">{categoria}</h3>
+        <div key={categoria}>
+          <h3>{categoria}</h3>
+
           <div className="grade-produtos">
             {categoriasAgrupadas[categoria].map((produto) => (
               <ProdutoCard
@@ -49,7 +51,25 @@ export default function ListaProdutos({ categoriasAgrupadas, onEditar, onDeletar
             formData={produtoEditando}
             indiceEdicao={produtoEditando.index}
             onChange={(e) => {
-              const { id, value } = e.target;
+              const { id } = e.target;
+
+              let value = e.target.value;
+
+              const preview = e.target.preview;
+              const file =
+                (e.target.files && e.target.files[0]) ||
+                (value instanceof File ? value : null);
+
+              if (id === "imagem") {
+                if (typeof preview === "string") {
+                  value = preview;
+                } else if (file) {
+                  value = URL.createObjectURL(file);
+                } else if (typeof value !== "string") {
+                  value = "";
+                }
+              }
+
               setProdutoEditando((prev) => ({ ...prev, [id]: value }));
             }}
             onSubmit={(e) => {
