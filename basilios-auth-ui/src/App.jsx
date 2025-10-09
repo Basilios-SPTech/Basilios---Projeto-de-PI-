@@ -11,7 +11,7 @@ import AuthLayout from "./layouts/AuthLayout.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import FooterBasilios from "./components/FooterBasilios.jsx";
-
+import Header  from "./components/header.jsx";
 
 // Rota de Login com layout aplicado e navegação para "Cadastrar-se"
 function LoginRoute() {
@@ -45,6 +45,7 @@ export default function App() {
   return (
     <div className="min-h-dvh flex flex-col">
       <main className="flex-1">
+       
         <Router>
           <Routes>
             {/* Raiz -> login */}
