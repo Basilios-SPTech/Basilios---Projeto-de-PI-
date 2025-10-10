@@ -3,6 +3,7 @@ import InputField from '../components/InputField.jsx'
 import PasswordField from '../components/PasswordField.jsx'
 import { validateEmail, validatePassword } from '../utils/validators.js'
 import { AuthAPI } from '../services/api.js'
+import SidebarUser from '../components/MenuButton.jsx'
 
 export default function Login({ onGoRegister }) {
   const [email, setEmail] = useState('')
@@ -27,7 +28,7 @@ export default function Login({ onGoRegister }) {
     try {
       const data = await AuthAPI.login(email, password)
       console.log('login ok:', data)
-      alert('Login efetuado. Troque este alert por navegação protegida.')
+      alert('Login efetuado.')
     } catch (err) {
       setServerError(err.message || 'Falha no login.')
     } finally {
@@ -54,7 +55,7 @@ export default function Login({ onGoRegister }) {
   return (
     <form className="space-y-6" onSubmit={handleLogin} noValidate>
       <h1 className="text-3xl font-bold text-black">Login</h1>
-
+      <SidebarUser />
       <InputField
         id="email"
         label="E-mail"

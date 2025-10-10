@@ -44,7 +44,7 @@ function RegisterRoute() {
 export default function App() {
   return (
     <div className="min-h-dvh flex flex-col">
-      <main className="flex-1">
+    <main className="flex-1">
        
         <Router>
           <Routes>
