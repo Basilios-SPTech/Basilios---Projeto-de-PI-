@@ -11,6 +11,7 @@ import AuthLayout from "./layouts/AuthLayout.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import FooterBasilios from "./components/FooterBasilios.jsx";
+import BoardTrello from "./components/BoardTrello.jsx";
 import Header  from "./components/header.jsx";
 
 // Rota de Login com layout aplicado e navegação para "Cadastrar-se"
@@ -59,6 +60,8 @@ export default function App() {
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </Router>
+        {/* <BoardTrello /> */}
+
       </main>
 
       {/* Footer global (permanece como no seu código atual) */}
