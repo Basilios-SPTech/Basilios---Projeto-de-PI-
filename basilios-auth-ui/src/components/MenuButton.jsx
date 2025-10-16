@@ -1,3 +1,5 @@
+/** Botão suspenso que chama a nossa side bar*/
+
 import { useEffect, useState, useMemo } from "react";
 import SidebarUser from "./SidebarUser.jsx";
 

@@ -1,3 +1,5 @@
+/** Sider bar para adms*/
+
 import { Home, ShoppingBag, Settings, LogOut, Package, Hamburger } from "lucide-react";
 import "../styles/side-bar.css";
 
@@ -8,7 +10,7 @@ export default function SidebarUser({ open, onClose }) {
     { icon: Home,       label: "Início",         href: "/login" },
     { icon: ShoppingBag,label: "Meus Pedidos",   href: "#pedidos" },
     { icon: Package,    label: "Meus Endereços", href: "#enderecos" },
-    { icon: Hamburger,  label: "Sobre Nós",      href: "#sobrenos" },
+    { icon: Hamburger,  label: "Sobre Nós",      href: "/about" },
     { icon: LogOut,     label: "Sair",           href: "#logout" },
   ];
 

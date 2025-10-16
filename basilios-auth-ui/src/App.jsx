@@ -12,6 +12,7 @@ import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import FooterBasilios from "./components/FooterBasilios.jsx";
 import Header  from "./components/header.jsx";
+import About from "./pages/About.jsx";
 
 // Rota de Login com layout aplicado e navegação para "Cadastrar-se"
 function LoginRoute() {
@@ -51,9 +52,13 @@ export default function App() {
             {/* Raiz -> login */}
             <Route path="/" element={<Navigate to="/login" replace />} />
 
+
             {/* Rotas de autenticação (públicas c/ layout) */}
             <Route path="/login" element={<LoginRoute />} />
             <Route path="/register" element={<RegisterRoute />} />
+
+             {/* ✅ Página sobre nós */}
+            <Route path="/about" element={<About />} />
 
             {/* 404 controlado: qualquer rota desconhecida cai no login */}
             <Route path="*" element={<Navigate to="/login" replace />} />
