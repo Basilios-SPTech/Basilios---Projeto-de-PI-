@@ -47,20 +47,20 @@ export default function App() {
     <div className="min-h-dvh flex flex-col">
     <main className="flex-1">
        
-        <Router>
-          <Routes>
+        {/* <Router> */}
+          {/* <Routes> */}
             {/* Raiz -> login */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            {/* <Route path="/" element={<Navigate to="/login" replace />} /> */}
 
             {/* Rotas de autenticação (públicas c/ layout) */}
-            <Route path="/login" element={<LoginRoute />} />
-            <Route path="/register" element={<RegisterRoute />} />
+            {/* <Route path="/login" element={<LoginRoute />} /> */}
+            {/* <Route path="/register" element={<RegisterRoute />} /> */}
 
             {/* 404 controlado: qualquer rota desconhecida cai no login */}
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          </Routes>
-        </Router>
-        {/* <BoardTrello /> */}
+            {/* <Route path="*" element={<Navigate to="/login" replace />} /> */}
+          {/* </Routes> */}
+        {/* </Router> */}
+        <BoardTrello />
 
       </main>
 
