@@ -1,3 +1,4 @@
+/** Sider bar base para construir outras sides bar*/
 import { X } from "lucide-react";
 
 export default function SidebarBase({

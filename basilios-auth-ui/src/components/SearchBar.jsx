@@ -1,4 +1,5 @@
-// src/components/SearchBar.jsx
+/** Barra de pesquisa presente no header*/
+
 import { Search } from "lucide-react";
 
 export default function SearchBar({

@@ -1,3 +1,4 @@
+/** footer global do nosso site (implementar em tudo) */
 import logo from "/logoWithoutBackGround.png"; 
 
 export default function Footer() {

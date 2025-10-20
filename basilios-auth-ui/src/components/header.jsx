@@ -1,3 +1,5 @@
+/** THeader da nossa home, com seleção de catálogo */
+
 import { useState, useEffect } from "react";
 import { Menu, User } from "lucide-react";
 import SearchBar from "./SearchBar.jsx";
