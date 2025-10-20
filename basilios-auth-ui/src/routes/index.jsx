@@ -4,7 +4,8 @@ import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import AuthLayout from "../layouts/AuthLayout.jsx";
 import Login from "../pages/Login.jsx";
 import Register from "../pages/Register.jsx";
-import BoardTrello from "../components/BoardTrello.jsx";
+import Home  from "../pages/Home.jsx";
+import CadastrarProduto from "../pages/CadastrarProduto.jsx";
 import OrdersBoard from "../pages/OrdersBoard.jsx";
 
 // Rota de Login com layout aplicado e navegação para "Cadastrar-se"
@@ -34,6 +35,20 @@ function BoardRoute(){
     )
 }
 
+function HomePage(){
+    const navigate = useNavigate();
+    return(
+          <Home onGoHome={() => navigate("/home")} />
+    )
+}
+
+function CadastrarProdutoRoute(){
+    const navigate = useNavigate();
+    return(
+          <CadastrarProduto onGoCadastrarProduto={() => navigate("/cadastrar-produto")} />
+    )
+}
+
 export default function AppRoutes() {
   return (
     <Routes>
@@ -43,6 +58,9 @@ export default function AppRoutes() {
       {/* Rotas de autenticação (públicas c/ layout) */}
       <Route path="/login" element={<LoginRoute />} />
       <Route path="/register" element={<RegisterRoute />} />
+
+      <Route path="/home" element={<Home />} />
+      <Route path="/cadastrar-produto" element={<CadastrarProduto />} />
 
       {/* Rota do Board */}
       <Route path="/board" element={<BoardRoute />} />

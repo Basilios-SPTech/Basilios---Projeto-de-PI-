@@ -1,5 +1,4 @@
-import logo from "../assets/logo.png";
-
+<img src="/logo.png" alt="Logo" />
 const CATEGORIAS = [
   "Combos-Promoção",
   "Lanches Premium",
@@ -34,7 +33,7 @@ export default function ProdutoForm({
       <div className="flex items-center gap-[clamp(14px,2vw,20px)] mb-[26px]">
         <div className="shrink-0">
           <img
-            src={logo}
+            src="/logo.png"
             alt="Logo Basilios"
             className="max-w-[92px] h-auto rounded-[var(--radius)] border border-[color:var(--border)] shadow-[var(--shadow-sm)]"
           />
