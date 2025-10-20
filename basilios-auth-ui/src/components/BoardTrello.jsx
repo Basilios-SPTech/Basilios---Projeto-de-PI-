@@ -7,35 +7,32 @@ export default function BoardTrello() {
     todo: {
       id: 'todo',
       title: 'Recebidos',
-      color: 'green',
+      color: 'blue',
       tasks: [
-        { id: '1', content: 'Combo 1', description: '1x X-Salada e 1x Batata Frita' },
-        { id: '2', content: 'Combo 2', description: '1x X-Burguer e 1x Batata Frita' }
+        { id: '1', content: 'Combo 1', description: '1x X-Salada e 1x Batata Frita', createdAt: '17:50' },
+        { id: '2', content: 'Combo 2', description: '1x X-Burguer e 1x Batata Frita', createdAt: '17h36' }
       ]
     },
     inProgress: {
       id: 'inProgress',
       title: 'Em preparação',
-      color: 'blue',
+      color: 'yellow',
       tasks: [
-        { id: '3', content: 'Combo 3', description: '1x X-Tudo e 1x Batata Frita' }
+        { id: '3', content: 'Combo 3', description: '1x X-Tudo e 1x Batata Frita', createdAt: '17:50' }
       ]
     },
     done: {
       id: 'done',
-      title: 'Concluído',
-      color: 'red',
+      title: 'Saiu para entrega',
+      color: 'green',
       tasks: [
-        { id: '4', content: 'Combo 4', description: '1x X-Bacon e 1x Batata Frita' }
+        { id: '4', content: 'Combo 4', description: '1x X-Bacon e 1x Batata Frita', createdAt: '17:50' }
       ]
     }
   });
 
   const [draggedTask, setDraggedTask] = useState(null);
   const [draggedFrom, setDraggedFrom] = useState(null);
-  const [newTaskColumn, setNewTaskColumn] = useState(null);
-  const [newTaskContent, setNewTaskContent] = useState('');
-  const [newTaskDescription, setNewTaskDescription] = useState('');
 
   const getColorClasses = (color) => {
     const colors = {
@@ -59,6 +56,13 @@ export default function BoardTrello() {
         badge: 'bg-red-500',
         hover: 'hover:border-red-600',
         button: 'bg-red-500 hover:bg-red-600'
+      },
+      yellow: {
+        border: 'border-yellow-500',
+        bg: 'bg-yellow-50',
+        badge: 'bg-yellow-500',
+        hover: 'hover:border-yellow-600',
+        button: 'bg-yellow-500 hover:bg-yellow-600'
       }
     };
     return colors[color];
@@ -105,18 +109,17 @@ export default function BoardTrello() {
     setDraggedTask(null);
     setDraggedFrom(null);
   };
-  
+
   return (
-    <div className="min-h-screen bg-white p-8">
+    <div className="min-h-screen w-full text-center text-white p-8 flex-1 items-start justify-center">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-4xl font-bold text-black mb-8">
-          Painel de pedidos - Basilios <Data />
+          <span> Painel de pedidos - Basilios <Data /></span>
         </h1>
         
-        <div className="flex gap-6 overflow-x-auto pb-4">
+        <div className="w-full flex items-center justify-between flex-row gap-6 pt-5 overflow-x-auto pb-4">
           {Object.values(columns).map(column => {
             const colorClasses = getColorClasses(column.color);
-            
             return (
               <div
                 key={column.id}
@@ -127,6 +130,7 @@ export default function BoardTrello() {
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-semibold text-black flex items-center gap-2">
                     {column.title}
+                    
                     <span className={`text-xs ${colorClasses.badge} text-white px-2 py-1 rounded-full`}>
                       {column.tasks.length}
                     </span>
@@ -141,9 +145,10 @@ export default function BoardTrello() {
                       className={`bg-white p-3 rounded-lg border-2 border-gray-200 cursor-move ${colorClasses.hover} hover:shadow-md transition-all group`}
                     >
                       <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="flex items-start gap-2 flex-1">
+                        <div className="flex gap-2 flex-row items-center justify-center">
                           <GripVertical className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
                           <p className="text-gray-900 text-sm font-semibold">{task.content}</p>
+                          <strong className='text-gray-600 text-s'> {task.createdAt} </strong>
                         </div>
                       </div>
                       {task.description && (
