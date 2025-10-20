@@ -1,11 +1,11 @@
-import SidebarUser from "../components/SidebarUser.jsx";
+import SidebarAdm from "../components/SidebarAdm.jsx";
 import BoardTrello from "../components/BoardTrello.jsx";
 
 export default function OrdersBoard(){
     return(
-        <main className="flex-1">
-            <SidebarUser />
+        <>
+            <SidebarAdm />
             <BoardTrello />
-        </main>
+        </>
     )
 }
