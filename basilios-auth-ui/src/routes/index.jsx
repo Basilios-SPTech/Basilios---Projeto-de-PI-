@@ -45,7 +45,7 @@ function HomePage(){
 function CadastrarProdutoRoute(){
     const navigate = useNavigate();
     return(
-          <CadastrarProduto onGoCadastrarProduto={() => navigate("/cadastrar-produto")} />
+          <CadastrarProduto onGoCadastrarProduto={() => navigate("/cadastro")} />
     )
 }
 
@@ -60,7 +60,7 @@ export default function AppRoutes() {
       <Route path="/register" element={<RegisterRoute />} />
 
       <Route path="/home" element={<Home />} />
-      <Route path="/cadastrar-produto" element={<CadastrarProduto />} />
+      <Route path="/cadastro" element={<CadastrarProduto />} />
 
       {/* Rota do Board */}
       <Route path="/board" element={<BoardRoute />} />
