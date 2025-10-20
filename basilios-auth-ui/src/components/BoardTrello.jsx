@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Plus, X, GripVertical } from 'lucide-react';
 import Data from './Data.jsx';
 
-export default function KanbanBoard() {
+export default function BoardTrello() {
   const [columns, setColumns] = useState({
     todo: {
       id: 'todo',
@@ -105,39 +105,7 @@ export default function KanbanBoard() {
     setDraggedTask(null);
     setDraggedFrom(null);
   };
-
-  const handleAddTask = (columnId) => {
-    if (!newTaskContent.trim()) return;
-
-    const newTask = {
-      id: Date.now().toString(),
-      content: newTaskContent,
-      description: newTaskDescription
-    };
-
-    setColumns(prev => ({
-      ...prev,
-      [columnId]: {
-        ...prev[columnId],
-        tasks: [...prev[columnId].tasks, newTask]
-      }
-    }));
-
-    setNewTaskContent('');
-    setNewTaskDescription('');
-    setNewTaskColumn(null);
-  };
-
-  const handleDeleteTask = (columnId, taskId) => {
-    setColumns(prev => ({
-      ...prev,
-      [columnId]: {
-        ...prev[columnId],
-        tasks: prev[columnId].tasks.filter(t => t.id !== taskId)
-      }
-    }));
-  };
-
+  
   return (
     <div className="min-h-screen bg-white p-8">
       <div className="max-w-7xl mx-auto">
@@ -163,58 +131,7 @@ export default function KanbanBoard() {
                       {column.tasks.length}
                     </span>
                   </h2>
-                  <button
-                    onClick={() => setNewTaskColumn(column.id)}
-                    className="p-1.5 hover:bg-white/50 rounded transition-colors"
-                  >
-                    <Plus className="w-5 h-5 text-black" />
-                  </button>
                 </div>
-
-                {newTaskColumn === column.id && (
-                  <div className="mb-4 p-3 bg-white rounded-lg border-2 border-gray-300">
-                    <input
-                      type="text"
-                      value={newTaskContent}
-                      onChange={(e) => setNewTaskContent(e.target.value)}
-                      placeholder="Título da tarefa..."
-                      className="w-full bg-gray-50 text-black px-3 py-2 rounded mb-2 border border-gray-300 focus:outline-none focus:border-black"
-                      autoFocus
-                    />
-                    <textarea
-                      value={newTaskDescription}
-                      onChange={(e) => setNewTaskDescription(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleAddTask(column.id);
-                        }
-                      }}
-                      placeholder="Descrição (opcional)..."
-                      className="w-full bg-gray-50 text-black px-3 py-2 rounded mb-2 border border-gray-300 focus:outline-none focus:border-black resize-none"
-                      rows="2"
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleAddTask(column.id)}
-                        className={`px-3 py-1.5 ${colorClasses.button} text-white rounded text-sm transition-colors`}
-                      >
-                        Adicionar
-                      </button>
-                      <button
-                        onClick={() => {
-                          setNewTaskColumn(null);
-                          setNewTaskContent('');
-                          setNewTaskDescription('');
-                        }}
-                        className="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-black rounded text-sm transition-colors"
-                      >
-                        Cancelar
-                      </button>
-                    </div>
-                  </div>
-                )}
-
                 <div className="space-y-3 min-h-[400px]">
                   {column.tasks.map(task => (
                     <div
@@ -228,12 +145,6 @@ export default function KanbanBoard() {
                           <GripVertical className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
                           <p className="text-gray-900 text-sm font-semibold">{task.content}</p>
                         </div>
-                        <button
-                          onClick={() => handleDeleteTask(column.id, task.id)}
-                          className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 rounded transition-all"
-                        >
-                          <X className="w-4 h-4 text-red-600" />
-                        </button>
                       </div>
                       {task.description && (
                         <p className="text-gray-600 text-xs ml-6 leading-relaxed">{task.description}</p>
