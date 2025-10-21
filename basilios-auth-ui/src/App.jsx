@@ -1,27 +1,19 @@
-
-   import React from "react";
-   import {
-     BrowserRouter as Router,
-     Routes,
-     Route,
-     Navigate,
-     useNavigate,
-   } from "react-router-dom";
+   import {BrowserRouter as Router, Routes, Route, Navigate, useNavigate,} from "react-router-dom";
    import { NavLink } from "react-router-dom"; // Adicionado para o header de produtos
 
-   // Componentes do segundo App.jsx (autenticação)
-   import AuthLayout from "./layouts/AuthLayout.jsx";
+   // Pages
    import Login from "./pages/Login.jsx";
    import Register from "./pages/Register.jsx";
    import FooterBasilios from "./components/FooterBasilios.jsx";
    import About from "./pages/About.jsx";
-   
-
-   // Componentes do primeiro App.jsx (produtos)
    import Home from "./pages/Home.jsx";
    import CadastrarProduto from "./pages/CadastrarProduto.jsx";
+   import OrdersBoard from "./pages/OrdersBoard.jsx"; 
 
-   // Rota de Login com layout aplicado e navegação para "Cadastrar-se"
+   // Layouts
+   import AuthLayout from "./layouts/AuthLayout.jsx";
+
+   // Rotas
    function LoginRoute() {
      const navigate = useNavigate();
      return (
@@ -31,7 +23,7 @@
      );
    }
 
-   // Rota de Cadastro com layout aplicado e navegação para "Já tem conta? Entre"
+  
    function RegisterRoute() {
      const navigate = useNavigate();
      return (
@@ -41,7 +33,28 @@
      );
    }
 
-   // Layout para páginas de produtos (usando o header do primeiro App.jsx)
+
+   function BoardRoute(){
+       const navigate = useNavigate();
+       return(
+             <OrdersBoard onGoOrdersBoard={() => navigate("/board")} />
+       )
+   }
+   
+   function HomePage(){
+       const navigate = useNavigate();
+       return(
+             <Home onGoHome={() => navigate("/home")} />
+       )
+   }
+   
+   function CadastrarProdutoRoute(){
+       const navigate = useNavigate();
+       return(
+             <CadastrarProduto onGoCadastrarProduto={() => navigate("/cadastro")} />
+       )
+   }
+
    function ProdutoLayout({ children }) {
      return (
        <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -61,23 +74,15 @@
      );
    }
 
-   /**
-    * ============================
-    * APP (ROTEADOR + FOOTER)
-    * ============================
-    * - Router controla as rotas públicas de autenticação e as de produtos;
-    * - FooterBasilios fica fora das rotas para aparecer em todas as páginas;
-    * - Redirecionamos "/" para "/login" (público);
-    * - Adicionadas rotas para produtos com layout próprio.
-    */
+ 
    export default function App() {
      return (
        <div className="min-h-dvh flex flex-col">
          <main className="flex-1">
            <Router>
              <Routes>
-               {/* Raiz -> login */}
-               <Route path="/" element={<Navigate to="/login" replace />} />
+               {/* Raiz -> home */}
+               <Route path="/" element={<Navigate to="/home" replace />} />
 
                {/* Rotas de autenticação (públicas c/ layout) */}
                <Route path="/login" element={<LoginRoute />} />
@@ -89,9 +94,12 @@
                {/* Rotas de produtos (com layout próprio, assumindo acesso após login) */}
                <Route path="/home" element={<ProdutoLayout><Home /></ProdutoLayout>} />
                <Route path="/cadastro" element={<ProdutoLayout><CadastrarProduto /></ProdutoLayout>} />
+              
+              {/* Rota do Board */}
+              <Route path="/board" element={<BoardRoute />} />
 
-               {/* 404 controlado: qualquer rota desconhecida cai no login */}
-               <Route path="*" element={<Navigate to="/login" replace />} />
+               {/* 404 controlado: qualquer rota desconhecida cai na home */}
+               <Route path="*" element={<Navigate to="/home" replace />} />
              </Routes>
            </Router>
          </main>
