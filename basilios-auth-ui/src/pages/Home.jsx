@@ -70,6 +70,7 @@ export default function Home() {
 
     return (
         <section>
+            
             <h2 className="text-xl font-semibold mb-4">Produtos</h2>
 
             <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

@@ -11,7 +11,7 @@ import {
   isNonEmpty,
 } from '../utils/validators.js'
 import { AuthAPI } from '../services/api.js'
-import SidebarUser from '../components/MenuButton.jsx'
+import SidebarLogin from '../components/MenuButtonLogin.jsx'
 
 export default function Register({ onGoLogin }) {
   const [form, setForm] = useState({
@@ -78,7 +78,7 @@ export default function Register({ onGoLogin }) {
       <h1 className="text-3xl font-bold text-black">Cadastro</h1>
 
       <div className="grid md:grid-cols-2 gap-4">
-        <SidebarUser />
+        <SidebarLogin />
         <InputField
           id="fullName"
           label="Nome completo"

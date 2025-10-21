@@ -1,4 +1,4 @@
-/** Sider bar para users*/
+/** Sider bar para login/cadastrp*/
 import { Home, ShoppingBag, Settings, LogOut, Package, Hamburger } from "lucide-react";
 import "../styles/side-bar.css";
 
@@ -7,10 +7,7 @@ export default function SidebarUser({ open, onClose }) {
 
   const menuItems = [
     { icon: Home,       label: "Início",         href: "/home" },
-    { icon: ShoppingBag,label: "Meus Pedidos",   href: "#pedidos" },
-    { icon: Package,    label: "Meus Endereços", href: "#enderecos" },
     { icon: Hamburger,  label: "Sobre Nós",      href: "/about" },
-    { icon: LogOut,     label: "Sair",           href: "#logout" },
   ];
 
   const handleClick = (item, e) => {

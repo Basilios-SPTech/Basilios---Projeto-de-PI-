@@ -3,7 +3,7 @@ import InputField from '../components/InputField.jsx'
 import PasswordField from '../components/PasswordField.jsx'
 import { validateEmail, validatePassword } from '../utils/validators.js'
 import { AuthAPI } from '../services/api.js'
-import SidebarUser from '../components/MenuButton.jsx'
+import SidebarLogin from '../components/MenuButtonLogin.jsx'
 
 export default function Login({ onGoRegister }) {
   const [email, setEmail] = useState('')
@@ -55,7 +55,7 @@ export default function Login({ onGoRegister }) {
   return (
     <form className="space-y-6" onSubmit={handleLogin} noValidate>
       <h1 className="text-3xl font-bold text-black">Login</h1>
-      <SidebarUser />
+      <SidebarLogin />
       <InputField
         id="email"
         label="E-mail"

@@ -87,7 +87,7 @@ export default function About() {
             </p>
 
             <div className="about-hero__cta">
-              <a className="btn btn--ghost btn--on-dark anchor-btn" href="#historia">
+              <a className="btn btn--ghost btn--on-dark anchor-btn" href="#history">
                 Nossa história
               </a>
             </div>
@@ -141,7 +141,7 @@ export default function About() {
       </section>
 
       {/* HISTÓRIA */}
-      <section id="historia" className="container section section--split">
+      <section id="history" className="container section section--split">
         <div className="split__media" data-reveal="left" data-delay="0">
           <img src="/RestauranteDentro.png" alt="Primeira chapa da Basilios" className="card-media" />
           <div className="stacked">
@@ -172,7 +172,7 @@ export default function About() {
             <li><MapPin size={18} /> Ingredientes da melhor qualidade.</li>
           </ul>
 
-          <a className="btn btn--primary anchor-btn" href="#principios">
+          <a className="btn btn--primary anchor-btn" href="#principles">
             Nossos princípios
           </a>
         </div>
@@ -210,7 +210,7 @@ export default function About() {
       </section>
 
       {/* POSTERS */}
-      <section id="principios" className="posters section" data-reveal="up" data-delay="0">
+      <section id="principles" className="posters section" data-reveal="up" data-delay="0">
         <div className="container">
           <div className="posters__grid">
             <article className="poster poster--red" data-reveal="up" data-delay="0">
@@ -241,7 +241,7 @@ export default function About() {
   {/* Botão Voltar (padronizado) + classe extra para custom só no de baixo */}
         <a
   className="btn btn--ghost btn--back btn--back-bottom"
-  href="#topo"
+  href="#top"
   aria-label="Voltar ao topo"
 >
   <ArrowUp size={18} />
