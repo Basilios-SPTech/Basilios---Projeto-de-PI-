@@ -1,4 +1,4 @@
-   // src/App.jsx
+
    import React from "react";
    import {
      BrowserRouter as Router,
@@ -15,6 +15,7 @@
    import Register from "./pages/Register.jsx";
    import FooterBasilios from "./components/FooterBasilios.jsx";
    import About from "./pages/About.jsx";
+   
 
    // Componentes do primeiro App.jsx (produtos)
    import Home from "./pages/Home.jsx";

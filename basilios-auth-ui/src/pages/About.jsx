@@ -73,7 +73,7 @@ export default function About() {
             </BackButton>
 
             {/* Logo maior e responsiva, reposicionada para mobile */}
-            <LogoLink to="/" />
+            <LogoLink to="/home" />
           </div>
 
           <div className="about-hero__content" data-reveal="up" data-delay="0">
@@ -123,7 +123,7 @@ export default function About() {
             className="is-dark"
             icon={Leaf}
             title="Ingredientes de respeito"
-            text="Blend próprio, pães frescos e iaquela maionese da casa. Só o que agrega."
+            text="Blend próprio, pães frescos e aquela maionese da casa. Só o que agrega."
           />
           <FeatureCard
             className="is-dark"
@@ -187,18 +187,23 @@ export default function About() {
 
         <div className="timeline">
           <div data-reveal="left" data-delay="0">
-            <TimelineItem year="2018" title="A primeira chapa" image="/img.png">
+            <TimelineItem year="2015" title="A primeira chapa" image="/chapa.png">
               Começamos com muita garra, sabendo como e onde chegariamos.
             </TimelineItem>
           </div>
           <div data-reveal="right" data-delay="1">
-            <TimelineItem year="2020" title="Explosão do delivery" image="/img.png" right>
+            <TimelineItem year="2020" title="Explosão do delivery" image="entrega.png" right>
               Embalagem, roteirização e tempo de entrega otimizados.
             </TimelineItem>
           </div>
           <div data-reveal="left" data-delay="2">
-            <TimelineItem year="2023" title="Menu autoral" image="/img.png">
+            <TimelineItem year="2023" title="Menu autoral" image="/cardapio.png">
               Edições exclusivas, com muitas variedades e sabor.
+            </TimelineItem>
+          </div>
+         <div data-reveal="right" data-delay="3">
+            <TimelineItem year="2025" title="Dias atuais" image="/doismilevintecinco.png" right>
+              Hoje a Basilios é aquele cantinho da aclimação, que todo mundo conhece e ama. 
             </TimelineItem>
           </div>
         </div>
@@ -231,7 +236,7 @@ export default function About() {
           <h3>Bora morder essa história?</h3>
           <p>Faça o pedido agora ou venha nos visitar!</p>
           <div className="cta__actions">
-  <Link className="btn btn--primary" to="/">Fazer pedido</Link>
+  <Link className="btn btn--primary" to="/home">Fazer pedido</Link>
 
   {/* Botão Voltar (padronizado) + classe extra para custom só no de baixo */}
         <a

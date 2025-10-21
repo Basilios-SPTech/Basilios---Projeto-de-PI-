@@ -56,7 +56,7 @@ h1,h2,h3,h4{ font-weight:900; letter-spacing:-.01em; margin:0 }
 
 /* No HERO: um tiquinho maior, ainda fixo */
 .about-hero .logo-img{
-  height: 48px;     /* <<< hero um pouco maior */
+  height: 150px;     /* <<< hero um pouco maior */
   width: auto;
 }
 
@@ -298,4 +298,39 @@ h1,h2,h3,h4{ font-weight:900; letter-spacing:-.01em; margin:0 }
 .section, .posters, .ticker, .container{
   box-shadow:none !important;
   background-clip:padding-box;
+}
+
+/* ===== TIMELINE: imagem com tamanho FIXO e corte consistente ===== */
+:root{
+  /* Ajusta aqui o tamanho “padrão” da mídia da timeline */
+  --tl-media-w: 520px;
+  --tl-media-h: 320px;
+}
+
+/* O container da imagem passa a ter tamanho fixo */
+.timeline__media{
+  width: var(--tl-media-w);
+  height: var(--tl-media-h);
+  border-radius: var(--radius-lg);
+  overflow: hidden;                /* corta sobras do cover */
+  box-shadow: var(--shadow-md);    /* sombra no container (não na img) */
+  justify-self: center;            /* centraliza na coluna da grid */
+}
+
+/* A imagem ocupa 100% do container e recorta sem deformar */
+.timeline__media img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;               /* mantém proporção e corta o excesso */
+  object-position: center;         /* centraliza o recorte */
+  border-radius: 0;                /* já tem radius no container */
+  box-shadow: none;                /* sombra fica no container */
+}
+
+/* Mobile: mantém padrão visual, mas adapta a largura da tela */
+@media (max-width: 900px){
+  .timeline__media{
+    width: 100%;
+    height: clamp(180px, 42vw, 280px); /* altura responsiva controlada */
+  }
 }

@@ -13,7 +13,7 @@ function LoginRoute() {
   const navigate = useNavigate();
   return (
     <AuthLayout>
-      <Login onGoRegister={() => navigate("/register")} />
+      <Login onGoRegister={() => navigate("/registration")} />
     </AuthLayout>
   );
 }
