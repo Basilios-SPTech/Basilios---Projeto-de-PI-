@@ -11,7 +11,6 @@ export default function Home() {
   const [cat, setCat] = useState("Todas");
   const [cartCount, setCartCount] = useState(0);
 
-  // carrega produtos (somente ativos / não pausados)
   useEffect(() => {
     try {
       const salvo = JSON.parse(localStorage.getItem(CHAVE_STORAGE) || "[]");
@@ -22,18 +21,10 @@ export default function Home() {
     }
   }, []);
 
-<<<<<<< HEAD
-    return (
-        <section>
-            
-            <h2 className="text-xl font-semibold mb-4">Produtos</h2>
-=======
-  // carrega contagem do carrinho (simples; se já aplicou lógica avançada, mantenha a sua)
   useEffect(() => {
     const c = JSON.parse(localStorage.getItem(CHAVE_CART) || "[]");
     setCartCount(Array.isArray(c) ? c.length : 0);
   }, []);
->>>>>>> 1d1cde3 (Tela de Cadastro de Produtos e Home)
 
   const categorias = useMemo(() => {
     const set = new Set(["Todas"]);
@@ -47,7 +38,7 @@ export default function Home() {
   const filtrados = useMemo(() => {
     const termo = q.trim().toLowerCase();
     return produtos.filter((p) => {
-      const okCat = cat === "Todas" || (p.categoria || "").trim() === cat;
+      const okCat = cat === "Todas" || (p.categoria || "").trim() == cat;
       const okTermo =
         !termo ||
         (p.nome || "").toLowerCase().includes(termo) ||
@@ -56,7 +47,6 @@ export default function Home() {
     });
   }, [produtos, q, cat]);
 
-  // === NOVO: ordenar e agrupar para exibir TÍTULO DA CATEGORIA na Home ===
   const produtosOrdenados = useMemo(
     () => [...filtrados].sort((a, b) => Number(b.index) - Number(a.index)),
     [filtrados]
@@ -69,9 +59,8 @@ export default function Home() {
       if (!map.has(categoria)) map.set(categoria, []);
       map.get(categoria).push(p);
     }
-    return Array.from(map.entries()); // [ [categoria, itens], ... ]
+    return Array.from(map.entries()); 
   }, [produtosOrdenados]);
-  // === FIM NOVO ===
 
   function addToCart(produto) {
     const carrinho = JSON.parse(localStorage.getItem(CHAVE_CART) || "[]");
@@ -90,13 +79,8 @@ export default function Home() {
 
   return (
     <div className="home-page page-with-fixed-header">
-      {/* Header global da aplicação */}
       <Header />
-
-      {/* GRID de produtos (cards públicos) */}
       <section className="hp-grid-wrap">
-        {/* Quando nenhuma categoria específica foi selecionada:
-            mostramos SEÇÕES por categoria, com o título da categoria */}
         {cat === "Todas" ? (
           secoesPorCategoria.length === 0 ? (
             <p className="hp-empty">
@@ -144,7 +128,6 @@ export default function Home() {
             ))
           )
         ) : (
-          // Categoria específica selecionada → grade única (sem títulos de seção)
           filtrados.length === 0 ? (
             <p className="hp-empty">
               Nada por aqui… Experimente limpar filtros ou cadastrar novos itens.

@@ -155,7 +155,6 @@ export default function CadastrarProduto() {
     <div className="cp-page">
 
       <Header variant="adm" MenuComponent={SidebarAdmBasilios} />
-      {/* Form + Preview (preview ainda mais compacto) */}
       <main className="cp-grid">
         <section className="cp-card cp-form">
           <h2>Informações do produto</h2>
@@ -198,7 +197,6 @@ export default function CadastrarProduto() {
         </aside>
       </main>
 
-      {/* Lista agrupada por categoria */}
       <section className="cp-list-wrap">
         <div className="cp-list-head">
           <h2>Produtos cadastrados</h2>
@@ -259,10 +257,8 @@ export default function CadastrarProduto() {
         )}
       </section>
 
-      {/* Modal só é renderizado quando estiver aberto (evita “aparecer embaixo”) */}
       {modalOpen && (
         <Modal open={true} isOpen={true} onClose={handleCloseModal}>
-          {/* Overlay + container próprios: garante centralização mesmo se o Modal for simples */}
           <div className="cp-modal-overlay" onClick={handleCloseModal}>
             <div className="cp-modal" onClick={(e) => e.stopPropagation()}>
               <header className="cp-modal__header">
