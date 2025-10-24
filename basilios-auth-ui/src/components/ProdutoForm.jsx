@@ -71,9 +71,25 @@ export default function ProdutoForm({
               type="text"
               id="descricao"
               name="descricao"
-              placeholder="Ex.: Pão, 2x hambúrguer, queijo, molho da casa…"
+              placeholder="Hambúrguer artesanal com carne suculenta..."
               className="input-base"
               value={formData.descricao}
+              onChange={onChange}
+              required
+            />
+          </div>
+
+
+          {/* Ingredientes */}
+          <div className="field-row">
+            <label htmlFor="descricao" className="field-label">Ingredientes</label>
+            <input
+              type="text"
+              id="ingrediente"
+              name="ingrediente"
+              placeholder="Ex.: Pão, 2x hambúrguer, queijo, molho da casa…"
+              className="input-base"
+              value={formData.ingrediente}
               onChange={onChange}
               required
             />

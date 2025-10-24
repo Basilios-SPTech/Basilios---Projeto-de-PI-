@@ -1,5 +1,4 @@
-/** THeader da nossa home, com seleção de catálogo */
-
+// src/components/HeaderAdm.jsx  (o seu header atual com mínima mudança)
 import { useState, useEffect } from "react";
 import { Menu, User } from "lucide-react";
 import SearchBar from "./SearchBar.jsx";
@@ -7,7 +6,7 @@ import SidebarAdm from "./SidebarAdm.jsx";
 import SidebarUser from "./SidebarUser.jsx";
 import "../styles/header.css"; 
 
-export default function Header({ variant = "user" }) {
+export default function Header({ variant = "user", MenuComponent = null }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState(null);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -33,67 +32,38 @@ export default function Header({ variant = "user" }) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const sections = [
-    "Combos Individuais","Lanches Premium","Beirutes","Hot-Dog","Veganos","Porções","Sobremesas","Bebidas",
-  ];
-
-  const slug = (s) => s.toString().normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-").toLowerCase();
-
   return (
     <>
       <header className={`site-header ${isScrolled ? "is-scrolled" : ""}`}>
-        {/* Linha superior */}
         <div className="header-grid">
-          {/* esquerda: menu */}
-          <button onClick={toggleMenu} className="icon-button">
+          <button onClick={toggleMenu} className="icon-button" aria-label="Abrir menu">
             <Menu size={28} />
           </button>
 
-          {/* centro: palco + logo absoluta */}
           <div className="center-content">
-            <div
-              className="logo-container"
-              style={{ "--logo-nudge-x": "130px" }}   // empurra a logo p/ direita
-            >
-              <img
-                src="/LogoApenasNomeEstilizada.png"
-                alt="Basilios"
-                className="logo-img logo-white-glow"
-              />
+            <div className="logo-container" style={{ "--logo-nudge-x": "130px" }}>
+              <img src="/LogoApenasNomeEstilizada.png" alt="Basilios" className="logo-img logo-white-glow" />
             </div>
           </div>
-            
-          {/* direita: busca + usuário */}
+
           <div style={{ display: "flex", alignItems: "center", gap: ".75rem", marginRight: "1rem", position: "relative", zIndex: 1 }}>
             <SearchBar value={searchQuery} onChange={setSearchQuery} width={250} />
-            <button className="icon-button">
+            <button className="icon-button" aria-label="Usuário">
               <User size={28} />
             </button>
           </div>
         </div>
 
-        {/* Linha inferior: seções */}
+        {/* Linha inferior vazia por enquanto */}
         <div className="scroll-container">
-          <div style={{ display: "flex", gap: "4rem", justifyContent: "center", minWidth: "max-content", paddingInline: "1rem" }}>
-            {sections.map((label, i) => (
-              <span
-                key={i}
-                className={`section-link ${activeSection === i ? "active" : ""}`}
-                onClick={() => {
-                  const el = document.querySelector(`section[data-section="${slug(label)}"]`);
-                  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
-              >
-                {label}
-              </span>
-            ))}
-          </div>
+          <div style={{ display: "flex", gap: "4rem", justifyContent: "center", minWidth: "max-content", paddingInline: "1rem" }} />
         </div>
       </header>
 
       {/* Sidebars plugáveis */}
-      {variant === "adm" ? (
+      {MenuComponent ? (
+        <MenuComponent open={isMenuOpen} onClose={toggleMenu} />
+      ) : variant === "adm" ? (
         <SidebarAdm open={isMenuOpen} onClose={toggleMenu} />
       ) : (
         <SidebarUser open={isMenuOpen} onClose={toggleMenu} />

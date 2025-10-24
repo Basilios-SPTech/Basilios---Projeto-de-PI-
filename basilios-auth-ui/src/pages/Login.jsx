@@ -5,6 +5,7 @@ import { validateEmail, validatePassword } from '../utils/validators.js'
 import { AuthAPI } from '../services/api.js'
 import SidebarLogin from '../components/MenuButtonLogin.jsx'
 
+
 export default function Login({ onGoRegister }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

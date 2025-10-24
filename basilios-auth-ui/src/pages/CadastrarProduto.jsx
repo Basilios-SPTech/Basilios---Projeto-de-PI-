@@ -1,9 +1,9 @@
 // src/pages/CadastrarProduto.jsx
-import React, { useState, useEffect } from "react";
-
-// IMPORTS CORRETOS (de /pages para /components)
+import React, { useEffect, useMemo, useState } from "react";
 import ProdutoForm from "../components/ProdutoForm.jsx";
-import ListaProdutos from "../components/ListaProdutos.jsx";
+import Modal from "../components/Modal.jsx";
+import Header from "../components/HeaderAdm.jsx";
+import SidebarAdmBasilios from "../components/SidebarAdmBasilios.jsx";
 
 const CHAVE_STORAGE = "produtos-basilios";
 
@@ -13,185 +13,277 @@ export default function CadastrarProduto() {
     nome: "",
     descricao: "",
     preco: "",
-    imagem: "",     // DataURL (base64) para preview e persistência
     categoria: "",
+    imagem: "",
     pausado: false,
   });
+  const [indiceEdicao, setIndiceEdicao] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
-  // ---- Carregar do localStorage (sem semear nada)
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(CHAVE_STORAGE);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) setProdutos(parsed);
+      const salvo = JSON.parse(localStorage.getItem(CHAVE_STORAGE) || "[]");
+      setProdutos(Array.isArray(salvo) ? salvo : []);
     } catch {
-      localStorage.removeItem(CHAVE_STORAGE);
       setProdutos([]);
     }
   }, []);
 
-  // ---- Utilitário: salvar e notificar
-  const salvarProdutos = (nextArray) => {
-    try {
-      localStorage.setItem(CHAVE_STORAGE, JSON.stringify(nextArray));
-      // Notifica outras telas (Home pode ouvir "produtos-updated")
-      window.dispatchEvent(new Event("produtos-updated"));
-    } catch (e) {
-      console.error("Falha ao salvar no localStorage:", e);
-    }
-  };
+  useEffect(() => {
+    localStorage.setItem(CHAVE_STORAGE, JSON.stringify(produtos));
+  }, [produtos]);
 
-  // ---- onChange genérico + tratamento do <input type="file">
-  // Suporta tanto onChange(event) quanto onChange(id, valor)
-  const handleChange = (arg1, arg2) => {
-    // Caso 1: veio um evento padrão do React
-    if (arg1 && arg1.target) {
-      const e = arg1;
-      const { id, name, value, files, type, checked } = e.target;
-      const key = id || name;
+  function handleChange(e) {
+    if (!e?.target) return;
+    const { id, name, value, files, type, checked } = e.target;
+    const key = id || name;
 
-      if (key === "imagem") {
-        const file = files?.[0] || null;
-        if (!file) {
-          setFormData((prev) => ({ ...prev, imagem: "" }));
-          return;
-        }
-        const fr = new FileReader();
-        fr.onload = (ev) => {
-          setFormData((prev) => ({ ...prev, imagem: ev.target.result })); // base64
-        };
-        fr.readAsDataURL(file);
+    if (key === "imagem") {
+      const file = files?.[0] || null;
+      if (!file) {
+        setFormData((prev) => ({ ...prev, imagem: "" }));
         return;
       }
-
-      setFormData((prev) => ({
-        ...prev,
-        [key]: type === "checkbox" ? !!checked : value,
-      }));
+      const fr = new FileReader();
+      fr.onload = (ev) => {
+        setFormData((prev) => ({ ...prev, imagem: ev.target.result }));
+      };
+      fr.readAsDataURL(file);
       return;
     }
 
-    // Caso 2: veio no formato (id, valor)
-    if (typeof arg1 === "string") {
-      const key = arg1;
-      const value = arg2;
+    setFormData((prev) => ({
+      ...prev,
+      [key]: type === "checkbox" ? !!checked : value,
+    }));
+  }
 
-      if (key === "imagem" && value instanceof File) {
-        const fr = new FileReader();
-        fr.onload = (ev) => {
-          setFormData((prev) => ({ ...prev, imagem: ev.target.result }));
-        };
-        fr.readAsDataURL(value);
-        return;
-      }
-
-      setFormData((prev) => ({ ...prev, [key]: value }));
-    }
-  };
-
-  // ---- Adicionar produto (mostra aqui e persiste na hora)
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    const nomeOK = formData.nome?.trim();
-    const descOK = formData.descricao?.trim();
-    const precoNum = Number(String(formData.preco).replace(",", "."));
-
-    if (!nomeOK || !descOK || Number.isNaN(precoNum) || precoNum <= 0) {
-      // aqui você pode disparar um toast/erro visual se quiser
-      return;
-    }
-
-    const novoProduto = {
-      ...formData,
-      preco: precoNum,
-      index: produtos.length,
-      pausado: false,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-    };
-
-    const next = [...produtos, novoProduto];
-    setProdutos(next);            // aparece na lista AQUI MESMO
-    salvarProdutos(next);         // persiste imediatamente
-
-    // limpa formulário (fica na mesma tela)
+  function clearForm() {
+    setIndiceEdicao(null);
     setFormData({
       nome: "",
       descricao: "",
       preco: "",
-      imagem: "",
       categoria: "",
+      imagem: "",
       pausado: false,
     });
-  };
+  }
 
-  // ---- Editar produto (com persistência síncrona)
-  const handleEditar = (index, atualizado) => {
-    setProdutos((prev) => {
-      const next = prev.map((p, i) =>
-        i === index
-          ? {
-              ...p,
-              ...atualizado,
-              index: i,
-              preco: Number(String(atualizado.preco ?? p.preco).replace(",", ".")),
-            }
-          : p
+  function handleSubmit(e) {
+    if (e?.preventDefault) e.preventDefault();
+
+    if (!formData.nome?.trim()) return alert("Informe o nome do produto.");
+    const precoNum = Number(String(formData.preco).replace(",", "."));
+    if (Number.isNaN(precoNum) || precoNum < 0) return alert("Preço inválido.");
+
+    const novo = {
+      ...formData,
+      preco: precoNum.toFixed(2),
+      index: indiceEdicao ?? Date.now(),
+    };
+
+    if (indiceEdicao !== null) {
+      setProdutos((prev) =>
+        prev.map((p) => (p.index === indiceEdicao ? novo : p))
       );
-      salvarProdutos(next);
-      return next;
-    });
-  };
+      setIndiceEdicao(null);
+      setModalOpen(false);
+    } else {
+      setProdutos((prev) => [novo, ...prev]);
+    }
 
-  // ---- Deletar
-  const handleDeletar = (index) => {
-    setProdutos((prev) => {
-      const next = prev.filter((_, i) => i !== index);
-      // Reindex opcional (mantém index consistente)
-      const reindexed = next.map((p, i) => ({ ...p, index: i }));
-      salvarProdutos(reindexed);
-      return reindexed;
-    });
-  };
+    clearForm();
+  }
 
-  // ---- Pausar
-  const handlePausar = (index) => {
-    setProdutos((prev) => {
-      const next = prev.map((p, i) =>
-        i === index ? { ...p, pausado: !p.pausado } : p
-      );
-      salvarProdutos(next);
-      return next;
-    });
-  };
+  function handleCancel() {
+    clearForm();
+  }
 
-  // ---- Agrupar por categoria para a Lista
-  const categoriasAgrupadas = produtos.reduce((acc, produto) => {
-    const cat = produto.categoria || "Sem categoria";
-    if (!acc[cat]) acc[cat] = [];
-    acc[cat].push(produto);
-    return acc;
-  }, {});
+  function handleEditar(produto) {
+    setIndiceEdicao(produto.index);
+    setFormData({
+      nome: produto.nome || "",
+      descricao: produto.descricao || "",
+      preco: produto.preco || "",
+      categoria: produto.categoria || "",
+      imagem: produto.imagem || "",
+      pausado: !!produto.pausado,
+    });
+    setModalOpen(true);
+  }
+
+  function handleCloseModal() {
+    setModalOpen(false);
+    clearForm();
+  }
+
+  function handleDeletar(index) {
+    if (!confirm("Apagar este produto?")) return;
+    setProdutos((prev) => prev.filter((p) => p.index !== index));
+  }
+
+  function handlePausar(index) {
+    setProdutos((prev) =>
+      prev.map((p) =>
+        p.index === index ? { ...p, pausado: !p.pausado } : p
+      )
+    );
+  }
+
+  const previewPreco =
+    formData.preco !== "" && !isNaN(Number(String(formData.preco).replace(",", ".")))
+      ? Number(String(formData.preco).replace(",", ".")).toFixed(2)
+      : "0,00";
+
+  const produtosOrdenados = useMemo(
+    () => [...produtos].sort((a, b) => Number(b.index) - Number(a.index)),
+    [produtos]
+  );
+
+  const secoesPorCategoria = useMemo(() => {
+    const map = new Map();
+    for (const p of produtosOrdenados) {
+      const cat = (p.categoria || "").trim() || "Sem categoria";
+      if (!map.has(cat)) map.set(cat, []);
+      map.get(cat).push(p);
+    }
+    return Array.from(map.entries());
+  }, [produtosOrdenados]);
 
   return (
-    <div className="container-tw">
-      {/* Formulário principal (cadastrar novo produto) */}
-      <ProdutoForm
-        formData={formData}
-        indiceEdicao={null}
-        onChange={handleChange}
-        onSubmit={handleSubmit}
-      />
+    <div className="cp-page">
 
-      {/* Lista de produtos (já aparece aqui imediatamente) */}
-      <ListaProdutos
-        categoriasAgrupadas={categoriasAgrupadas}
-        onEditar={handleEditar}
-        onDeletar={handleDeletar}
-        onPausar={handlePausar}
-      />
+      <Header variant="adm" MenuComponent={SidebarAdmBasilios} />
+      {/* Form + Preview (preview ainda mais compacto) */}
+      <main className="cp-grid">
+        <section className="cp-card cp-form">
+          <h2>Informações do produto</h2>
+          <p className="cp-muted">Preencha os campos. A imagem ajuda no card.</p>
+
+          <ProdutoForm
+            formData={formData}
+            indiceEdicao={indiceEdicao}
+            onChange={handleChange}
+            onSubmit={handleSubmit}
+            onCancel={handleCancel}
+          />
+        </section>
+
+        <aside className="cp-right">
+          <section className="cp-card cp-preview cp-preview--compact cp-preview--xs">
+            <h3>Pré-visualização</h3>
+            <div className="cp-preview__card cp-preview__card--compact cp-preview__card--xs">
+              <div className="cp-preview__media cp-preview__media--compact cp-preview__media--xs">
+                {formData.imagem ? (
+                  <img src={formData.imagem} alt="Pré-visualização do produto" />
+                ) : (
+                  <div className="cp-preview__placeholder">Sem imagem</div>
+                )}
+              </div>
+              <div className="cp-preview__body cp-preview__body--compact">
+                <h4>{formData.nome || "Nome do produto"}</h4>
+                <p className="cp-preview__desc">
+                  {formData.descricao || "Descrição curta do produto..."}
+                </p>
+                <div className="cp-preview__meta">
+                  <span className="cp-chip">
+                    {formData.categoria || "Sem categoria"}
+                  </span>
+                  <strong className="cp-price">R$ {previewPreco}</strong>
+                </div>
+              </div>
+            </div>
+          </section>
+        </aside>
+      </main>
+
+      {/* Lista agrupada por categoria */}
+      <section className="cp-list-wrap">
+        <div className="cp-list-head">
+          <h2>Produtos cadastrados</h2>
+          <p className="cp-muted">
+            Seus itens aparecem por categoria. Você pode editar, pausar e excluir.
+          </p>
+        </div>
+
+        {secoesPorCategoria.length === 0 ? (
+          <div className="cp-empty">
+            <p>Nenhum produto ainda. Cadastre seu primeiro item!</p>
+          </div>
+        ) : (
+          secoesPorCategoria.map(([categoria, itens]) => (
+            <div className="cp-cat-section" key={categoria}>
+              <h3 className="cp-cat-title">{categoria}</h3>
+
+              <div className="cp-list">
+                {itens.map((p) => (
+                  <article
+                    key={p.index}
+                    className={`product-card ${p.pausado ? "is-paused" : ""}`}
+                  >
+                    <div className="product-media">
+                      {p.imagem ? (
+                        <img src={p.imagem} alt={p.nome || "Produto"} />
+                      ) : (
+                        <div className="product-placeholder">Sem imagem</div>
+                      )}
+                      {p.pausado && <span className="product-badge">Pausado</span>}
+                    </div>
+
+                    <div className="product-body">
+                      <h3 className="product-title">{p.nome || "Sem nome"}</h3>
+                      <p className="product-desc">{p.descricao || "—"}</p>
+                      <div className="product-meta">
+                        <span className="cp-chip">{p.categoria || "Sem categoria"}</span>
+                        <strong className="cp-price">R$ {(p.preco || "0.00")}</strong>
+                      </div>
+                    </div>
+
+                    <div className="product-actions">
+                      <button className="btn btn-ghost" onClick={() => handleEditar(p)}>
+                        Editar
+                      </button>
+                      <button className="btn btn-ghost" onClick={() => handleDeletar(p.index)}>
+                        Deletar
+                      </button>
+                      <button className="btn btn-ghost" onClick={() => handlePausar(p.index)}>
+                        {p.pausado ? "Retomar" : "Pausar"}
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          ))
+        )}
+      </section>
+
+      {/* Modal só é renderizado quando estiver aberto (evita “aparecer embaixo”) */}
+      {modalOpen && (
+        <Modal open={true} isOpen={true} onClose={handleCloseModal}>
+          {/* Overlay + container próprios: garante centralização mesmo se o Modal for simples */}
+          <div className="cp-modal-overlay" onClick={handleCloseModal}>
+            <div className="cp-modal" onClick={(e) => e.stopPropagation()}>
+              <header className="cp-modal__header">
+                <div className="cp-modal__logo" aria-hidden />
+                <h4>Editar Produto</h4>
+                <button className="cp-modal__close" onClick={handleCloseModal} aria-label="Fechar">×</button>
+              </header>
+
+              <div className="cp-modal__body">
+                <ProdutoForm
+                  formData={formData}
+                  indiceEdicao={indiceEdicao}
+                  onChange={handleChange}
+                  onSubmit={handleSubmit}
+                  onCancel={handleCloseModal}
+                />
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
