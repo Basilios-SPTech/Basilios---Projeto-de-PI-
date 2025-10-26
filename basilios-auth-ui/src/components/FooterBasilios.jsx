@@ -119,7 +119,7 @@ export default function Footer() {
                 BASILIO HAMBURGUERIA LTDA
               </p>
               <p className="text-sm text-gray-300">
-                © 2018–{year}. Todos os direitos reservados.
+                © 2015–{year}. Todos os direitos reservados.
               </p>
             </div>
           </div>

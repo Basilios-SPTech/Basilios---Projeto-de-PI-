@@ -56,7 +56,7 @@ h1,h2,h3,h4{ font-weight:900; letter-spacing:-.01em; margin:0 }
 
 /* No HERO: um tiquinho maior, ainda fixo */
 .about-hero .logo-img{
-  height: 150px;     /* <<< hero um pouco maior */
+  height: 70px;     /* <<< hero um pouco maior */
   width: auto;
 }
 
