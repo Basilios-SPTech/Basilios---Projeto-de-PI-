@@ -1,32 +1,21 @@
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
-
-async function request(path, { method = 'GET', body, headers } = {}) {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(headers || {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  })
-  const data = await res.json().catch(() => ({}))
-  if (!res.ok) {
-    const message = data?.message || 'Falha na solicitação.'
-    const error = new Error(message)
-    error.status = res.status
-    error.data = data
-    throw error
-  }
-  return data
-}
+import { http } from './http'
+import { authStorage } from './storageAuth'
 
 export const AuthAPI = {
-  login: (email, password) =>
-    request('/auth/login', { method: 'POST', body: { email, password } }),
+  async login(email, password) {
+    const { data } = await http.post('/api/auth/login', { email, password })
+    if (data?.token) authStorage.setToken(data.token)
+    return data
+  },
 
-  register: (payload) =>
-    request('/auth/register', { method: 'POST', body: payload }),
+  async register(payload) { 
+    const { data } = await http.post('/api/auth/register', payload)
+    if (data?.token) authStorage.setToken(data.token)
+    return data
+  },
 
-  forgot: (email) =>
-    request('/auth/forgot-password', { method: 'POST', body: { email } }),
+
+  logout() {
+    authStorage.clear()
+  },
 }

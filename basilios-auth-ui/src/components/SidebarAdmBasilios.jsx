@@ -1,29 +1,53 @@
-/** Sider bar para users*/
-import {Home, LayoutDashboard, PlusSquare, Settings, LogOut, ListOrdered } from "lucide-react";
+/** Sidebar ADM  */
+import { Home, LayoutDashboard, PlusSquare, Settings, LogOut, LogIn } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import { AuthAPI } from "../services/api";             
+import { authStorage } from "../services/storageAuth"; 
 import "../styles/side-bar.css";
 
-export default function SidebarUser({ open, onClose }) {
+export default function SidebarAdm({ open, onClose }) {
+  const navigate = useNavigate();
   if (!open) return null;
 
-  const menuItems = [
-    { icon: Home, label: "Home", href: "/home" },
-    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-    { icon: PlusSquare, label: "Cadastrar Produto", href: "/cadastro" },
-    { icon: Settings, label: "Configurações", href: "/adm/config" },
-    { icon: LogOut, label: "Sair", href: "/logout" },
-  ];
+
+  const isLogged = !!authStorage.getToken();
+
+  const menuItems = isLogged
+    ? [
+        { icon: Home,            label: "Home",               href: "/home" },
+        { icon: LayoutDashboard, label: "Dashboard",          href: "/board" },     
+        { icon: PlusSquare,      label: "Cadastrar Produto",  href: "/cadastro" },
+        { icon: Settings,        label: "Configurações",      href: "/adm/config" },
+        { icon: LogOut,          label: "Sair",               href: "#logout" },    
+      ]
+    : [
+        { icon: Home,   label: "Home",   href: "/home" },
+        { icon: LogIn,  label: "Entrar", href: "/login" },                           
+      ];
 
   const handleClick = (item, e) => {
     e.preventDefault();
-    // rola até seções quando for hash (#id)
+
+    // Logout: limpa token e volta pra home
+    if (item.href === "#logout") {
+      AuthAPI.logout();                 // limpa localStorage
+      toast.success("Sessão encerrada.");
+      onClose?.();
+      navigate("/home");
+      return;
+    }
+
+    // Hash interna (#...): rola até a seção
     if (item.href?.startsWith("#")) {
       const el = document.querySelector(item.href);
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
       onClose?.();
       return;
     }
-    // por enquanto, links "normais" seguem o href (vai recarregar se for fora do SPA)
-    window.location.href = item.href || "/";
+
+    // Navegação SPA
+    navigate(item.href || "/");
     onClose?.();
   };
 
@@ -32,7 +56,7 @@ export default function SidebarUser({ open, onClose }) {
       <div className="sidebar-user">
         {/* Cabeçalho */}
         <div className="sidebar-user__header">
-          <span className="sidebar-user__title">MENU</span>
+          <span className="sidebar-user__title">ADMIN</span>
           <button className="sidebar-user__close" onClick={onClose}>✕</button>
         </div>
 

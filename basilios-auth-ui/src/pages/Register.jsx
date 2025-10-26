@@ -12,6 +12,7 @@ import {
 } from '../utils/validators.js'
 import { AuthAPI } from '../services/api.js'
 import SidebarLogin from '../components/MenuButtonLogin.jsx'
+import toast from 'react-hot-toast';
 
 export default function Register({ onGoLogin }) {
   const [form, setForm] = useState({
@@ -59,12 +60,12 @@ export default function Register({ onGoLogin }) {
         email: form.email,
         password: form.password,
         cpf: form.cpf.replace(/\D/g, ''),
-        phone: form.phone.replace(/\D/g, ''),
+        telefone: form.phone.replace(/\D/g, ''),
         birthDate: form.birth || null,
       }
       const data = await AuthAPI.register(payload)
       console.log('register ok:', data)
-      alert('Cadastro efetuado. Troque este alert por navegação/feedback real.')
+      toast.success('Cadastro concluído! Faça login para continuar.');
       onGoLogin()
     } catch (err) {
       setServerError(err.message || 'Falha no cadastro.')

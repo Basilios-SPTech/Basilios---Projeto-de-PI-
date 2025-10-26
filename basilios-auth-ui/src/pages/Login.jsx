@@ -4,13 +4,13 @@ import PasswordField from '../components/PasswordField.jsx'
 import { validateEmail, validatePassword } from '../utils/validators.js'
 import { AuthAPI } from '../services/api.js'
 import SidebarLogin from '../components/MenuButtonLogin.jsx'
+import toast from 'react-hot-toast';
 
-
-export default function Login({ onGoRegister }) {
+export default function Login({ onGoRegister, onGoHome }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [forgotOpen, setForgotOpen] = useState(false)
-  const [forgotEmail, setForgotEmail] = useState('') // <- estado separado
+  const [forgotEmail, setForgotEmail] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [serverError, setServerError] = useState('')
 
@@ -23,13 +23,15 @@ export default function Login({ onGoRegister }) {
 
   async function handleLogin(e) {
     e.preventDefault()
-    if (!canSubmit) return
+    if (!canSubmit || submitting) return
     setSubmitting(true)
     setServerError('')
     try {
       const data = await AuthAPI.login(email, password)
       console.log('login ok:', data)
-      alert('Login efetuado.')
+      toast.success('Bem-vindo!')
+      // navegação via prop (App controla o destino)
+      if (typeof onGoHome === 'function') onGoHome()
     } catch (err) {
       setServerError(err.message || 'Falha no login.')
     } finally {
@@ -39,13 +41,12 @@ export default function Login({ onGoRegister }) {
 
   async function handleForgot(e) {
     e.preventDefault()
-    // usa o forgotEmail (não o email do login)
     if (!validateEmail(forgotEmail)) return
     setSubmitting(true)
     setServerError('')
     try {
       await AuthAPI.forgot(forgotEmail)
-      alert('Se o e-mail existir, enviaremos instruções.')
+      toast.success('Se o e-mail existir, enviaremos instruções.')
     } catch (err) {
       setServerError(err.message || 'Falha ao solicitar redefinição.')
     } finally {
@@ -57,6 +58,7 @@ export default function Login({ onGoRegister }) {
     <form className="space-y-6" onSubmit={handleLogin} noValidate>
       <h1 className="text-3xl font-bold text-black">Login</h1>
       <SidebarLogin />
+
       <InputField
         id="email"
         label="E-mail"
@@ -91,7 +93,6 @@ export default function Login({ onGoRegister }) {
           type="button"
           className="btn-ghost"
           onClick={() => {
-            // abre/fecha o bloco e faz prefill UMA vez
             setForgotOpen((prev) => {
               const next = !prev
               if (next && email && !forgotEmail) setForgotEmail(email)
@@ -111,8 +112,8 @@ export default function Login({ onGoRegister }) {
               type="email"
               className="input input-focus flex-1"
               placeholder="voce@exemplo.com"
-              value={forgotEmail}                          
-              onChange={(e) => setForgotEmail(e.target.value)}  
+              value={forgotEmail}
+              onChange={(e) => setForgotEmail(e.target.value)}
             />
             <button
               onClick={handleForgot}

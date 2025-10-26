@@ -1,107 +1,158 @@
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+  Outlet,
+} from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 
-   import {BrowserRouter as Router, Routes, Route, Navigate, useNavigate,} from "react-router-dom";
-   import { NavLink } from "react-router-dom"; // Adicionado para o header de produtos
+// Pages
+import Login from "./pages/Login.jsx";
+import Register from "./pages/Register.jsx";
+import FooterBasilios from "./components/FooterBasilios.jsx";
+import About from "./pages/About.jsx";
+import Home from "./pages/Home.jsx";
+import CadastrarProduto from "./pages/CadastrarProduto.jsx";
+import OrdersBoard from "./pages/OrdersBoard.jsx";
 
-   // Pages
-   import Login from "./pages/Login.jsx";
-   import Register from "./pages/Register.jsx";
-   import FooterBasilios from "./components/FooterBasilios.jsx";
-   import About from "./pages/About.jsx";
-   import Home from "./pages/Home.jsx";
-   import CadastrarProduto from "./pages/CadastrarProduto.jsx";
-   import OrdersBoard from "./pages/OrdersBoard.jsx"; 
+// Layouts
+import AuthLayout from "./layouts/AuthLayout.jsx";
 
-   // Layouts
-   import AuthLayout from "./layouts/AuthLayout.jsx";
+// Auth storage (fonte da verdade: token + claims + roles)
+import { authStorage } from "./services/storageAuth.js";
 
-   // Rotas
-   function LoginRoute() {
-     const navigate = useNavigate();
-     return (
-       <AuthLayout>
-         <Login onGoRegister={() => navigate("/register")} />
-       </AuthLayout>
-     );
-   }
+/* ============================
+   Guards/Routes helpers
+============================ */
 
-  
-   function RegisterRoute() {
-     const navigate = useNavigate();
-     return (
-       <AuthLayout>
-         <Register onGoLogin={() => navigate("/login")} />
-       </AuthLayout>
-     );
-   }
+// Se já estiver logado, não faz sentido ver login/register
+function PublicRoute() {
+  return authStorage.isAuthenticated() ? <Navigate to="/home" replace /> : <Outlet />;
+}
 
+// Guard genérico: exige login e, opcionalmente, um conjunto de roles
+function RequireAuth({ roles = [] }) {
+  if (!authStorage.isAuthenticated()) {
+    return <Navigate to="/login" replace />;
+  }
+  if (roles.length > 0 && !authStorage.hasRole(...roles)) {
+    return <Navigate to="/home" replace />;
+  }
+  return <Outlet />;
+}
 
-   function BoardRoute(){
-       const navigate = useNavigate();
-       return(
-             <OrdersBoard onGoOrdersBoard={() => navigate("/board")} />
-       )
-   }
-   
-   function HomePage(){
-       const navigate = useNavigate();
-       return(
-             <Home onGoHome={() => navigate("/home")} />
-       )
-   }
-   
-   function CadastrarProdutoRoute(){
-       const navigate = useNavigate();
-       return(
-             <CadastrarProduto onGoCadastrarProduto={() => navigate("/cadastro")} />
-       )
-   }
+/* ============================
+   Wrappers (rotas com layout)
+============================ */
 
-   function ProdutoLayout({ children }) {
-     return (
-       <div className="min-h-screen bg-slate-50 text-slate-900">
-         <header className="sticky top-0 z-10 border-b bg-white/80 backdrop-blur">
-           <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
-           </div>
-         </header>
-         <main className="mx-auto max-w-6xl px-4 py-6">
-           {children}
-         </main>
-       </div>
-     );
-   }
+function LoginRoute() {
+  const navigate = useNavigate();
+  return (
+    <AuthLayout>
+      <Login
+        onGoRegister={() => navigate("/register")}
+        onGoHome={() => navigate("/home")}
+      />
+    </AuthLayout>
+  );
+}
 
- 
-   export default function App() {
-     return (
-       <div className="min-h-dvh flex flex-col">
-         <main className="flex-1">
-           <Router>
-             <Routes>
-               {/* Raiz -> home */}
-               <Route path="/" element={<Navigate to="/home" replace />} />
+function RegisterRoute() {
+  const navigate = useNavigate();
+  return (
+    <AuthLayout>
+      <Register onGoLogin={() => navigate("/login")} />
+    </AuthLayout>
+  );
+}
 
-               {/* Rotas de autenticação (públicas c/ layout) */}
-               <Route path="/login" element={<LoginRoute />} />
-               <Route path="/register" element={<RegisterRoute />} />
+function BoardRoute() {
+  const navigate = useNavigate();
+  return <OrdersBoard onGoOrdersBoard={() => navigate("/board")} />;
+}
 
-               {/* ✅ Página sobre nós (pública, sem layout especial) */}
-               <Route path="/about" element={<About />} />
+function HomePage() {
+  const navigate = useNavigate();
+  return <Home onGoHome={() => navigate("/home")} />;
+}
 
-               {/* Rotas de produtos (com layout próprio, assumindo acesso após login) */}
-               <Route path="/home" element={<ProdutoLayout><Home /></ProdutoLayout>} />
-               <Route path="/cadastro" element={<ProdutoLayout><CadastrarProduto /></ProdutoLayout>} />
-              
-              {/* Rota do Board */}
+function CadastrarProdutoRoute() {
+  const navigate = useNavigate();
+  return <CadastrarProduto onGoCadastrarProduto={() => navigate("/cadastro")} />;
+}
+
+/* ============================
+   Layout público (produtos)
+============================ */
+
+function ProdutoLayout({ children }) {
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <header className="sticky top-0 z-10 border-b bg-white/80 backdrop-blur">
+        <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
+          {/* Cabeçalho simples / slots */}
+        </div>
+      </header>
+      <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
+    </div>
+  );
+}
+
+/* ============================
+   App
+============================ */
+
+export default function App() {
+  return (
+    <div className="min-h-dvh flex flex-col">
+      <main className="flex-1">
+        <Router>
+          {/* Toast global */}
+          <Toaster position="top-center" />
+
+          <Routes>
+            {/* Raiz -> home (pública) */}
+            <Route path="/" element={<Navigate to="/home" replace />} />
+
+            {/* Telas públicas SEM login obrigatório */}
+            <Route path="/about" element={<About />} />
+            <Route
+              path="/home"
+              element={
+                <ProdutoLayout>
+                  <HomePage />
+                </ProdutoLayout>
+              }
+            />
+
+            {/* Login/Register públicas, mas se já logado, redireciona pra /home */}
+            <Route element={<PublicRoute />}>
+              <Route path="/login" element={<LoginRoute />} />
+              <Route path="/register" element={<RegisterRoute />} />
+            </Route>
+
+            {/* Áreas internas protegidas por ROLE_ADMIN */}
+            <Route element={<RequireAuth roles={["ROLE_ADMIN"]} />}>
+              <Route
+                path="/cadastro"
+                element={
+                  <ProdutoLayout>
+                    <CadastrarProdutoRoute />
+                  </ProdutoLayout>
+                }
+              />
               <Route path="/board" element={<BoardRoute />} />
+            </Route>
 
-               {/* 404 controlado: qualquer rota desconhecida cai na home */}
-               <Route path="*" element={<Navigate to="/home" replace />} />
-             </Routes>
-           </Router>
-         </main>
+            {/* 404 -> home */}
+            <Route path="*" element={<Navigate to="/home" replace />} />
+          </Routes>
+        </Router>
+      </main>
 
-         {/* Footer global (permanece como no seu código atual) */}
-         <FooterBasilios />
-       </div>
-     );
-   }
+      <FooterBasilios />
+    </div>
+  );
+}

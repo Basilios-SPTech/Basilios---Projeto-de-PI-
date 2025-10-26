@@ -62,7 +62,7 @@ export default function About() {
   return (
     <main id="topo" className="about-root" ref={containerRef}>
       {/* HERO: preto com glow vermelho + sombra inferior */}
-      <header className="about-hero about-hero--dark">
+      <header className="about-hero about-hero-/logo.png-dark">
         <div className="about-hero__bg" aria-hidden="true" />
         <div className="about-hero__edge" aria-hidden="true" />
         <div className="container about-hero__inner">
