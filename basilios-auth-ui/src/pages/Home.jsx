@@ -1,6 +1,7 @@
 // src/pages/Home.jsx 
 import { useEffect, useMemo, useState } from "react";
 import Header from "../components/header.jsx";
+import Cart from "../components/Cart.jsx";
 
 const CHAVE_STORAGE = "produtos-basilios";
 const CHAVE_CART = "carrinho-basilios";
@@ -80,6 +81,7 @@ export default function Home() {
   return (
     <div className="home-page page-with-fixed-header">
       <Header />
+      <Cart />
       <section className="hp-grid-wrap">
         {cat === "Todas" ? (
           secoesPorCategoria.length === 0 ? (
