@@ -187,22 +187,22 @@ export default function About() {
 
         <div className="timeline">
           <div data-reveal="left" data-delay="0">
-            <TimelineItem year="2015" title="A primeira chapa" image="/chapa.png">
+            <TimelineItem year="2015" title="A primeira chapa" image="/burguerIA.png">
               Começamos com muita garra, sabendo como e onde chegariamos.
             </TimelineItem>
           </div>
           <div data-reveal="right" data-delay="1">
-            <TimelineItem year="2020" title="Explosão do delivery" image="entrega.png" right>
+            <TimelineItem year="2020" title="Explosão do delivery" image="deliveryIA.png" right>
               Embalagem, roteirização e tempo de entrega otimizados.
             </TimelineItem>
           </div>
           <div data-reveal="left" data-delay="2">
-            <TimelineItem year="2023" title="Menu autoral" image="/cardapio.png">
+            <TimelineItem year="2023" title="Menu autoral" image="/cardapioIA.png">
               Edições exclusivas, com muitas variedades e sabor.
             </TimelineItem>
           </div>
          <div data-reveal="right" data-delay="3">
-            <TimelineItem year="2025" title="Dias atuais" image="/doismilevintecinco.png" right>
+            <TimelineItem year="2025" title="Dias atuais" image="/fachadaIA.png" right>
               Hoje a Basilios é aquele cantinho da aclimação, que todo mundo conhece e ama. 
             </TimelineItem>
           </div>
