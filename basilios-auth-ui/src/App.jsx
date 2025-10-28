@@ -20,7 +20,7 @@ import OrdersBoard from "./pages/OrdersBoard.jsx";
 // Layouts
 import AuthLayout from "./layouts/AuthLayout.jsx";
 
-// Auth storage (fonte da verdade: token + claims + roles)
+// Auth storage
 import { authStorage } from "./services/storageAuth.js";
 
 /* ============================
@@ -32,13 +32,10 @@ function PublicRoute() {
   return authStorage.isAuthenticated() ? <Navigate to="/home" replace /> : <Outlet />;
 }
 
-// Guard genérico: exige login e, opcionalmente, um conjunto de roles
-function RequireAuth({ roles = [] }) {
+// 🔻 SEM ROLES: exige apenas estar logado
+function RequireAuth() {
   if (!authStorage.isAuthenticated()) {
     return <Navigate to="/login" replace />;
-  }
-  if (roles.length > 0 && !authStorage.hasRole(...roles)) {
-    return <Navigate to="/home" replace />;
   }
   return <Outlet />;
 }
@@ -109,14 +106,12 @@ export default function App() {
     <div className="min-h-dvh flex flex-col">
       <main className="flex-1">
         <Router>
-          {/* Toast global */}
           <Toaster position="top-center" />
 
           <Routes>
-            {/* Raiz -> home (pública) */}
             <Route path="/" element={<Navigate to="/home" replace />} />
 
-            {/* Telas públicas SEM login obrigatório */}
+            {/* Públicas */}
             <Route path="/about" element={<About />} />
             <Route
               path="/home"
@@ -127,14 +122,14 @@ export default function App() {
               }
             />
 
-            {/* Login/Register públicas, mas se já logado, redireciona pra /home */}
+            {/* Login/Register públicas, mas se já logado, manda pra /home */}
             <Route element={<PublicRoute />}>
               <Route path="/login" element={<LoginRoute />} />
               <Route path="/register" element={<RegisterRoute />} />
             </Route>
 
-            {/* Áreas internas protegidas por ROLE_ADMIN */}
-            <Route element={<RequireAuth roles={["ROLE_ADMIN"]} />}>
+            {/* 🔻 SEM ROLES: áreas internas exigem apenas login */}
+            <Route element={<RequireAuth />}>
               <Route
                 path="/cadastro"
                 element={

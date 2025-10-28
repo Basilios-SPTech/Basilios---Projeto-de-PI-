@@ -4,22 +4,19 @@ import { useNavigate } from "react-router-dom";
 import { Menu, User } from "lucide-react";
 import SearchBar from "./SearchBar.jsx";
 import SidebarAdm from "./SidebarAdm.jsx";
-import SidebarUser from "./SidebarUser.jsx";
 import { authStorage } from "../services/storageAuth.js";
 import "../styles/header.css";
 
-
 function useAuthSnapshot() {
+  // 🔻 SEM ROLES: guardamos só se está autenticado
   const [snap, setSnap] = useState(() => ({
     isAuthenticated: authStorage.isAuthenticated(),
-    isAdmin: authStorage.isAdmin(),
   }));
 
   useEffect(() => {
     return authStorage.subscribe(() => {
       setSnap({
         isAuthenticated: authStorage.isAuthenticated(),
-        isAdmin: authStorage.isAdmin(),
       });
     });
   }, []);
@@ -29,7 +26,7 @@ function useAuthSnapshot() {
 
 export default function Header() {
   const navigate = useNavigate();
-  const { isAuthenticated, isAdmin } = useAuthSnapshot();
+  const { isAuthenticated } = useAuthSnapshot();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState(null);
@@ -38,7 +35,6 @@ export default function Header() {
 
   const toggleMenu = useCallback(() => setIsMenuOpen((s) => !s), []);
 
-  // Seções e util de slug
   const sections = useMemo(
     () => [
       "Combos Individuais",
@@ -64,7 +60,6 @@ export default function Header() {
     []
   );
 
-  // Um único listener de scroll para isScrolled + activeSection
   useEffect(() => {
     const onScroll = () => {
       setIsScrolled(window.scrollY > 50);
@@ -79,11 +74,10 @@ export default function Header() {
     };
 
     window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll(); // inicial
+    onScroll();
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Fechar sidebar no ESC
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === "Escape") setIsMenuOpen(false);
@@ -99,9 +93,8 @@ export default function Header() {
 
   const handleUserClick = () => {
     if (!isAuthenticated) return navigate("/login");
-    // autenticado: manda pra área mais útil
-    if (isAdmin) navigate("/board");
-    else navigate("/home");
+    // 🔻 SEM ROLES: logado vai pra home
+    navigate("/home");
   };
 
   return (
@@ -109,16 +102,14 @@ export default function Header() {
       <header className={`site-header ${isScrolled ? "is-scrolled" : ""}`}>
         {/* Linha superior */}
         <div className="header-grid">
-          {/* esquerda: menu */}
           <button onClick={toggleMenu} className="icon-button" aria-label="Abrir menu">
             <Menu size={28} />
           </button>
 
-          {/* centro: palco + logo absoluta */}
           <div className="center-content">
             <div
               className="logo-container"
-              style={{ "--logo-nudge-x": "130px" }} // ajuste fino da logo
+              style={{ "--logo-nudge-x": "130px" }}
             >
               <img
                 src="/LogoApenasNomeEstilizada.png"
@@ -128,7 +119,6 @@ export default function Header() {
             </div>
           </div>
 
-          {/* direita: busca + usuário */}
           <div
             style={{
               display: "flex",
@@ -173,12 +163,8 @@ export default function Header() {
         </div>
       </header>
 
-      {/* Sidebars plugáveis por role */}
-      {isAdmin ? (
-        <SidebarAdm open={isMenuOpen} onClose={toggleMenu} />
-      ) : (
-        <SidebarUser open={isMenuOpen} onClose={toggleMenu} />
-      )}
+      {/* 🔻 SEM ROLES */}
+      <SidebarAdm open={isMenuOpen} onClose={toggleMenu} />
     </>
   );
 }

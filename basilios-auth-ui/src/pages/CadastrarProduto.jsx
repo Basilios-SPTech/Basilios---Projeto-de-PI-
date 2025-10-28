@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import ProdutoForm from "../components/ProdutoForm.jsx";
 import Modal from "../components/Modal.jsx";
 import Header from "../components/HeaderAdm.jsx";
-import SidebarAdmBasilios from "../components/SidebarAdmBasilios.jsx";
+import SidebarAdm from "../components/SidebarAdm.jsx";
 
 const CHAVE_STORAGE = "produtos-basilios";
 
@@ -156,7 +156,7 @@ export default function CadastrarProduto() {
   return (
     <div className="cp-page">
 
-      <Header variant="adm" MenuComponent={SidebarAdmBasilios} />
+      <Header variant="adm" MenuComponent={SidebarAdm} />
       <main className="cp-grid">
         <section className="cp-card cp-form">
           <h2>Informações do produto</h2>
