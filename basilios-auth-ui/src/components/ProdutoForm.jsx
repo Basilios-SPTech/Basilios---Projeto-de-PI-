@@ -1,23 +1,13 @@
-<img src="/logo.png" alt="Logo" />
-const CATEGORIAS = [
-  "Combos-Promoção",
-  "Lanches Premium",
-  "X-Burguer",
-  "Acompanhamentos",
-  "Burguers Vegetariano",
-  "X-Picanha",
-  "Costela",
-  "X-Salmão",
-  "X-Calabresa",
-  "X-Filé de Frango",
-  "X-Filé Mignon",
-  "Vegetarianos",
-  "X-Burguer Picanha",
-  "Beirutes",
-  "Hot-Dog",
-  "Lanches Tradicionais",
-  "Bebidas",
-  "Opções de Pães",
+// src/components/ProdutoForm.jsx
+
+// Mapeamento VISUAL -> VALOR DO BACKEND
+// O usuário enxerga "Lanches / Hambúrguer", mas o backend recebe "BURGER"
+const CATEGORIAS_BACKEND = [
+  { label: "Lanches / Hambúrguer", value: "BURGER" },
+  { label: "Combo / Promoção", value: "COMBO" },
+  { label: "Acompanhamento / Side", value: "SIDE" },
+  { label: "Bebidas", value: "DRINK" },
+  { label: "Sobremesa", value: "DESSERT" },
 ];
 
 export default function ProdutoForm({
@@ -38,6 +28,7 @@ export default function ProdutoForm({
             className="max-w-[92px] h-auto rounded-[var(--radius)] border border-[color:var(--border)] shadow-[var(--shadow-sm)]"
           />
         </div>
+
         <h2
           id="titulo-form"
           className="mb-0 border-b-0 ml-[40px] text-[var(--fs-h2)] font-extrabold text-[color:var(--text)]"
@@ -51,7 +42,9 @@ export default function ProdutoForm({
         <div className="grid-1-2">
           {/* Nome */}
           <div className="field-row">
-            <label htmlFor="nome" className="field-label">Nome do Produto</label>
+            <label htmlFor="nome" className="field-label">
+              Nome do Produto
+            </label>
             <input
               type="text"
               id="nome"
@@ -66,7 +59,9 @@ export default function ProdutoForm({
 
           {/* Descrição */}
           <div className="field-row">
-            <label htmlFor="descricao" className="field-label">Descrição</label>
+            <label htmlFor="descricao" className="field-label">
+              Descrição
+            </label>
             <input
               type="text"
               id="descricao"
@@ -79,25 +74,30 @@ export default function ProdutoForm({
             />
           </div>
 
-
-          {/* Ingredientes */}
+          {/* Ingredientes (a API ainda não usa diretamente, mas vamos coletar) */}
           <div className="field-row">
-            <label htmlFor="descricao" className="field-label">Ingredientes</label>
+            <label htmlFor="ingrediente" className="field-label">
+              Ingredientes
+            </label>
             <input
               type="text"
               id="ingrediente"
               name="ingrediente"
               placeholder="Ex.: Pão, 2x hambúrguer, queijo, molho da casa…"
               className="input-base"
-              value={formData.ingrediente}
+              value={formData.ingrediente ?? ""}
               onChange={onChange}
-              required
             />
+            <p className="text-[12px] text-[color:var(--muted)] mt-1">
+              (Opcional. Só pra referência interna por enquanto)
+            </p>
           </div>
 
           {/* Preço */}
           <div className="field-row">
-            <label htmlFor="preco" className="field-label">Preço</label>
+            <label htmlFor="preco" className="field-label">
+              Preço
+            </label>
             <input
               type="number"
               id="preco"
@@ -113,9 +113,11 @@ export default function ProdutoForm({
             />
           </div>
 
-          {/* Imagem (arquivo) */}
+          {/* Imagem (só front preview ainda) */}
           <div className="field-row">
-            <label htmlFor="imagem" className="field-label">Imagem</label>
+            <label htmlFor="imagem" className="field-label">
+              Imagem
+            </label>
             <input
               type="file"
               id="imagem"
@@ -124,11 +126,16 @@ export default function ProdutoForm({
               accept="image/*"
               onChange={onChange}
             />
+            <p className="text-[12px] text-[color:var(--muted)] mt-1">
+              A imagem ainda não vai pro backend, só pro preview interno.
+            </p>
           </div>
 
-          {/* Categoria (select) */}
+          {/* Categoria (ENUM do backend) */}
           <div className="field-row">
-            <label htmlFor="categoria" className="field-label">Categoria</label>
+            <label htmlFor="categoria" className="field-label">
+              Categoria
+            </label>
             <div className="relative">
               <select
                 id="categoria"
@@ -141,12 +148,14 @@ export default function ProdutoForm({
                 <option value="" disabled>
                   Selecione uma categoria…
                 </option>
-                {CATEGORIAS.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
+
+                {CATEGORIAS_BACKEND.map((cat) => (
+                  <option key={cat.value} value={cat.value}>
+                    {cat.label}
                   </option>
                 ))}
               </select>
+
               {/* setinha */}
               <svg
                 aria-hidden="true"
@@ -163,6 +172,29 @@ export default function ProdutoForm({
                 />
               </svg>
             </div>
+            <p className="text-[12px] text-[color:var(--muted)] mt-1 leading-snug">
+              Isso precisa bater com o enum do backend:
+              BURGER / COMBO / SIDE / DRINK / DESSERT
+            </p>
+          </div>
+
+          {/* Disponibilidade (pausado / ativo) */}
+          <div className="field-row">
+            <label className="field-label">Disponibilidade</label>
+
+            <label className="flex items-center gap-2 text-[14px] text-[color:var(--text)]">
+              <input
+                type="checkbox"
+                id="pausado"
+                name="pausado"
+                checked={!!formData.pausado}
+                onChange={onChange}
+                className="h-[16px] w-[16px]"
+              />
+              <span>
+                Pausado (Marcar = não aparece pra venda / está fora do cardápio)
+              </span>
+            </label>
           </div>
         </div>
 
