@@ -16,6 +16,7 @@ import About from "./pages/About.jsx";
 import Home from "./pages/Home.jsx";
 import CadastrarProduto from "./pages/CadastrarProduto.jsx";
 import OrdersBoard from "./pages/OrdersBoard.jsx";
+import ProfilePage from "./pages/ProfilePage.jsx";
 
 // Layouts
 import AuthLayout from "./layouts/AuthLayout.jsx";
@@ -29,7 +30,11 @@ import { authStorage } from "./services/storageAuth.js";
 
 // Se já estiver logado, não faz sentido ver login/register
 function PublicRoute() {
-  return authStorage.isAuthenticated() ? <Navigate to="/home" replace /> : <Outlet />;
+  return authStorage.isAuthenticated() ? (
+    <Navigate to="/home" replace />
+  ) : (
+    <Outlet />
+  );
 }
 
 // 🔻 SEM ROLES: exige apenas estar logado
@@ -77,7 +82,14 @@ function HomePage() {
 
 function CadastrarProdutoRoute() {
   const navigate = useNavigate();
-  return <CadastrarProduto onGoCadastrarProduto={() => navigate("/cadastro")} />;
+  return (
+    <CadastrarProduto onGoCadastrarProduto={() => navigate("/cadastro")} />
+  );
+}
+
+function ProfileRoute() {
+  const navigate = useNavigate();
+  return <ProfilePage onGoProfile={() => navigate("/profile")} />;
 }
 
 /* ============================
