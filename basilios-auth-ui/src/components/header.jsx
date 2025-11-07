@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Menu, User } from "lucide-react";
 import SearchBar from "./SearchBar.jsx";
-import SidebarAdm from "./SidebarAdm.jsx";
+import SidebarAdm from "./sidebar/SidebarAdm.jsx";
 import { authStorage } from "../services/storageAuth.js";
 import "../styles/header.css";
 

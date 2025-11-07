@@ -1,6 +1,6 @@
 /** Sider bar para login/cadastrp*/
 import { Home, ShoppingBag, Settings, LogOut, Package, Hamburger } from "lucide-react";
-import "../styles/side-bar.css";
+import "../../styles/side-bar.css";
 
 export default function SidebarUser({ open, onClose }) {
   if (!open) return null;

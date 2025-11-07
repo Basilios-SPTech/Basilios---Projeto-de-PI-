@@ -2,8 +2,8 @@
 import { useState, useEffect } from "react";
 import { Menu, User } from "lucide-react";
 import SearchBar from "./SearchBar.jsx";
-import SidebarAdm from "./SidebarAdm.jsx";
-import SidebarUser from "./SidebarUser.jsx";
+import SidebarAdm from "./sidebar/SidebarAdm.jsx";
+import SidebarUser from "./sidebar/SidebarUser.jsx";
 import "../styles/header.css"; 
 
 export default function Header({ variant = "user", MenuComponent = null }) {

@@ -1,0 +1,154 @@
+/* ============================
+   BASILIOS — Analytics V4 (compressão real + títulos centralizados)
+============================ */
+:root{
+  --b-red:#BB3530; --b-dark:#111111; --b-ink:#1A1A1A;
+  --b-bg:#F5F5F5;  --b-card:#FFFFFF; --b-muted:#6E6E6E;
+
+  --border-strong: rgba(0,0,0,.14);
+  --radius-sm:10px; --radius-lg:18px;
+  --shadow-1:0 10px 30px rgba(0,0,0,.10), 0 2px 6px rgba(0,0,0,.05);
+
+  --gap-xs:clamp(6px,.6vw,10px);
+  --gap-sm:clamp(10px,.9vw,14px);
+  --gap-md:clamp(12px,1.1vw,18px);
+  --gap-lg:clamp(18px,1.6vw,26px);
+
+  --fs-10:clamp(10px,.8vw,12px);
+  --fs-12:clamp(11px,.9vw,13px);
+  --fs-14:clamp(12px,1.0vw,14px);
+  --fs-16:clamp(14px,1.2vw,16px);
+  --fs-18:clamp(15px,1.4vw,18px);
+  --fs-22:clamp(17px,1.6vw,22px);
+  --fs-28:clamp(20px,2.2vw,28px);
+}
+
+/* Base */
+.ana-content{
+  padding:clamp(16px,1.6vw,28px);
+  background:var(--b-bg); color:var(--b-ink);
+  font-family:'Montserrat',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+}
+.ana-container{ width:100%; }
+.ana-grid{ display:grid; gap:var(--gap-md); }
+
+.ana-card{
+  background:var(--b-card);
+  border:1px solid var(--border-strong);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-1);
+  padding:clamp(14px,1.2vw,20px);
+}
+
+/* Toolbar (folga pro toggle) */
+.ana-toolbar{
+  display:grid; grid-template-columns:repeat(12,1fr);
+  gap:var(--gap-md); align-items:end;
+  margin-top:calc(var(--gap-sm) + 8px);
+  margin-bottom:var(--gap-lg);
+}
+.ana-field{ display:grid; gap:6px; grid-column:span 4; }
+.ana-field label{ font-size:var(--fs-12); color:var(--b-muted); font-weight:600; }
+.ana-field input[type="date"]{
+  padding:12px 14px; border:1px solid var(--border-strong);
+  border-radius:var(--radius-sm); background:#fff; font-size:var(--fs-14);
+}
+.ana-btn{
+  grid-column:span 2; background:var(--b-red); color:#fff;
+  padding:12px 18px; border:0; border-radius:var(--radius-sm);
+  font-weight:800; font-size:var(--fs-14); cursor:pointer;
+  box-shadow:0 10px 26px rgba(187,53,48,.18);
+}
+@media (max-width:980px){ .ana-field{grid-column:span 6} .ana-btn{grid-column:span 12} }
+
+/* KPIs — 6 em linha, títulos + bold e centralizados */
+.ana-grid.kpis{ grid-template-columns:repeat(6,minmax(150px,1fr)); align-items:stretch; }
+@media (max-width:1280px){ .ana-grid.kpis{ grid-template-columns:repeat(3,1fr) } }
+@media (max-width:760px){  .ana-grid.kpis{ grid-template-columns:repeat(2,1fr) } }
+
+.kpi-card{
+  min-height:clamp(96px,12vw,128px);
+  display:grid; align-content:space-between;
+  background:linear-gradient(180deg,#fff 0%,#fff 65%,#fafafa 100%);
+}
+.kpi-card .kpi-label{ font-size:var(--fs-12); color:#4f4f4f; font-weight:700; text-align:center; }
+.kpi-card .kpi-value{ font-size:var(--fs-28); font-weight:900; line-height:1.1; text-align:center; }
+.kpi-card .kpi-sublabel{ font-size:var(--fs-12); color:var(--b-muted); text-align:center; }
+ 
+/* ===== Área principal ===== */
+/* ↓ Mínimos menores para permitir compressão real em telas estreitas */
+.ana-grid.main{
+  grid-template-columns:minmax(300px,1.6fr) minmax(220px,1fr);
+  align-items:stretch; margin-top:var(--gap-md);
+}
+@media (max-width:1050px){ .ana-grid.main{ grid-template-columns:1fr; } }
+.ana-grid.rightcol{ grid-template-rows:auto auto; align-self:stretch; gap:var(--gap-md); }
+
+/* Títulos dos CARDS centralizados */
+.ana-card-title{
+  font-weight:900; font-size:var(--fs-16);
+  margin-bottom:var(--gap-sm); text-align:center;
+}
+
+/* Heatmap — compressão por vw + redução de mínimos internos */
+.heatmap-card{ display:grid; align-content:start; min-height:clamp(0px,0vw,520px); }
+.heatmap-grid{ display:grid; grid-template-columns:56px 1fr; gap:var(--gap-sm); }
+.heatmap-hours{ display:grid; grid-template-columns:repeat(24,minmax(8px,1fr)); gap:3px; }
+.heatmap-hour{ font-size:var(--fs-10); text-align:center; color:var(--b-muted); }
+
+/* Em larguras menores, reduz ticks/hours para caber sempre */
+@media (max-width:1200px){ .heatmap-hour:nth-child(2n){ visibility:hidden } }
+@media (max-width:900px){  .heatmap-hour{ display:none } }
+
+.heatmap-rows{ display:grid; gap:3px; }
+.heatmap-row{
+  display:grid; grid-template-columns:56px repeat(24,minmax(8px,1fr));
+  gap:3px; align-items:center;
+}
+@media (max-width:700px){
+  .heatmap-grid{ grid-template-columns:46px 1fr }
+  .heatmap-row{ grid-template-columns:46px repeat(24,minmax(6px,1fr)) }
+}
+.heatmap-day{ font-size:var(--fs-12); color:var(--b-muted); text-align:center; }
+
+.heatmap-cell{
+  height:clamp(12px,1.2vw,20px);
+  border-radius:4px; background:rgba(187,53,48,.10);
+  transition:transform .08s ease, filter .12s ease;
+}
+.heatmap-cell:hover{ transform:translateY(-1px); filter:contrast(1.05) saturate(1.04) }
+
+.heatmap-legend{
+  display:flex; align-items:center; gap:10px; margin-top:10px;
+  font-size:var(--fs-12); color:var(--b-muted); justify-content:center;
+}
+.legend-bar{ height:8px; flex:1; max-width:380px; border-radius:999px;
+  background:linear-gradient(90deg,rgba(187,53,48,.14),rgba(187,53,48,1)); }
+
+/* Top 5 — realmente encolhe (sem vh) */
+.top-products-card{
+  display:grid; grid-auto-rows:max-content;
+  min-height:clamp(140px,26vw,280px);
+}
+.top-products-card .bars{ display:grid; gap:var(--gap-sm); }
+.bar-row{
+  display:grid; grid-template-columns:minmax(80px,1fr) minmax(90px,3fr) max-content;
+  align-items:center; gap:10px;
+}
+.bar-label{ font-size:var(--fs-12); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.bar-track{ width:100%; height:12px; border-radius:999px; background:#EFEFEF; overflow:hidden; }
+.bar-fill{ height:100%; background:var(--b-red); border-radius:999px; }
+.bar-value{ font-size:var(--fs-12); font-weight:800 }
+
+/* Campeão — compacto e compressível (sem vh) */
+.champion-card{
+  display:grid; align-content:start; gap:8px;
+  min-height:clamp(110px,18vw,200px);
+}
+.champion-name{ font-weight:900; font-size:var(--fs-18); text-align:center; }
+.champion-units{ font-size:var(--fs-14); color:var(--b-muted); text-align:center; }
+
+/* Acessibilidade */
+.ana-btn:focus, .ana-field input[type="date"]:focus{
+  outline:3px solid rgba(187,53,48,.25); outline-offset:2px;
+}

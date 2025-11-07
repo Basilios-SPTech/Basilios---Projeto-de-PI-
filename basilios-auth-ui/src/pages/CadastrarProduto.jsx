@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import ProdutoForm from "../components/ProdutoForm.jsx";
 import Modal from "../components/Modal.jsx";
 import Header from "../components/HeaderAdm.jsx";
-import SidebarAdm from "../components/SidebarAdm.jsx";
+import SidebarAdm from "../components/sidebar/SidebarAdm.jsx";
 
 const CHAVE_STORAGE = "produtos-basilios";
 

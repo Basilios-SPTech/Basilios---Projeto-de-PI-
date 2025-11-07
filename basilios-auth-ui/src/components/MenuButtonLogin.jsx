@@ -1,7 +1,7 @@
 /** Botão suspenso que chama a nossa side bar user*/
 
 import { useEffect, useState, useMemo } from "react";
-import SidebarLogin from "./SideBarLogin.jsx";
+import SidebarLogin from "./sidebar/SideBarLogin.jsx";
 
 export default function SidebarToggle({
   label = "Abrir menu",

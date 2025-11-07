@@ -1,7 +1,7 @@
 /** Botão suspenso que chama a nossa side bar adm*/
 
 import { useEffect, useState, useMemo } from "react";
-import SidebarAdm from "./SidebarAdm.jsx";
+import SidebarAdm from "./sidebar/SidebarAdm.jsx";
 
 export default function SidebarToggle({
   label = "Abrir menu",

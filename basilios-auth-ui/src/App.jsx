@@ -16,6 +16,7 @@ import About from "./pages/About.jsx";
 import Home from "./pages/Home.jsx";
 import CadastrarProduto from "./pages/CadastrarProduto.jsx";
 import OrdersBoard from "./pages/OrdersBoard.jsx";
+import AnalyticsAdm from "./pages/AnalyticsAdm.jsx";
 
 // Layouts
 import AuthLayout from "./layouts/AuthLayout.jsx";
@@ -32,7 +33,6 @@ function PublicRoute() {
   return authStorage.isAuthenticated() ? <Navigate to="/home" replace /> : <Outlet />;
 }
 
-// 🔻 SEM ROLES: exige apenas estar logado
 function RequireAuth() {
   if (!authStorage.isAuthenticated()) {
     return <Navigate to="/login" replace />;
@@ -41,7 +41,7 @@ function RequireAuth() {
 }
 
 /* ============================
-   Wrappers (rotas com layout)
+  rotas
 ============================ */
 
 function LoginRoute() {
@@ -70,6 +70,12 @@ function BoardRoute() {
   return <OrdersBoard onGoOrdersBoard={() => navigate("/board")} />;
 }
 
+function AnalyticsRoute() {
+  const navigate = useNavigate();
+  return <AnalyticsAdm onGoOrdersBoard={() => navigate("/analytics")}/>;
+}
+
+
 function HomePage() {
   const navigate = useNavigate();
   return <Home onGoHome={() => navigate("/home")} />;
@@ -80,16 +86,12 @@ function CadastrarProdutoRoute() {
   return <CadastrarProduto onGoCadastrarProduto={() => navigate("/cadastro")} />;
 }
 
-/* ============================
-   Layout público (produtos)
-============================ */
 
 function ProdutoLayout({ children }) {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="sticky top-0 z-10 border-b bg-white/80 backdrop-blur">
         <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
-          {/* Cabeçalho simples / slots */}
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
@@ -107,7 +109,6 @@ export default function App() {
       <main className="flex-1">
         <Router>
           <Toaster position="top-center" />
-
           <Routes>
             <Route path="/" element={<Navigate to="/home" replace />} />
 
@@ -122,13 +123,12 @@ export default function App() {
               }
             />
 
-            {/* Login/Register públicas, mas se já logado, manda pra /home */}
+            {/* Login/Register públicas */}
             <Route element={<PublicRoute />}>
               <Route path="/login" element={<LoginRoute />} />
               <Route path="/register" element={<RegisterRoute />} />
             </Route>
-
-            {/* 🔻 SEM ROLES: áreas internas exigem apenas login */}
+            {/* Áreas privadas */}
             <Route element={<RequireAuth />}>
               <Route
                 path="/cadastro"
@@ -139,6 +139,7 @@ export default function App() {
                 }
               />
               <Route path="/board" element={<BoardRoute />} />
+              <Route path="/analytics" element={<AnalyticsRoute />} />
             </Route>
 
             {/* 404 -> home */}
@@ -146,7 +147,6 @@ export default function App() {
           </Routes>
         </Router>
       </main>
-
       <FooterBasilios />
     </div>
   );
