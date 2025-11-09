@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { CreditCard, QrCode, MapPin, ShoppingCart, Trash2 } from "lucide-react";
 
 export default function Checkout() {
@@ -186,9 +186,6 @@ export default function Checkout() {
                 >
                   <QrCode size={48} className="mx-auto mb-3" />
                   <p className="font-semibold text-lg">PIX</p>
-                  <p className="text-sm text-gray-400 mt-1">
-                    Aprovação imediata
-                  </p>
                 </button>
 
                 <button
@@ -201,9 +198,6 @@ export default function Checkout() {
                 >
                   <CreditCard size={48} className="mx-auto mb-3" />
                   <p className="font-semibold text-lg">Cartão de Crédito</p>
-                  <p className="text-sm text-gray-400 mt-1">
-                    Parcelamento disponível
-                  </p>
                 </button>
               </div>
 
