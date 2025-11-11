@@ -61,9 +61,9 @@ export default function Checkout() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-4 md:p-8">
+    <div className="min-h-screen bg-gray-200 text-white p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8 flex items-center gap-3">
+        <h1 className="text-3xl font-bold mb-8 flex items-center gap-3 text-black">
           <ShoppingCart size={32} />
           Finalizar Pedido
         </h1>

@@ -16,6 +16,7 @@ import About from "./pages/About.jsx";
 import Home from "./pages/Home.jsx";
 import CadastrarProduto from "./pages/CadastrarProduto.jsx";
 import OrdersBoard from "./pages/OrdersBoard.jsx";
+import CheckoutPage from "./pages/CheckoutPage.jsx";
 
 // Layouts
 import AuthLayout from "./layouts/AuthLayout.jsx";
@@ -29,7 +30,11 @@ import { authStorage } from "./services/storageAuth.js";
 
 // Se já estiver logado, não faz sentido ver login/register
 function PublicRoute() {
-  return authStorage.isAuthenticated() ? <Navigate to="/home" replace /> : <Outlet />;
+  return authStorage.isAuthenticated() ? (
+    <Navigate to="/home" replace />
+  ) : (
+    <Outlet />
+  );
 }
 
 // 🔻 SEM ROLES: exige apenas estar logado
@@ -70,6 +75,11 @@ function BoardRoute() {
   return <OrdersBoard onGoOrdersBoard={() => navigate("/board")} />;
 }
 
+function CheckoutRoute() {
+  const navigate = useNavigate();
+  return <CheckoutPage onGoCheckout={() => navigate("/checkout")} />;
+}
+
 function HomePage() {
   const navigate = useNavigate();
   return <Home onGoHome={() => navigate("/home")} />;
@@ -77,7 +87,9 @@ function HomePage() {
 
 function CadastrarProdutoRoute() {
   const navigate = useNavigate();
-  return <CadastrarProduto onGoCadastrarProduto={() => navigate("/cadastro")} />;
+  return (
+    <CadastrarProduto onGoCadastrarProduto={() => navigate("/cadastro")} />
+  );
 }
 
 /* ============================
@@ -140,6 +152,8 @@ export default function App() {
               />
               <Route path="/board" element={<BoardRoute />} />
             </Route>
+
+            <Route path="/checkout" element={<CheckoutRoute />} />
 
             {/* 404 -> home */}
             <Route path="*" element={<Navigate to="/home" replace />} />
