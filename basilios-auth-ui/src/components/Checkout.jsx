@@ -1,5 +1,12 @@
-import { useState } from "react";
-import { CreditCard, QrCode, MapPin, ShoppingCart, Trash2 } from "lucide-react";
+import React, { useState } from "react";
+import {
+  CreditCard,
+  QrCode,
+  MapPin,
+  ShoppingCart,
+  Trash2,
+  Banknote,
+} from "lucide-react";
 
 export default function Checkout() {
   const [formaPagamento, setFormaPagamento] = useState("pix");
@@ -61,29 +68,29 @@ export default function Checkout() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-200 text-white p-4 md:p-8">
+    <div className="min-h-screen bg-gray-100 text-gray-900 p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8 flex items-center gap-3 text-black">
+        <h1 className="text-3xl font-bold mb-12 flex items-center gap-5">
           <ShoppingCart size={32} />
           Finalizar Pedido
         </h1>
-
+        <br />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Coluna Principal */}
           <div className="lg:col-span-2 space-y-6">
             {/* Revisão dos Itens */}
-            <div className="bg-zinc-900 rounded-lg p-6">
+            <div className="bg-white rounded-lg p-6 shadow-md">
               <h2 className="text-xl font-semibold mb-4">Itens do Pedido</h2>
               <div className="space-y-4">
                 {itens.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center gap-4 bg-zinc-800 p-4 rounded-lg"
+                    className="flex items-center gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200"
                   >
                     <div className="text-4xl">{item.imagem}</div>
                     <div className="flex-1">
                       <h3 className="font-medium">{item.nome}</h3>
-                      <p className="text-gray-400 text-sm">
+                      <p className="text-gray-600 text-sm">
                         R$ {item.preco.toFixed(2)}
                       </p>
                     </div>
@@ -92,7 +99,7 @@ export default function Checkout() {
                         onClick={() =>
                           atualizarQuantidade(item.id, item.quantidade - 1)
                         }
-                        className="w-8 h-8 bg-zinc-700 hover:bg-zinc-600 rounded flex items-center justify-center"
+                        className="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded flex items-center justify-center"
                       >
                         -
                       </button>
@@ -103,7 +110,7 @@ export default function Checkout() {
                         onClick={() =>
                           atualizarQuantidade(item.id, item.quantidade + 1)
                         }
-                        className="w-8 h-8 bg-zinc-700 hover:bg-zinc-600 rounded flex items-center justify-center"
+                        className="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded flex items-center justify-center"
                       >
                         +
                       </button>
@@ -115,7 +122,7 @@ export default function Checkout() {
                     </div>
                     <button
                       onClick={() => removerItem(item.id)}
-                      className="text-red-500 hover:text-red-400"
+                      className="text-gray-500 hover:text-gray-700"
                     >
                       <Trash2 size={20} />
                     </button>
@@ -125,19 +132,20 @@ export default function Checkout() {
             </div>
 
             {/* Endereço de Entrega */}
-            <div className="bg-zinc-900 rounded-lg p-6">
+            <div className="bg-white rounded-lg p-6 shadow-md">
               <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
                 <MapPin size={24} />
                 Endereço de Entrega
               </h2>
+              <br />
               <div className="space-y-3">
                 {enderecos.map((endereco) => (
                   <label
                     key={endereco.id}
                     className={`block p-4 rounded-lg cursor-pointer transition-all ${
                       enderecoSelecionado === endereco.id
-                        ? "bg-red-600 border-2 border-red-500"
-                        : "bg-zinc-800 border-2 border-transparent hover:border-zinc-700"
+                        ? "bg-gray-800 text-white border-2 border-gray-700"
+                        : "bg-gray-50 border-2 border-gray-200 hover:border-gray-400"
                     }`}
                   >
                     <input
@@ -153,7 +161,7 @@ export default function Checkout() {
                         className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-1 ${
                           enderecoSelecionado === endereco.id
                             ? "border-white"
-                            : "border-gray-500"
+                            : "border-gray-400"
                         }`}
                       >
                         {enderecoSelecionado === endereco.id && (
@@ -162,7 +170,9 @@ export default function Checkout() {
                       </div>
                       <div>
                         <p className="font-semibold">{endereco.nome}</p>
-                        <p className="text-gray-400 text-sm">
+                        <p
+                          className={`text-sm ${enderecoSelecionado === endereco.id ? "text-gray-300" : "text-gray-600"}`}
+                        >
                           {endereco.endereco}
                         </p>
                       </div>
@@ -173,43 +183,57 @@ export default function Checkout() {
             </div>
 
             {/* Forma de Pagamento */}
-            <div className="bg-zinc-900 rounded-lg p-6">
-              <h2 className="text-xl font-semibold mb-4">Forma de Pagamento</h2>
+            <div className="bg-white rounded-lg p-6 shadow-md">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <Banknote size={24} />
+                Forma de Pagamento
+              </h2>
+              <br />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <button
                   onClick={() => setFormaPagamento("pix")}
                   className={`p-6 rounded-lg border-2 transition-all ${
                     formaPagamento === "pix"
-                      ? "bg-red-600 border-red-500"
-                      : "bg-zinc-800 border-transparent hover:border-zinc-700"
+                      ? "bg-gray-800 text-white border-gray-700"
+                      : "bg-gray-50 border-gray-200 hover:border-gray-400"
                   }`}
                 >
                   <QrCode size={48} className="mx-auto mb-3" />
                   <p className="font-semibold text-lg">PIX</p>
+                  <p
+                    className={`text-sm mt-1 ${formaPagamento === "pix" ? "text-gray-300" : "text-gray-600"}`}
+                  >
+                    Aprovação imediata
+                  </p>
                 </button>
 
                 <button
                   onClick={() => setFormaPagamento("cartao")}
                   className={`p-6 rounded-lg border-2 transition-all ${
                     formaPagamento === "cartao"
-                      ? "bg-red-600 border-red-500"
-                      : "bg-zinc-800 border-transparent hover:border-zinc-700"
+                      ? "bg-gray-800 text-white border-gray-700"
+                      : "bg-gray-50 border-gray-200 hover:border-gray-400"
                   }`}
                 >
                   <CreditCard size={48} className="mx-auto mb-3" />
                   <p className="font-semibold text-lg">Cartão de Crédito</p>
+                  <p
+                    className={`text-sm mt-1 ${formaPagamento === "cartao" ? "text-gray-300" : "text-gray-600"}`}
+                  >
+                    Parcelamento disponível
+                  </p>
                 </button>
               </div>
 
               {formaPagamento === "cartao" && (
-                <div className="mt-6 bg-zinc-800 p-6 rounded-lg border-2 border-yellow-600">
+                <div className="mt-6 bg-gray-50 p-6 rounded-lg border-2 border-gray-300">
                   <div className="flex items-start gap-3">
                     <div className="text-2xl">ℹ️</div>
                     <div>
-                      <p className="font-semibold text-yellow-500 mb-2">
+                      <p className="font-semibold text-gray-800 mb-2">
                         Pagamento na Entrega
                       </p>
-                      <p className="text-gray-300 text-sm">
+                      <p className="text-gray-600 text-sm">
                         O pagamento com cartão será processado no momento da
                         entrega. Tenha seu cartão em mãos para finalizar a
                         transação.
@@ -223,7 +247,7 @@ export default function Checkout() {
 
           {/* Resumo do Pedido */}
           <div className="lg:col-span-1">
-            <div className="bg-zinc-900 rounded-lg p-6 sticky top-8">
+            <div className="gray-50 rounded-lg p-6 sticky top-8">
               <h2 className="text-xl font-semibold mb-4">Resumo do Pedido</h2>
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-gray-400">
