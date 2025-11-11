@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   CreditCard,
   QrCode,
@@ -11,25 +11,37 @@ import {
 export default function Checkout() {
   const [formaPagamento, setFormaPagamento] = useState("pix");
   const [enderecoSelecionado, setEnderecoSelecionado] = useState("0");
+  const [enderecos, setEnderecos] = useState([]);
+
+  async function getEnderecos() {
+    try {
+      const response = await axios.get(
+        `http://localhost:8080/address/${localStorage.userID}`,
+      );
+      setEnderecos(response.data);
+    } catch (err) {
+      console.log(err);
+    }
+  }
 
   // Dados mockados
-  const enderecos = [
-    {
-      id: "0",
-      nome: "Casa",
-      endereco: "Rua das Flores, 123 - Centro, Mauá - SP, 09310-000",
-    },
-    {
-      id: "1",
-      nome: "Trabalho",
-      endereco: "Av. Paulista, 1000 - Bela Vista, São Paulo - SP, 01310-100",
-    },
-    {
-      id: "2",
-      nome: "Apartamento",
-      endereco: "Rua dos Pinheiros, 456 - Pinheiros, São Paulo - SP, 05422-000",
-    },
-  ];
+  // const enderecos = [
+  //   {
+  //     id: "0",
+  //     nome: "Casa",
+  //     endereco: "Rua das Flores, 123 - Centro, Mauá - SP, 09310-000",
+  //   },
+  //   {
+  //     id: "1",
+  //     nome: "Trabalho",
+  //     endereco: "Av. Paulista, 1000 - Bela Vista, São Paulo - SP, 01310-100",
+  //   },
+  //   {
+  //     id: "2",
+  //     nome: "Apartamento",
+  //     endereco: "Rua dos Pinheiros, 456 - Pinheiros, São Paulo - SP, 05422-000",
+  //   },
+  // ];
 
   const [itens, setItens] = useState([
     { id: 1, nome: "Produto A", preco: 59.9, quantidade: 2, imagem: "📦" },
@@ -66,6 +78,14 @@ export default function Checkout() {
   const finalizarCompra = () => {
     alert("Pedido finalizado com sucesso!");
   };
+
+  useEffect(() => {
+    try {
+      getEnderecos();
+    } catch (err) {
+      console.log(err);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900 p-4 md:p-8">
