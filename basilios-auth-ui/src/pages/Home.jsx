@@ -60,23 +60,33 @@ export default function Home() {
       if (!map.has(categoria)) map.set(categoria, []);
       map.get(categoria).push(p);
     }
-    return Array.from(map.entries()); 
+    return Array.from(map.entries());
   }, [produtosOrdenados]);
 
   function addToCart(produto) {
     const carrinho = JSON.parse(localStorage.getItem(CHAVE_CART) || "[]");
     const novo = Array.isArray(carrinho) ? carrinho : [];
-    novo.push({
-      id: produto.index,
-      nome: produto.nome,
-      preco: Number(produto.preco || "0"),
-      qtd: 1,
-      imagem: produto.imagem || "",
-      categoria: produto.categoria || "",
-    });
+
+    const existente = novo.find((item) => item.id === produto.index);
+    if (existente) {
+      existente.qtd += 1; 
+    } else {
+      novo.push({
+        id: produto.index,
+        nome: produto.nome,
+        preco: Number(produto.preco || "0"),
+        qtd: 1,
+        imagem: produto.imagem || "",
+        categoria: produto.categoria || "",
+        descricao: produto.descricao || "",
+      });
+    }
+
     localStorage.setItem(CHAVE_CART, JSON.stringify(novo));
-    setCartCount(novo.length);
+    setCartCount(novo.reduce((acc, i) => acc + i.qtd, 0));
+    window.dispatchEvent(new Event("cartUpdated")); // 🔔 notifica o Cart.jsx
   }
+
 
   return (
     <div className="home-page page-with-fixed-header">
