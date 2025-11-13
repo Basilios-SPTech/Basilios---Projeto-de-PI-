@@ -8,40 +8,12 @@ import {
   Banknote,
 } from "lucide-react";
 
+import axios from "axios";
+
 export default function Checkout() {
   const [formaPagamento, setFormaPagamento] = useState("pix");
-  const [enderecoSelecionado, setEnderecoSelecionado] = useState("0");
-  const [enderecos, setEnderecos] = useState([]);
-
-  async function getEnderecos() {
-    try {
-      const response = await axios.get(
-        `http://localhost:8080/address/${localStorage.userID}`,
-      );
-      setEnderecos(response.data);
-    } catch (err) {
-      console.log(err);
-    }
-  }
-
-  // Dados mockados
-  // const enderecos = [
-  //   {
-  //     id: "0",
-  //     nome: "Casa",
-  //     endereco: "Rua das Flores, 123 - Centro, Mauá - SP, 09310-000",
-  //   },
-  //   {
-  //     id: "1",
-  //     nome: "Trabalho",
-  //     endereco: "Av. Paulista, 1000 - Bela Vista, São Paulo - SP, 01310-100",
-  //   },
-  //   {
-  //     id: "2",
-  //     nome: "Apartamento",
-  //     endereco: "Rua dos Pinheiros, 456 - Pinheiros, São Paulo - SP, 05422-000",
-  //   },
-  // ];
+  const [enderecoSelecionado, setEnderecoSelecionado] = useState("1");
+  const [endUser, setEndUser] = useState([]);
 
   const [itens, setItens] = useState([
     { id: 1, nome: "Produto A", preco: 59.9, quantidade: 2, imagem: "📦" },
@@ -81,11 +53,32 @@ export default function Checkout() {
 
   useEffect(() => {
     try {
+      async function getEnderecos() {
+        try {
+          const response = await axios.get("http://localhost:8080/addresses", {
+            headers: {
+              Authorization: `Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkBiYXNpbGlvcy5jb20iLCJpYXQiOjE3NjMwNzE4OTUsImV4cCI6MTc2MzE1ODI5NX0.oD9AIl8UEQQaB1E6FhdILKyMTRCsBWO1xGN_U7siWGE`,
+            },
+          });
+
+          console.log(response.data);
+          setEndUser(response.data);
+
+          console.log(`response: ${response.data}`);
+        } catch (err) {
+          console.log(err);
+        }
+      }
+
       getEnderecos();
     } catch (err) {
       console.log(err);
     }
   }, []);
+
+  useEffect(() => {
+    console.log("Endereços atualizados:", endUser);
+  }, [endUser]);
 
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900 p-4 md:p-8">
@@ -159,11 +152,11 @@ export default function Checkout() {
               </h2>
               <br />
               <div className="space-y-3">
-                {enderecos.map((endereco) => (
+                {endUser.map((endereco) => (
                   <label
                     key={endereco.id}
                     className={`block p-4 rounded-lg cursor-pointer transition-all ${
-                      enderecoSelecionado === endereco.id
+                      Number(enderecoSelecionado) === endereco.id
                         ? "bg-gray-800 text-white border-2 border-gray-700"
                         : "bg-gray-50 border-2 border-gray-200 hover:border-gray-400"
                     }`}
@@ -172,7 +165,7 @@ export default function Checkout() {
                       type="radio"
                       name="endereco"
                       value={endereco.id}
-                      checked={enderecoSelecionado === endereco.id}
+                      checked={Number(enderecoSelecionado) === endereco.id}
                       onChange={(e) => setEnderecoSelecionado(e.target.value)}
                       className="hidden"
                     />
@@ -189,12 +182,12 @@ export default function Checkout() {
                         )}
                       </div>
                       <div>
-                        <p className="font-semibold">{endereco.nome}</p>
-                        <p
-                          className={`text-sm ${enderecoSelecionado === endereco.id ? "text-gray-300" : "text-gray-600"}`}
-                        >
-                          {endereco.endereco}
+                        <p className="font-semibold">
+                          {endereco.enderecoCompleto}
                         </p>
+                        <p
+                          className={`text-sm ${enderecoSelecionado == endereco.id ? "text-gray-300" : "text-gray-600"}`}
+                        ></p>
                       </div>
                     </div>
                   </label>
@@ -222,9 +215,7 @@ export default function Checkout() {
                   <p className="font-semibold text-lg">PIX</p>
                   <p
                     className={`text-sm mt-1 ${formaPagamento === "pix" ? "text-gray-300" : "text-gray-600"}`}
-                  >
-                    Aprovação imediata
-                  </p>
+                  ></p>
                 </button>
 
                 <button
@@ -239,9 +230,7 @@ export default function Checkout() {
                   <p className="font-semibold text-lg">Cartão de Crédito</p>
                   <p
                     className={`text-sm mt-1 ${formaPagamento === "cartao" ? "text-gray-300" : "text-gray-600"}`}
-                  >
-                    Parcelamento disponível
-                  </p>
+                  ></p>
                 </button>
               </div>
 
