@@ -205,7 +205,7 @@ export default function Checkout() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <button
                   onClick={() => setFormaPagamento("pix")}
-                  className={`p-6 rounded-lg border-2 transition-all ${
+                  className={`p-6 rounded-lg border-2 transition-all cursor-pointer ${
                     formaPagamento === "pix"
                       ? "bg-gray-800 text-white border-gray-700"
                       : "bg-gray-50 border-gray-200 hover:border-gray-400"
@@ -220,7 +220,7 @@ export default function Checkout() {
 
                 <button
                   onClick={() => setFormaPagamento("cartao")}
-                  className={`p-6 rounded-lg border-2 transition-all ${
+                  className={`p-6 rounded-lg border-2 transition-all cursor-pointer ${
                     formaPagamento === "cartao"
                       ? "bg-gray-800 text-white border-gray-700"
                       : "bg-gray-50 border-gray-200 hover:border-gray-400"
@@ -279,7 +279,7 @@ export default function Checkout() {
 
               <button
                 onClick={finalizarCompra}
-                className="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-lg font-semibold text-lg transition-colors"
+                className="cursor-pointer w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-lg font-semibold text-lg transition-colors"
               >
                 Finalizar Pedido
               </button>
