@@ -1,0 +1,16 @@
+# dependências
+node_modules/
+
+# build
+dist/
+build/
+
+# variáveis de ambiente
+.env*
+
+# logs
+*.log
+
+# configs de editor
+.vscode/
+.idea/
