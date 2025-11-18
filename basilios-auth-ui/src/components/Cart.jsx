@@ -155,7 +155,7 @@ export default function Cart() {
           </div>
 
           {/* Footer */}
-          {cartItems.length == 0 && (
+          {cartItems.length > 0 && (
             <div className="border-t border-gray-200 p-6 bg-gray-50">
               <div className="space-y-3 mb-4">
                 <div className="flex justify-between text-sm text-gray-600">
