@@ -46,10 +46,10 @@ export function ProfilePage({
 
       {/* PERFIL CARD */}
       <div className="perfil-card">
-        <div className="foto-container">
+        <div className="foto-container" color="#860000">
           <img
             src={dados.foto || "/default-avatar.png"}
-            alt="Foto de perfil"
+           
             className="perfil-foto" />
           
         </div>
@@ -65,16 +65,16 @@ export function ProfilePage({
         </div>
            <button
             className="edit-btn" onClick={() => abrirEdicao("perfil")}>
-            ✏️ Edit
+            ✏️ Editar
           </button>
       </div>
 
       {/* PERSONAL INFO */}
       <div className="info-card">
         <div className="info-header">
-          <h3>Personal Information</h3>
+          <h3>Informações Pessoais</h3>
           <button className="edit-btn" onClick={() => abrirEdicao("personal")}>
-            ✏️ Edit
+            ✏️ Editar
           </button>
         </div>
         <div className="info-grid">
@@ -90,15 +90,15 @@ export function ProfilePage({
       {/* ADDRESS INFO */}
       <div className="info-card">
         <div className="info-header">
-          <h3>Address</h3>
+          <h3>Endereço</h3>
           <button className="edit-btn" onClick={() => abrirEdicao("address")}>
-            ✏️ Edit
+            ✏️ Editar
           </button>
         </div>
         <div className="info-grid">
-          <div><span>Country</span><p>{dados.pais}</p></div>
-          <div><span>City</span><p>{dados.cidade}</p></div>
-          <div><span>Postal Code</span><p>{dados.cep}</p></div>
+          <div><span>Rua, Número</span><p>{dados.pais}</p></div>
+          <div><span>Cidade</span><p>{dados.cidade}</p></div>
+          <div><span>CEP</span><p>{dados.cep}</p></div>
         </div>
       </div>
 

@@ -48,7 +48,7 @@
   width: 110px;
   height: 110px;
   border-radius: 50%;
-  border: 2px solid #8fbc8f;
+  border: 2px solid #BB3530;
   object-fit: cover;
 }
 
@@ -107,13 +107,13 @@
 
 .info-header h3 {
   font-size: 1.1rem;
-  color: #8fbc8f;
+  color: #BB3530;
 }
 
 /* Botão editar */
 .edit-btn {
   margin-left: 200px;
-  background-color: #7e0c0c;
+  background-color: #BB3530;
   border: none;
   color: white;
   border-radius: 6px;
@@ -125,7 +125,7 @@
 }
 
 .edit-btn:hover {
-  background-color: #ffa733;
+  background-color: #ff7e33;
 }
 
 /* === GRID DAS INFORMAÇÕES === */
@@ -168,7 +168,7 @@
 
 .edit-form input:focus {
   outline: none;
-  border-color: #8fbc8f;
+  border-color: #860000;
 }
 
 /* Botões do formulário */
@@ -180,7 +180,7 @@
 }
 
 .save-btn {
-  background-color: #8fbc8f;
+  background-color: #860000;
   border: none;
   color: #121212;
   border-radius: 6px;
@@ -191,7 +191,7 @@
 }
 
 .save-btn:hover {
-  background-color: #a8d8a8;
+  background-color: #860000;
 }
 
 .cancel-btn {

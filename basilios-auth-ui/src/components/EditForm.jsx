@@ -1,6 +1,7 @@
 import { useState } from "react";
 import "../styles/EditForm.css";
 
+
 export default function EditForm({ secao, dados, onSave, onCancel }) {
   const [form, setForm] = useState({ ...dados });
   const [preview, setPreview] = useState(dados.foto || "");
@@ -34,8 +35,9 @@ export default function EditForm({ secao, dados, onSave, onCancel }) {
 
   return (
     <div className="modal">
-      <div className="modal-content">
-        <h3>
+      <div className="modal-content zoom-in">
+
+        <h3 className="modal-title">
           {secao === "perfil"
             ? "Editar Perfil"
             : secao === "personal"
@@ -43,10 +45,11 @@ export default function EditForm({ secao, dados, onSave, onCancel }) {
             : "Editar Endereço"}
         </h3>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="form-container">
           {campos.map((key) => (
-            <label key={key}>
+            <label key={key} className="form-label">
               {key.charAt(0).toUpperCase() + key.slice(1)}
+
               {key === "foto" ? (
                 <div className="foto-edit-container">
                   {preview && (
@@ -58,15 +61,6 @@ export default function EditForm({ secao, dados, onSave, onCancel }) {
                     accept="image/*"
                     onChange={handleChange}
                   />
-                  {preview && (
-                    <button
-                      type="button"
-                      className="remove-foto"
-                      onClick={() => setPreview("")}
-                    >
-                      Remover Foto
-                    </button>
-                  )}
                 </div>
               ) : (
                 <input
@@ -74,6 +68,7 @@ export default function EditForm({ secao, dados, onSave, onCancel }) {
                   name={key}
                   value={form[key] || ""}
                   onChange={handleChange}
+                  className="form-input"
                 />
               )}
             </label>
@@ -81,9 +76,12 @@ export default function EditForm({ secao, dados, onSave, onCancel }) {
 
           <div className="modal-buttons">
             <button type="submit" className="save-btn">Salvar</button>
-            <button type="button" className="cancel-btn" onClick={onCancel}>Cancelar</button>
+            <button type="button" className="cancel-btn" onClick={onCancel}>
+              Cancelar
+            </button>
           </div>
         </form>
+
       </div>
     </div>
   );
