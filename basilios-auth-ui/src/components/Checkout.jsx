@@ -10,17 +10,12 @@ import {
 
 import axios from "axios";
 
+const CHAVE_CART = "carrinho-basilios";
+
 export default function Checkout() {
   const [formaPagamento, setFormaPagamento] = useState("pix");
   const [enderecoSelecionado, setEnderecoSelecionado] = useState("1");
   const [endUser, setEndUser] = useState([]);
-
-  // const [itens, setItens] = useState([
-  //   { id: 1, nome: "Produto A", preco: 59.9, quantidade: 2, imagem: "📦" },
-  //   { id: 2, nome: "Produto B", preco: 129.9, quantidade: 1, imagem: "📦" },
-  //   { id: 3, nome: "Produto C", preco: 39.9, quantidade: 3, imagem: "📦" },
-  // ]);
-  //
   const [itens, setItens] = useState([]);
 
   const calcularSubtotal = () => {
@@ -70,18 +65,11 @@ export default function Checkout() {
       }
 
       getEnderecos();
-
-      // let productArray =
-      // console.log(productArray);
-      setItens(JSON.parse(localStorage.getItem("carrinho-basilios")));
+      setItens(JSON.parse(localStorage.getItem(CHAVE_CART)));
     } catch (err) {
       console.log(err);
     }
   }, []);
-
-  useEffect(() => {
-    console.log("Endereços atualizados:", endUser);
-  }, [endUser]);
 
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900 p-4 md:p-8">
