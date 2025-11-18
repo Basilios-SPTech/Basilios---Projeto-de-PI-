@@ -16,6 +16,7 @@ import About from "./pages/About.jsx";
 import Home from "./pages/Home.jsx";
 import CadastrarProduto from "./pages/CadastrarProduto.jsx";
 import OrdersBoard from "./pages/OrdersBoard.jsx";
+import { ProfilePage } from "./pages/ProfilePage.jsx";
 
 // Layouts
 import AuthLayout from "./layouts/AuthLayout.jsx";
@@ -80,6 +81,11 @@ function CadastrarProdutoRoute() {
   return <CadastrarProduto onGoCadastrarProduto={() => navigate("/cadastro")} />;
 }
 
+function ProfileRoute() {
+  const navigate = useNavigate();
+  return <ProfilePage onGoProfile={() => navigate("/perfil")} />;
+}
+
 /* ============================
    Layout público (produtos)
 ============================ */
@@ -126,6 +132,7 @@ export default function App() {
             <Route element={<PublicRoute />}>
               <Route path="/login" element={<LoginRoute />} />
               <Route path="/register" element={<RegisterRoute />} />
+              <Route path="/perfil" element={<ProfileRoute />} />
             </Route>
 
             {/* 🔻 SEM ROLES: áreas internas exigem apenas login */}

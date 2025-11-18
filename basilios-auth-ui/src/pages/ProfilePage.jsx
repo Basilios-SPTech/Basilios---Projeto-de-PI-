@@ -1,6 +1,7 @@
 import { useState } from "react";
 import "../styles/ProfilePage.css";
 import EditForm from "../components/EditForm.jsx";
+import Header from "../components/header.jsx";  
 
 export function ProfilePage({
   nome,
@@ -38,6 +39,8 @@ export function ProfilePage({
   const abrirEdicao = (secao) => setIsEditing(secao);
 
   return (
+    <>
+    <Header />
     <div className="perfil-container">
       <h2 className="titulo">Meu perfil</h2>
 
@@ -47,13 +50,10 @@ export function ProfilePage({
           <img
             src={dados.foto || "/default-avatar.png"}
             alt="Foto de perfil"
-            className="perfil-foto"
-          />
-          <button
-            className="edit-btn" onClick={() => abrirEdicao("perfil")}>
-              ✏️ Edit
-          </button>
+            className="perfil-foto" />
+          
         </div>
+     
 
         <div className="perfil-info-header">
           <h3>
@@ -63,6 +63,10 @@ export function ProfilePage({
           <p>{dados.cidade}, {dados.pais}
           </p>
         </div>
+           <button
+            className="edit-btn" onClick={() => abrirEdicao("perfil")}>
+            ✏️ Edit
+          </button>
       </div>
 
       {/* PERSONAL INFO */}
@@ -74,12 +78,12 @@ export function ProfilePage({
           </button>
         </div>
         <div className="info-grid">
-          <div><span>First Name</span><p>{dados.nome}</p></div>
-          <div><span>Last Name</span><p>{dados.sobrenome}</p></div>
-          <div><span>Date of Birth</span><p>{dados.nascimento}</p></div>
+          <div><span>Nome</span><p>{dados.nome}</p></div>
+          <div><span>Sobrenome</span><p>{dados.sobrenome}</p></div>
+          <div><span>Nascimento</span><p>{dados.nascimento}</p></div>
           <div><span>Email</span><p>{dados.email}</p></div>
-          <div><span>Phone</span><p>{dados.telefone}</p></div>
-          <div><span>User Role</span><p>{dados.papel}</p></div>
+          <div><span>Telefone</span><p>{dados.telefone}</p></div>
+          <div><span>Papel</span><p>{dados.papel}</p></div>
         </div>
       </div>
 
@@ -104,9 +108,8 @@ export function ProfilePage({
           secao={isEditing}
           dados={dados}
           onSave={handleSave}
-          onCancel={() => setIsEditing(null)}
-        />
+          onCancel={() => setIsEditing(null)} />
       )}
-    </div>
+    </div></>
   );
 }
