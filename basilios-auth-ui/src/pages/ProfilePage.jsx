@@ -1,9 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "../styles/ProfilePage.css";
 import EditForm from "../components/EditForm.jsx";
 import Header from "../components/header.jsx";  
+import axios from "axios";
 
-export function ProfilePage({
+
+
+export function ProfilePage(
+{
   nome,
   sobrenome,
   cargo,
@@ -30,6 +34,17 @@ export function ProfilePage({
     cep,
     foto,
   });
+
+  useEffect(() => {
+    // Exemplo de chamada para buscar dados do usuário
+    axios.get("http://localhost:8080/api/auth/me", {
+      headers: {
+        Authorization: `Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkBiYXNpbGlvcy5jb20iLCJpYXQiOjE3NjM1MDgwMTksImV4cCI6MTc2MzU5NDQxOX0.pO1FBjyuiSq6wPzq7DDuw5Q3TPzuMP5e0G1jcL5duss)}`,
+      },
+    }).then((response) => {
+      setDados(response.data); 
+    });
+  }, []);
 
   const handleSave = (novosDados) => {
     setDados(novosDados);
