@@ -64,7 +64,7 @@ export default function Header() {
     const onScroll = () => {
       setIsScrolled(window.scrollY > 50);
 
-      const nodes = document.querySelectorAll('section[data-section]');
+      const nodes = document.querySelectorAll("section[data-section]");
       let current = null;
       nodes.forEach((section, index) => {
         const rect = section.getBoundingClientRect();
@@ -91,6 +91,23 @@ export default function Header() {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  // 🔎 quando o usuário busca (Enter / clique na lupa)
+  const handleSearchSubmit = () => {
+    const term = searchQuery.trim().toLowerCase();
+    if (!term) return;
+
+    const match = sections.find((label) =>
+      label.toLowerCase().includes(term)
+    );
+
+    if (match) {
+      goToSection(match);
+    } else {
+      console.log("Nenhuma seção encontrada para:", term);
+      // aqui depois você pode trocar por um toast bonitinho
+    }
+  };
+
   const handleUserClick = () => {
     if (!isAuthenticated) return navigate("/login");
     // 🔻 SEM ROLES: logado vai pra home
@@ -102,7 +119,11 @@ export default function Header() {
       <header className={`site-header ${isScrolled ? "is-scrolled" : ""}`}>
         {/* Linha superior */}
         <div className="header-grid">
-          <button onClick={toggleMenu} className="icon-button" aria-label="Abrir menu">
+          <button
+            onClick={toggleMenu}
+            className="icon-button"
+            aria-label="Abrir menu"
+          >
             <Menu size={28} />
           </button>
 
@@ -129,8 +150,17 @@ export default function Header() {
               zIndex: 1,
             }}
           >
-            <SearchBar value={searchQuery} onChange={setSearchQuery} width={250} />
-            <button className="icon-button" onClick={handleUserClick} aria-label="Área do usuário">
+            <SearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              onSubmit={handleSearchSubmit} // 👈 agora a busca funciona
+              width={250}
+            />
+            <button
+              className="icon-button"
+              onClick={handleUserClick}
+              aria-label="Área do usuário"
+            >
               <User size={28} />
             </button>
           </div>
@@ -152,9 +182,13 @@ export default function Header() {
                 key={label}
                 role="button"
                 tabIndex={0}
-                className={`section-link ${activeSection === i ? "active" : ""}`}
+                className={`section-link ${
+                  activeSection === i ? "active" : ""
+                }`}
                 onClick={() => goToSection(label)}
-                onKeyDown={(e) => (e.key === "Enter" ? goToSection(label) : null)}
+                onKeyDown={(e) =>
+                  e.key === "Enter" ? goToSection(label) : null
+                }
               >
                 {label}
               </span>

@@ -167,12 +167,14 @@ export default function CadastrarProduto() {
       tags: [],
       ingredientes: formData.ingrediente
         ? formData.ingrediente
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
         : [],
+      ingredientsDetailed: [], 
       isPaused: !!formData.pausado,
     };
+
 
     // Edição local (sem back)
     if (indiceEdicao !== null) {

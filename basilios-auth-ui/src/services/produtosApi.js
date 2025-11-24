@@ -4,10 +4,29 @@ import { http } from "./http.js";
 
 /**
  * Cria um novo produto no backend.
- * Requer token válido (admin) porque o endpoint é protegido.
- * Envia para POST /api/menu
+ * POST /api/products
  */
 export async function criarProduto(dto) {
-  const response = await http.post("/api/menu", dto);
-  return response.data;
+  // agora usa a rota nova
+  const { data } = await http.post("/api/products", dto);
+  return data;
+}
+
+/**
+ * Lista produtos.
+ * GET /api/products?activeOnly=true
+ */
+export async function listarProdutos(activeOnly = true) {
+  const { data } = await http.get("/api/products", {
+    params: { activeOnly }, 
+  });
+
+  console.log("🔎 Resposta /api/products:", data, "tipo:", typeof data);
+
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  console.warn("⚠️ /api/products em formato inesperado:", data);
+  return [];
 }

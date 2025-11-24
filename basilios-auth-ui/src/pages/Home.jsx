@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Header from "../components/header.jsx";
 import Cart from "../components/Cart.jsx";
+import { listarProdutos } from "../services/produtosApi.js";
 
 const CHAVE_STORAGE = "produtos-basilios";
 const CHAVE_CART = "carrinho-basilios";
@@ -13,15 +14,49 @@ export default function Home() {
   const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
-    try {
-      const salvo = JSON.parse(localStorage.getItem(CHAVE_STORAGE) || "[]");
-      const ativos = (Array.isArray(salvo) ? salvo : []).filter((p) => !p.pausado);
-      setProdutos(ativos);
-    } catch {
-      setProdutos([]);
+    async function carregarProdutos() {
+      try {
+        const data = await listarProdutos();
+
+        console.log("✅ Produtos carregados da API:", data);
+
+        const adaptados = (data || []).map((p, index) => ({
+          index: p.id ?? index,
+          nome: p.name ?? p.nome ?? "",
+          descricao: p.description ?? p.descricao ?? "",
+          preco: p.finalPrice ?? p.price ?? p.preco ?? 0,
+          categoria: p.category ?? p.categoria ?? "",
+          subcategoria: p.subcategory ?? p.subcategoria ?? "",
+          pausado: p.isPaused ?? p.paused ?? false,
+          imagem: p.imageUrl ?? p.imagem ?? "",
+        }));
+
+        const ativos = adaptados.filter((p) => !p.pausado);
+
+        setProdutos(ativos);
+
+        // cache/local compatível
+        localStorage.setItem(CHAVE_STORAGE, JSON.stringify(adaptados));
+      } catch (err) {
+        console.error("💥 Erro ao carregar produtos do backend:", err);
+
+        // fallback pro localStorage, se tiver algo
+        try {
+          const salvo = JSON.parse(localStorage.getItem(CHAVE_STORAGE) || "[]");
+          const ativos = (Array.isArray(salvo) ? salvo : []).filter(
+            (p) => !p.pausado
+          );
+          setProdutos(ativos);
+        } catch {
+          setProdutos([]);
+        }
+      }
     }
+
+    carregarProdutos();
   }, []);
 
+  // Carrinho: continua igual
   useEffect(() => {
     const c = JSON.parse(localStorage.getItem(CHAVE_CART) || "[]");
     setCartCount(Array.isArray(c) ? c.length : 0);
@@ -39,7 +74,8 @@ export default function Home() {
   const filtrados = useMemo(() => {
     const termo = q.trim().toLowerCase();
     return produtos.filter((p) => {
-      const okCat = cat === "Todas" || (p.categoria || "").trim() == cat;
+      const okCat =
+        cat === "Todas" || (p.categoria || "").trim() == cat;
       const okTermo =
         !termo ||
         (p.nome || "").toLowerCase().includes(termo) ||
@@ -69,7 +105,7 @@ export default function Home() {
 
     const existente = novo.find((item) => item.id === produto.index);
     if (existente) {
-      existente.qtd += 1; 
+      existente.qtd += 1;
     } else {
       novo.push({
         id: produto.index,
@@ -84,9 +120,8 @@ export default function Home() {
 
     localStorage.setItem(CHAVE_CART, JSON.stringify(novo));
     setCartCount(novo.reduce((acc, i) => acc + i.qtd, 0));
-    window.dispatchEvent(new Event("cartUpdated")); // 🔔 notifica o Cart.jsx
+    window.dispatchEvent(new Event("cartUpdated"));
   }
-
 
   return (
     <div className="home-page page-with-fixed-header">
@@ -123,7 +158,9 @@ export default function Home() {
                         <div className="hp-price">
                           <span>R$</span>
                           <strong>
-                            {Number(p.preco || "0").toFixed(2).replace(".", ",")}
+                            {Number(p.preco || "0")
+                              .toFixed(2)
+                              .replace(".", ",")}
                           </strong>
                         </div>
                         <button
@@ -139,46 +176,46 @@ export default function Home() {
               </div>
             ))
           )
+        ) : filtrados.length === 0 ? (
+          <p className="hp-empty">
+            Nada por aqui… Experimente limpar filtros ou cadastrar novos itens.
+          </p>
         ) : (
-          filtrados.length === 0 ? (
-            <p className="hp-empty">
-              Nada por aqui… Experimente limpar filtros ou cadastrar novos itens.
-            </p>
-          ) : (
-            <div className="hp-grid">
-              {produtosOrdenados.map((p) => (
-                <article key={p.index} className="hp-card">
-                  <div className="hp-card__media">
-                    {p.imagem ? (
-                      <img src={p.imagem} alt={p.nome || "Produto"} />
-                    ) : (
-                      <div className="hp-card__placeholder">Sem imagem</div>
-                    )}
-                  </div>
+          <div className="hp-grid">
+            {produtosOrdenados.map((p) => (
+              <article key={p.index} className="hp-card">
+                <div className="hp-card__media">
+                  {p.imagem ? (
+                    <img src={p.imagem} alt={p.nome || "Produto"} />
+                  ) : (
+                    <div className="hp-card__placeholder">Sem imagem</div>
+                  )}
+                </div>
 
-                  <div className="hp-card__body">
-                    <h3 className="hp-card__title">{p.nome}</h3>
-                    <p className="hp-card__desc">{p.descricao}</p>
-                  </div>
+                <div className="hp-card__body">
+                  <h3 className="hp-card__title">{p.nome}</h3>
+                  <p className="hp-card__desc">{p.descricao}</p>
+                </div>
 
-                  <div className="hp-card__footer">
-                    <div className="hp-price">
-                      <span>R$</span>
-                      <strong>
-                        {Number(p.preco || "0").toFixed(2).replace(".", ",")}
-                      </strong>
-                    </div>
-                    <button
-                      className="btn btn-primary hp-add"
-                      onClick={() => addToCart(p)}
-                    >
-                      Adicionar
-                    </button>
+                <div className="hp-card__footer">
+                  <div className="hp-price">
+                    <span>R$</span>
+                    <strong>
+                      {Number(p.preco || "0")
+                        .toFixed(2)
+                        .replace(".", ",")}
+                    </strong>
                   </div>
-                </article>
-              ))}
-            </div>
-          )
+                  <button
+                    className="btn btn-primary hp-add"
+                    onClick={() => addToCart(p)}
+                  >
+                    Adicionar
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
         )}
       </section>
     </div>

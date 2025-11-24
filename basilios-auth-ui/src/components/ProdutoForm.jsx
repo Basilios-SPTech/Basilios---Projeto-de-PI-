@@ -1,7 +1,4 @@
 // src/components/ProdutoForm.jsx
-
-// Mapeamento VISUAL -> VALOR DO BACKEND
-// O usuário enxerga "Lanches / Hambúrguer", mas o backend recebe "BURGER"
 const CATEGORIAS_BACKEND = [
   { label: "Lanches / Hambúrguer", value: "BURGER" },
   { label: "Combo / Promoção", value: "COMBO" },

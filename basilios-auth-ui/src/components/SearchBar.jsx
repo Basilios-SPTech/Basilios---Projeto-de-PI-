@@ -1,13 +1,21 @@
-/** Barra de pesquisa presente no header*/
+/** Barra de pesquisa presente no header */
 
 import { Search } from "lucide-react";
 
 export default function SearchBar({
   value,
   onChange,
+  onSubmit, 
   placeholder = "Pesquisar...",
-  width = 250, // mantém o mesmo default
+  width = 250, 
 }) {
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      onSubmit && onSubmit(); // 👈 dispara a busca ao pressionar Enter
+    }
+  };
+
   return (
     <div className="search-container" style={{ width }}>
       <div
@@ -22,7 +30,8 @@ export default function SearchBar({
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.borderColor = "#e85d5d";
-          e.currentTarget.style.boxShadow = "0 0 0 2px rgba(232, 93, 93, 0.2)";
+          e.currentTarget.style.boxShadow =
+            "0 0 0 2px rgba(232, 93, 93, 0.2)";
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.borderColor = "rgba(245, 245, 240, 0.2)";
@@ -32,13 +41,20 @@ export default function SearchBar({
         <Search
           className="search-icon"
           size={18}
-          style={{ color: "#888", marginRight: "0.5rem", flexShrink: 0 }}
+          style={{
+            color: "#888",
+            marginRight: "0.5rem",
+            flexShrink: 0,
+            cursor: "pointer",           // 👈 fica clicável
+          }}
+          onClick={() => onSubmit && onSubmit()} // 👈 clique na lupa dispara a busca
         />
         <input
           type="text"
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange?.(e.target.value)}
+          onKeyDown={handleKeyDown}               // 👈 Enter dispara a busca
           className="search-input"
           style={{
             background: "none",
