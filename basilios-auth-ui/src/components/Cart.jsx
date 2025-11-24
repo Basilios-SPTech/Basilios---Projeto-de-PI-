@@ -2,6 +2,7 @@ import CartItem from "./CartItem";
 import React, { useState, useEffect } from "react";
 import { ShoppingCart, X } from "lucide-react";
 import CustomizeBurger from "./CustomizeBurger";
+import { useNavigate } from "react-router-dom";
 
 const CHAVE_CART = "carrinho-basilios";
 
@@ -10,6 +11,8 @@ export default function Cart() {
   const [cartItems, setCartItems] = useState([]);
   const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+
+  const navigate = useNavigate();
 
   // carregar o carrinho do localStorage
   useEffect(() => {
@@ -30,13 +33,13 @@ export default function Cart() {
   const totalItems = cartItems.reduce((sum, item) => sum + item.qtd, 0);
   const totalPrice = cartItems.reduce(
     (sum, item) => sum + item.preco * item.qtd,
-    0
+    0,
   );
 
   const handleUpdateQuantity = (itemId, newQuantity) => {
     if (newQuantity < 1) return;
     const atualizados = cartItems.map((item) =>
-      item.id === itemId ? { ...item, qtd: newQuantity } : item
+      item.id === itemId ? { ...item, qtd: newQuantity } : item,
     );
     setCartItems(atualizados);
     localStorage.setItem(CHAVE_CART, JSON.stringify(atualizados));
@@ -55,6 +58,10 @@ export default function Cart() {
     setCartItems([]);
     window.dispatchEvent(new Event("cartUpdated"));
   };
+
+  function goToCheckout() {
+    navigate("/checkout");
+  }
 
   return (
     <>
@@ -165,7 +172,10 @@ export default function Cart() {
                 </div>
               </div>
 
-              <button className="w-full bg-black hover:bg-gray-800 text-white font-semibold py-4 rounded-lg transition-colors">
+              <button
+                onClick={goToCheckout}
+                className="w-full bg-black hover:bg-gray-800 text-white font-semibold py-4 rounded-lg transition-colors"
+              >
                 Finalizar Compra
               </button>
             </div>
@@ -180,7 +190,7 @@ export default function Cart() {
           onClose={() => setIsCustomizeOpen(false)}
           onSave={(customizedItem) => {
             const atualizado = cartItems.map((p) =>
-              p.id === customizedItem.id ? { ...p, ...customizedItem } : p
+              p.id === customizedItem.id ? { ...p, ...customizedItem } : p,
             );
             setCartItems(atualizado);
             localStorage.setItem(CHAVE_CART, JSON.stringify(atualizado));
