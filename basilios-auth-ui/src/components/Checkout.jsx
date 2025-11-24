@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import {
   CreditCard,
   QrCode,
@@ -17,6 +19,7 @@ export default function Checkout() {
   const [enderecoSelecionado, setEnderecoSelecionado] = useState("1");
   const [endUser, setEndUser] = useState([]);
   const [itens, setItens] = useState([]);
+  const navigate = useNavigate();
 
   const calcularSubtotal = () => {
     return itens.reduce((total, item) => total + item.preco * item.qtd, 0);
@@ -41,8 +44,21 @@ export default function Checkout() {
     );
   };
 
-  const finalizarCompra = () => {
-    alert("Pedido finalizado com sucesso!");
+  const endOrder = () => {
+    if (formaPagamento == "pix") {
+      navigate("/pix-checkout");
+    } else {
+      toast.success(
+        "Você selecionou 'Cartão de Crédito' como forma de pagamento! Você será redirecionado para a tela de acompanhamento do pedido e deverá realizar o pagamento na entrega",
+        {
+          duration: 6000,
+        },
+      );
+
+      setTimeout(() => {
+        navigate("/home");
+      }, 6500);
+    }
   };
 
   useEffect(() => {
@@ -267,7 +283,7 @@ export default function Checkout() {
               </div>
 
               <button
-                onClick={finalizarCompra}
+                onClick={endOrder}
                 className="cursor-pointer w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-lg font-semibold text-lg transition-colors"
               >
                 Finalizar Pedido

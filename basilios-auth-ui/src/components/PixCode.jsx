@@ -26,7 +26,6 @@ export default function PixQRCode({ brCode }) {
       </div>
       <button
         onClick={handleCopy}
-        // se o vermelho nao ficar bom = alterar para "teal"
         className="cursor-pointer w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
       >
         {copied ? (
