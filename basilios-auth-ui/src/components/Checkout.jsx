@@ -10,22 +10,16 @@ import {
 
 import axios from "axios";
 
+const CHAVE_CART = "carrinho-basilios";
+
 export default function Checkout() {
   const [formaPagamento, setFormaPagamento] = useState("pix");
   const [enderecoSelecionado, setEnderecoSelecionado] = useState("1");
   const [endUser, setEndUser] = useState([]);
-
-  const [itens, setItens] = useState([
-    { id: 1, nome: "Produto A", preco: 59.9, quantidade: 2, imagem: "📦" },
-    { id: 2, nome: "Produto B", preco: 129.9, quantidade: 1, imagem: "📦" },
-    { id: 3, nome: "Produto C", preco: 39.9, quantidade: 3, imagem: "📦" },
-  ]);
+  const [itens, setItens] = useState([]);
 
   const calcularSubtotal = () => {
-    return itens.reduce(
-      (total, item) => total + item.preco * item.quantidade,
-      0,
-    );
+    return itens.reduce((total, item) => total + item.preco * item.qtd, 0);
   };
 
   const calcularFrete = () => 15.0;
@@ -42,7 +36,7 @@ export default function Checkout() {
     if (novaQuantidade < 1) return;
     setItens(
       itens.map((item) =>
-        item.id === id ? { ...item, quantidade: novaQuantidade } : item,
+        item.id === id ? { ...item, qtd: novaQuantidade } : item,
       ),
     );
   };
@@ -71,14 +65,11 @@ export default function Checkout() {
       }
 
       getEnderecos();
+      setItens(JSON.parse(localStorage.getItem(CHAVE_CART)));
     } catch (err) {
       console.log(err);
     }
   }, []);
-
-  useEffect(() => {
-    console.log("Endereços atualizados:", endUser);
-  }, [endUser]);
 
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900 p-4 md:p-8">
@@ -110,18 +101,16 @@ export default function Checkout() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() =>
-                          atualizarQuantidade(item.id, item.quantidade - 1)
+                          atualizarQuantidade(item.id, item.qtd - 1)
                         }
                         className="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded flex items-center justify-center"
                       >
                         -
                       </button>
-                      <span className="w-12 text-center">
-                        {item.quantidade}
-                      </span>
+                      <span className="w-12 text-center">{item.qtd}</span>
                       <button
                         onClick={() =>
-                          atualizarQuantidade(item.id, item.quantidade + 1)
+                          atualizarQuantidade(item.id, item.qtd + 1)
                         }
                         className="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded flex items-center justify-center"
                       >
@@ -130,7 +119,7 @@ export default function Checkout() {
                     </div>
                     <div className="text-right min-w-24">
                       <p className="font-semibold">
-                        R$ {(item.preco * item.quantidade).toFixed(2)}
+                        R$ {(item.preco * item.qtd).toFixed(2)}
                       </p>
                     </div>
                     <button
