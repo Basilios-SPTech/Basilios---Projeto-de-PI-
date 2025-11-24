@@ -17,6 +17,7 @@ import Home from "./pages/Home.jsx";
 import CadastrarProduto from "./pages/CadastrarProduto.jsx";
 import OrdersBoard from "./pages/OrdersBoard.jsx";
 import CheckoutPage from "./pages/CheckoutPage.jsx";
+import PixCheckout from "./pages/PixCheckout.jsx";
 
 // Layouts
 import AuthLayout from "./layouts/AuthLayout.jsx";
@@ -78,6 +79,11 @@ function BoardRoute() {
 function CheckoutRoute() {
   const navigate = useNavigate();
   return <CheckoutPage onGoCheckout={() => navigate("/checkout")} />;
+}
+
+function PixRoute() {
+  const navigate = useNavigate();
+  return <PixCheckout onGoCheckout={() => navigate("/pix-checkout")} />;
 }
 
 function HomePage() {
@@ -154,6 +160,7 @@ export default function App() {
             </Route>
 
             <Route path="/checkout" element={<CheckoutRoute />} />
+            <Route path="pix-checkout" element={<PixRoute />} />
 
             {/* 404 -> home */}
             <Route path="*" element={<Navigate to="/home" replace />} />
