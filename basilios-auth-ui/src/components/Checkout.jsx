@@ -59,6 +59,8 @@ export default function Checkout() {
         navigate("/home");
       }, 6500);
     }
+
+    localStorage.removeItem(CHAVE_CART);
   };
 
   useEffect(() => {
