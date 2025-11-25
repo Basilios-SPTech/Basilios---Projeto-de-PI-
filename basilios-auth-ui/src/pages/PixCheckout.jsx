@@ -1,4 +1,4 @@
-import PixProcessor from "../components/PixProcessor";
+import PixProcessor from "../components/pix/PixProcessor";
 import MenuButton from "../components/MenuButton";
 
 export default function CheckoutPage() {
