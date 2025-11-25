@@ -98,10 +98,6 @@ export default function OrderStatus() {
               </p>
               <p className="text-sm text-gray-500">{order.dataPedido}</p>
             </div>
-            <div className="bg-gray-100 px-4 py-2 rounded-lg">
-              <p className="text-sm text-gray-600">Status</p>
-              <p className="font-semibold text-gray-900">Em Preparação</p>
-            </div>
           </div>
         </div>
 

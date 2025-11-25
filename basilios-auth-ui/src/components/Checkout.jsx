@@ -56,7 +56,7 @@ export default function Checkout() {
       );
 
       setTimeout(() => {
-        navigate("/home");
+        navigate("/order-status");
       }, 6500);
     }
 
@@ -69,14 +69,11 @@ export default function Checkout() {
         try {
           const response = await axios.get("http://localhost:8080/addresses", {
             headers: {
-              Authorization: `Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkBiYXNpbGlvcy5jb20iLCJpYXQiOjE3NjMwNzE4OTUsImV4cCI6MTc2MzE1ODI5NX0.oD9AIl8UEQQaB1E6FhdILKyMTRCsBWO1xGN_U7siWGE`,
+              Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
             },
           });
 
-          console.log(response.data);
           setEndUser(response.data);
-
-          console.log(`response: ${response.data}`);
         } catch (err) {
           console.log(err);
         }

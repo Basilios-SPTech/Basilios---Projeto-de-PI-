@@ -8,9 +8,6 @@ export default function OrderTime({ tempoEstimado }) {
         <h2 className="text-xl font-semibold">Tempo Estimado de Entrega</h2>
       </div>
       <p className="text-3xl font-bold">{tempoEstimado}</p>
-      <p className="text-gray-300 text-sm mt-2">
-        Previsão aproximada, pode variar de acordo com o trânsito
-      </p>
     </div>
   );
 }
