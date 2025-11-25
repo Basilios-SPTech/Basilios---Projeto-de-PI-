@@ -108,54 +108,6 @@ export default function OrderStatus() {
         {/* Tempo Estimado */}
         <OrderTime tempoEstimado={order.tempoEstimado} />
 
-        {/* Progresso do Pedido */}
-        <div className="bg-white rounded-lg p-6 shadow-md mb-6">
-          <h2 className="text-xl font-semibold mb-6">Progresso do Pedido</h2>
-          <div className="space-y-6">
-            {etapas.map((etapa, index) => {
-              const Icon = etapa.icon;
-              return (
-                <div key={etapa.id} className="flex gap-4">
-                  <div className="flex flex-col items-center">
-                    <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                        etapa.concluido
-                          ? "bg-gray-800 text-white"
-                          : "bg-gray-200 text-gray-400"
-                      }`}
-                    >
-                      <Icon size={24} />
-                    </div>
-                    {index < etapas.length - 1 && (
-                      <div
-                        className={`w-0.5 h-12 mt-2 ${
-                          etapa.concluido ? "bg-gray-800" : "bg-gray-200"
-                        }`}
-                      ></div>
-                    )}
-                  </div>
-                  <div className="flex-1 pb-8">
-                    <h3
-                      className={`font-semibold ${
-                        etapa.concluido ? "text-gray-900" : "text-gray-400"
-                      }`}
-                    >
-                      {etapa.titulo}
-                    </h3>
-                    <p
-                      className={`text-sm ${
-                        etapa.concluido ? "text-gray-600" : "text-gray-400"
-                      }`}
-                    >
-                      {etapa.descricao}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Detalhes do Pedido */}
         <div className="bg-white rounded-lg p-6 shadow-md mb-6">
           <h2 className="text-xl font-semibold mb-4">Detalhes do Pedido</h2>
