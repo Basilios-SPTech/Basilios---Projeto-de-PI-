@@ -33,20 +33,18 @@ export default function Home() {
           subcategoria: p.subcategory ?? p.subcategoria ?? "",
           pausado: p.isPaused ?? p.paused ?? false,
           imagem: p.imageUrl
-            ? `${API_BASE}${p.imageUrl}` // vem do backend como "/uploads/..."
-            : p.imagem || "",            // fallback pra dado local já salvo
+            ? `${API_BASE}${p.imageUrl}` 
+            : p.imagem || "",        
         }));
 
         const ativos = adaptados.filter((p) => !p.pausado);
 
         setProdutos(ativos);
 
-        // cache/local compatível
         localStorage.setItem(CHAVE_STORAGE, JSON.stringify(adaptados));
       } catch (err) {
         console.error("💥 Erro ao carregar produtos do backend:", err);
 
-        // fallback pro localStorage, se tiver algo
         try {
           const salvo = JSON.parse(localStorage.getItem(CHAVE_STORAGE) || "[]");
           const ativos = (Array.isArray(salvo) ? salvo : []).filter(
@@ -62,7 +60,6 @@ export default function Home() {
     carregarProdutos();
   }, []);
 
-  // Carrinho: continua igual
   useEffect(() => {
     const c = JSON.parse(localStorage.getItem(CHAVE_CART) || "[]");
     setCartCount(Array.isArray(c) ? c.length : 0);
@@ -112,7 +109,6 @@ export default function Home() {
     const existente = novo.find((item) => item.id === produto.index && !item.isCustom);
 
     if (customOptions.isCustom) {
-      // Adiciona como um novo item se for customizado
       novo.push({
         id: produto.index + "-" + Date.now(), // ID único para item customizado
         nome: produto.nome,
