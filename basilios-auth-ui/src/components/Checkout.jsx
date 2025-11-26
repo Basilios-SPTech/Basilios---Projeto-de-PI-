@@ -106,7 +106,11 @@ export default function Checkout() {
                     key={item.id}
                     className="flex items-center gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200"
                   >
-                    <div className="text-4xl">{item.imagem}</div>
+                    <img
+                      src={item.imagem}
+                      atl={item.nome}
+                      className="w-16 h-16 object-cover rounded"
+                    />
                     <div className="flex-1">
                       <h3 className="font-medium">{item.nome}</h3>
                       <p className="text-gray-600 text-sm">
