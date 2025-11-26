@@ -86,7 +86,6 @@ export default function ProdutoForm({
               onChange={onChange}
             />
             <p className="text-[12px] text-[color:var(--muted)] mt-1">
-              (Opcional. Só pra referência interna por enquanto)
             </p>
           </div>
 
@@ -124,7 +123,6 @@ export default function ProdutoForm({
               onChange={onChange}
             />
             <p className="text-[12px] text-[color:var(--muted)] mt-1">
-              A imagem ainda não vai pro backend, só pro preview interno.
             </p>
           </div>
 
@@ -170,8 +168,6 @@ export default function ProdutoForm({
               </svg>
             </div>
             <p className="text-[12px] text-[color:var(--muted)] mt-1 leading-snug">
-              Isso precisa bater com o enum do backend:
-              BURGER / COMBO / SIDE / DRINK / DESSERT
             </p>
           </div>
 

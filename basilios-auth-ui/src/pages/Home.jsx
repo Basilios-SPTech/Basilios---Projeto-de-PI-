@@ -2,16 +2,20 @@
 import { useEffect, useMemo, useState } from "react";
 import Header from "../components/header.jsx";
 import Cart from "../components/Cart.jsx";
+import CustomizeBurger from "../components/CustomizeBurger.jsx";
 import { listarProdutos } from "../services/produtosApi.js";
 
 const CHAVE_STORAGE = "produtos-basilios";
 const CHAVE_CART = "carrinho-basilios";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 export default function Home() {
   const [produtos, setProdutos] = useState([]);
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("Todas");
   const [cartCount, setCartCount] = useState(0);
+  const [isCustomizing, setIsCustomizing] = useState(false);
+  const [productToCustomize, setProductToCustomize] = useState(null);
 
   useEffect(() => {
     async function carregarProdutos() {
@@ -28,7 +32,9 @@ export default function Home() {
           categoria: p.category ?? p.categoria ?? "",
           subcategoria: p.subcategory ?? p.subcategoria ?? "",
           pausado: p.isPaused ?? p.paused ?? false,
-          imagem: p.imageUrl ?? p.imagem ?? "",
+          imagem: p.imageUrl
+            ? `${API_BASE}${p.imageUrl}` // vem do backend como "/uploads/..."
+            : p.imagem || "",            // fallback pra dado local já salvo
         }));
 
         const ativos = adaptados.filter((p) => !p.pausado);
@@ -99,12 +105,26 @@ export default function Home() {
     return Array.from(map.entries());
   }, [produtosOrdenados]);
 
-  function addToCart(produto) {
+  function addToCart(produto, customOptions = {}) {
     const carrinho = JSON.parse(localStorage.getItem(CHAVE_CART) || "[]");
     const novo = Array.isArray(carrinho) ? carrinho : [];
 
-    const existente = novo.find((item) => item.id === produto.index);
-    if (existente) {
+    const existente = novo.find((item) => item.id === produto.index && !item.isCustom);
+
+    if (customOptions.isCustom) {
+      // Adiciona como um novo item se for customizado
+      novo.push({
+        id: produto.index + "-" + Date.now(), // ID único para item customizado
+        nome: produto.nome,
+        preco: Number(produto.preco || "0"),
+        qtd: 1,
+        imagem: produto.imagem || "",
+        categoria: produto.categoria || "",
+        descricao: produto.descricao || "",
+        isCustom: true,
+        customOptions: customOptions,
+      });
+    } else if (existente) {
       existente.qtd += 1;
     } else {
       novo.push({
@@ -115,6 +135,7 @@ export default function Home() {
         imagem: produto.imagem || "",
         categoria: produto.categoria || "",
         descricao: produto.descricao || "",
+        isCustom: false,
       });
     }
 
@@ -123,10 +144,34 @@ export default function Home() {
     window.dispatchEvent(new Event("cartUpdated"));
   }
 
+  function handleCustomize(produto) {
+    setProductToCustomize(produto);
+    setIsCustomizing(true);
+  }
+
+  function handleSaveCustomization(customItem) {
+    // O item customizado já contém o produto original e as opções de customização
+    addToCart(productToCustomize, { isCustom: true, ...customItem });
+    setIsCustomizing(false);
+    setProductToCustomize(null);
+  }
+
+  function handleCloseCustomization() {
+    setIsCustomizing(false);
+    setProductToCustomize(null);
+  }
+
   return (
     <div className="home-page page-with-fixed-header">
       <Header />
       <Cart />
+      {isCustomizing && productToCustomize && (
+        <CustomizeBurger
+          item={productToCustomize}
+          onClose={handleCloseCustomization}
+          onSave={handleSaveCustomization}
+        />
+      )}
       <section className="hp-grid-wrap">
         {cat === "Todas" ? (
           secoesPorCategoria.length === 0 ? (
@@ -165,7 +210,7 @@ export default function Home() {
                         </div>
                         <button
                           className="btn btn-primary hp-add"
-                          onClick={() => addToCart(p)}
+                          onClick={() => handleCustomize(p)}
                         >
                           Adicionar
                         </button>
@@ -208,7 +253,7 @@ export default function Home() {
                   </div>
                   <button
                     className="btn btn-primary hp-add"
-                    onClick={() => addToCart(p)}
+                    onClick={() => handleCustomize(p)}
                   >
                     Adicionar
                   </button>
