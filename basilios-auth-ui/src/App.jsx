@@ -17,7 +17,8 @@ import Home from "./pages/Home.jsx";
 import CadastrarProduto from "./pages/CadastrarProduto.jsx";
 import OrdersBoard from "./pages/OrdersBoard.jsx";
 import CheckoutPage from "./pages/CheckoutPage.jsx";
-
+import PixCheckout from "./pages/PixCheckout.jsx";
+import StatusOrderPage from "./pages/StatusOrderPage.jsx";
 // Layouts
 import AuthLayout from "./layouts/AuthLayout.jsx";
 
@@ -78,6 +79,16 @@ function BoardRoute() {
 function CheckoutRoute() {
   const navigate = useNavigate();
   return <CheckoutPage onGoCheckout={() => navigate("/checkout")} />;
+}
+
+function PixRoute() {
+  const navigate = useNavigate();
+  return <PixCheckout onGoCheckout={() => navigate("/pix-checkout")} />;
+}
+
+function OrderStatusRoute() {
+  const navigate = useNavigate();
+  return <StatusOrderPage onGoOrderStatus={() => navigate("/order-status")} />;
 }
 
 function HomePage() {
@@ -154,6 +165,8 @@ export default function App() {
             </Route>
 
             <Route path="/checkout" element={<CheckoutRoute />} />
+            <Route path="/pix-checkout" element={<PixRoute />} />
+            <Route path="/order-status" element={<StatusOrderPage />} />
 
             {/* 404 -> home */}
             <Route path="*" element={<Navigate to="/home" replace />} />

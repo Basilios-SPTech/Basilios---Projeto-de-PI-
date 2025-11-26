@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import {
   CreditCard,
   QrCode,
@@ -17,6 +19,7 @@ export default function Checkout() {
   const [enderecoSelecionado, setEnderecoSelecionado] = useState("1");
   const [endUser, setEndUser] = useState([]);
   const [itens, setItens] = useState([]);
+  const navigate = useNavigate();
 
   const calcularSubtotal = () => {
     return itens.reduce((total, item) => total + item.preco * item.qtd, 0);
@@ -41,8 +44,23 @@ export default function Checkout() {
     );
   };
 
-  const finalizarCompra = () => {
-    alert("Pedido finalizado com sucesso!");
+  const endOrder = () => {
+    if (formaPagamento == "pix") {
+      navigate("/pix-checkout");
+    } else {
+      toast.success(
+        "Você selecionou 'Cartão de Crédito' como forma de pagamento! Você será redirecionado para a tela de acompanhamento do pedido e deverá realizar o pagamento na entrega",
+        {
+          duration: 6000,
+        },
+      );
+
+      setTimeout(() => {
+        navigate("/order-status");
+      }, 6500);
+    }
+
+    localStorage.removeItem(CHAVE_CART);
   };
 
   useEffect(() => {
@@ -51,14 +69,11 @@ export default function Checkout() {
         try {
           const response = await axios.get("http://localhost:8080/addresses", {
             headers: {
-              Authorization: `Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkBiYXNpbGlvcy5jb20iLCJpYXQiOjE3NjMwNzE4OTUsImV4cCI6MTc2MzE1ODI5NX0.oD9AIl8UEQQaB1E6FhdILKyMTRCsBWO1xGN_U7siWGE`,
+              Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
             },
           });
 
-          console.log(response.data);
           setEndUser(response.data);
-
-          console.log(`response: ${response.data}`);
         } catch (err) {
           console.log(err);
         }
@@ -267,7 +282,7 @@ export default function Checkout() {
               </div>
 
               <button
-                onClick={finalizarCompra}
+                onClick={endOrder}
                 className="cursor-pointer w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-lg font-semibold text-lg transition-colors"
               >
                 Finalizar Pedido
