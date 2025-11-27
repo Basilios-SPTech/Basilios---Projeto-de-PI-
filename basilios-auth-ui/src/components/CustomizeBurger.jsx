@@ -317,7 +317,7 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
               onClick={() => {
                 const customItem = {
                   ...item,
-                  quantity,
+                  qtd: quantity, // Usar 'qtd' para consistência com o carrinho
                   meatPoint,
                   ingredients,
                   drinks,

@@ -9,7 +9,7 @@ const CHAVE_STORAGE = "produtos-basilios";
 const CHAVE_CART = "carrinho-basilios";
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
-export default function Home() {
+export default function Home( ) {
   const [produtos, setProdutos] = useState([]);
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("Todas");
@@ -106,11 +106,14 @@ export default function Home() {
     const carrinho = JSON.parse(localStorage.getItem(CHAVE_CART) || "[]");
     const novo = Array.isArray(carrinho) ? carrinho : [];
 
+    // A busca por existente deve ser mais robusta para itens não customizados, mas por enquanto, mantemos assim.
+    // Para itens customizados, sempre criamos um novo.
     const existente = novo.find((item) => item.id === produto.index && !item.isCustom);
 
     if (customOptions.isCustom) {
       novo.push({
         id: produto.index + "-" + Date.now(), // ID único para item customizado
+        originalProductId: produto.index, // ID do produto original
         nome: produto.nome,
         preco: Number(produto.preco || "0"),
         qtd: 1,
@@ -118,13 +121,14 @@ export default function Home() {
         categoria: produto.categoria || "",
         descricao: produto.descricao || "",
         isCustom: true,
-        customOptions: customOptions,
+        ...customOptions, // Espalha as opções de customização (incluindo observação e adições)
       });
     } else if (existente) {
       existente.qtd += 1;
     } else {
       novo.push({
         id: produto.index,
+        originalProductId: produto.index, // ID do produto original
         nome: produto.nome,
         preco: Number(produto.preco || "0"),
         qtd: 1,
@@ -132,6 +136,13 @@ export default function Home() {
         categoria: produto.categoria || "",
         descricao: produto.descricao || "",
         isCustom: false,
+        // Adiciona campos vazios para consistência com itens customizados
+        meatPoint: null,
+        ingredients: [],
+        drinks: [],
+        breads: [],
+        sauces: [],
+        observation: "",
       });
     }
 

@@ -25,6 +25,37 @@ export default function CartItem({ item, onUpdateQuantity, onRemove, onEdit }) {
             {item.description}
           </span>
         )}
+        {item.observation && (
+            <span className="block text-xs text-gray-500 italic mt-1">
+              Obs: {item.observation}
+            </span>
+          )}
+          {/* Exibir Adições/Customizações */}
+          {item.ingredients?.filter(i => i.selected).length > 0 && (
+            <span className="block text-xs text-gray-500 mt-1">
+              Adicionais: {item.ingredients.filter(i => i.selected).map(i => i.name).join(', ')}
+            </span>
+          )}
+          {item.drinks?.filter(d => d.selected).length > 0 && (
+            <span className="block text-xs text-gray-500 mt-1">
+              Bebidas: {item.drinks.filter(d => d.selected).map(d => d.name).join(', ')}
+            </span>
+          )}
+          {item.breads?.filter(b => b.selected).length > 0 && (
+            <span className="block text-xs text-gray-500 mt-1">
+              Pão: {item.breads.filter(b => b.selected).map(b => b.name).join(', ')}
+            </span>
+          )}
+          {item.sauces?.filter(s => s.selected).length > 0 && (
+            <span className="block text-xs text-gray-500 mt-1">
+              Molhos: {item.sauces.filter(s => s.selected).map(s => s.name).join(', ')}
+            </span>
+          )}
+          {item.meatPoint && item.meatPoint !== "médio" && (
+            <span className="block text-xs text-gray-500 mt-1">
+              Ponto da Carne: {item.meatPoint}
+            </span>
+          )}
         <p className="text-sm text-gray-600 mt-1">
           R$ {item.price.toFixed(2).replace(".", ",")}
         </p>
