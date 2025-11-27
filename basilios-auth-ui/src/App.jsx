@@ -132,7 +132,6 @@ export default function App() {
             <Route element={<PublicRoute />}>
               <Route path="/login" element={<LoginRoute />} />
               <Route path="/register" element={<RegisterRoute />} />
-              <Route path="/perfil" element={<ProfileRoute />} />
             </Route>
 
             {/* 🔻 SEM ROLES: áreas internas exigem apenas login */}
@@ -150,6 +149,8 @@ export default function App() {
 
             {/* 404 -> home */}
             <Route path="*" element={<Navigate to="/home" replace />} />
+            <Route path="/perfil" element={<ProfileRoute />} />
+
           </Routes>
         </Router>
       </main>
