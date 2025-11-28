@@ -19,6 +19,8 @@ import OrdersBoard from "./pages/OrdersBoard.jsx";
 import CheckoutPage from "./pages/CheckoutPage.jsx";
 import PixCheckout from "./pages/PixCheckout.jsx";
 import StatusOrderPage from "./pages/StatusOrderPage.jsx";
+import Dashboard from "./pages/Dashboard.jsx";
+
 // Layouts
 import AuthLayout from "./layouts/AuthLayout.jsx";
 
@@ -161,11 +163,15 @@ export default function App() {
                   </ProdutoLayout>
                 }
               />
-              <Route path="/board" element={<BoardRoute />} />
-            </Route>
+              
+            <Route path="/board" element={<BoardRoute />} /></Route>
+
+            <Route path="/dashboard" element={<ProdutoLayout><Dashboard /></ProdutoLayout>} />
 
             <Route path="/checkout" element={<CheckoutRoute />} />
+
             <Route path="/pix-checkout" element={<PixRoute />} />
+
             <Route path="/order-status" element={<StatusOrderPage />} />
 
             {/* 404 -> home */}
