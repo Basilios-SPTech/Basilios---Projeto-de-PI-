@@ -4,4 +4,7 @@
 /* Optional: normalize font rendering */
 html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 
+/* global font: use project token (Montserrat) whenever available */
+body, #root { font-family: var(--font-sans, "Montserrat", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial); }
+
 

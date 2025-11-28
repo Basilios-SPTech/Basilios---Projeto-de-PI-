@@ -10,7 +10,6 @@ export function ProfilePage({
   data_nascimento,
   email,
   telefone,
-  foto,
 }) {
   const [isEditing, setIsEditing] = useState(null);
 
@@ -20,7 +19,6 @@ export function ProfilePage({
     data_nascimento,
     email,
     telefone,
-    foto,
   });
 
   useEffect(() => {
@@ -50,24 +48,14 @@ export function ProfilePage({
       <div className="perfil-container">
         <h2 className="titulo">Meu perfil</h2>
 
-        {/* PERFIL CARD */}
-        <div className="perfil-card">
-          <div className="foto-container">
-            <img
-              src={dados.foto || "/default-avatar.png"}
-              className="perfil-foto"
-            />
+        {/* WELCOME CARD (replaces original profile/photo card) */}
+        <div className="welcome-card">
+          <div className="welcome-inner">
+            <h3 className="welcome-text">Bem-vindo, {dados.nomeUsuario}!</h3>
+            <p className="welcome-sub">Que bom te ver por aqui — revise suas informações abaixo.</p>
           </div>
 
-          <div className="perfil-info-header">
-            <h3>{dados.nome_usuario}</h3>
-            <p>{dados.email}</p>
-            {/* <p>Telefone: {dados.telefone}</p> */}
-          </div>
-
-          <button className="edit-btn" onClick={() => abrirEdicao("perfil")}>
-            ✏️ Editar
-          </button>
+          {/* username removed from side (kept only welcome text) */}
         </div>
 
         {/* PERSONAL INFO */}
@@ -75,7 +63,7 @@ export function ProfilePage({
           <div className="info-header">
             <h3>Informações Pessoais</h3>
             <button className="edit-btn" onClick={() => abrirEdicao("personal")}>
-              ✏️ Editar
+               Editar
             </button>
           </div>
 
@@ -92,7 +80,7 @@ export function ProfilePage({
 
             <div>
               <span>Data de Nascimento</span>
-              <p>{dados.dataNascimento}</p>
+              <p>{dados.data_nascimento}</p>
             </div>
 
             <div>

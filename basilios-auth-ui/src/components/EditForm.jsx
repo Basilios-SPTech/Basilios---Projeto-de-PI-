@@ -3,33 +3,24 @@ import "../styles/EditForm.css";
 
 export default function EditForm({ secao, dados, onSave, onCancel }) {
   const [form, setForm] = useState({ ...dados });
-  const [preview, setPreview] = useState(dados.foto || "");
 
   const handleChange = (e) => {
-    const { name, value, files } = e.target;
+    const { name, value } = e.target;
 
-    if (files && files[0]) {
-      const reader = new FileReader();
-      reader.onloadend = () => setPreview(reader.result);
-      reader.readAsDataURL(files[0]);
-
-      setForm((prev) => ({ ...prev, foto: files[0] }));
-    } else {
-      setForm((prev) => ({ ...prev, [name]: value }));
-    }
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const novosDados = { ...form };
 
-    if (preview) novosDados.foto = preview;
+    // we don't handle photos anymore — keep only fields from form
     onSave(novosDados);
   };
 
   // 🔥 Agora só com seus campos novos
   const camposPorSecao = {
-    perfil: ["foto", "nome_usuario"],
+    perfil: ["nome_usuario"],
     personal: ["nome_usuario", "cpf", "data_nascimento", "email", "telefone"],
   };
 
@@ -48,29 +39,19 @@ export default function EditForm({ secao, dados, onSave, onCancel }) {
         <form onSubmit={handleSubmit} className="form-container">
           {campos.map((key) => (
             <label key={key} className="form-label">
-              {key === "nome_usuario"
-                ? "Nome de Usuário"
-                : key === "cpf"
-                ? "CPF"
-                : key === "data_nascimento"
-                ? "Data de Nascimento"
-                : key === "telefone"
-                ? "Telefone"
-                : key.charAt(0).toUpperCase() + key.slice(1)}
+                <span className="field-title">
+                {key === "nome_usuario"
+                  ? "Nome de Usuário"
+                  : key === "cpf"
+                  ? "CPF"
+                  : key === "data_nascimento"
+                  ? "Data de Nascimento"
+                  : key === "telefone"
+                  ? "Telefone"
+                  : key.charAt(0).toUpperCase() + key.slice(1)}
+              </span>
 
-              {key === "foto" ? (
-                <div className="foto-edit-container">
-                  {preview && (
-                    <img src={preview} alt="Preview" className="foto-preview" />
-                  )}
-                  <input
-                    type="file"
-                    name="foto"
-                    accept="image/*"
-                    onChange={handleChange}
-                  />
-                </div>
-              ) : (
+              
                 <div className="input-with-lock">
                   <input
                     type={key === "data_nascimento" ? "date" : "text"}
@@ -92,7 +73,6 @@ export default function EditForm({ secao, dados, onSave, onCancel }) {
                     <span className="lock-icon" title="Campo protegido">🔒</span>
                   )}
                 </div>
-              )}
             </label>
           ))}
 
