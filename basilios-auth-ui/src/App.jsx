@@ -123,11 +123,7 @@ function CadastrarProdutoRoute() {
 function ProdutoLayout({ children }) {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="sticky top-0 z-10 border-b bg-white/80 backdrop-blur">
-        <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
-          {/* Cabeçalho simples / slots */}
-        </div>
-      </header>
+      
       <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
     </div>
   );
