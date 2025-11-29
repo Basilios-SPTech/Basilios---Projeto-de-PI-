@@ -55,21 +55,27 @@ function RequireAuth() {
 function LoginRoute() {
   const navigate = useNavigate();
   return (
-    <AuthLayout>
-      <Login
-        onGoRegister={() => navigate("/register")}
-        onGoHome={() => navigate("/home")}
-      />
-    </AuthLayout>
+    <>
+      <AuthLayout>
+        <Login
+          onGoRegister={() => navigate("/register")}
+          onGoHome={() => navigate("/home")}
+        />
+      </AuthLayout>
+      <FooterBasilios />
+    </>
   );
 }
 
 function RegisterRoute() {
   const navigate = useNavigate();
   return (
-    <AuthLayout>
-      <Register onGoLogin={() => navigate("/login")} />
-    </AuthLayout>
+    <>
+      <AuthLayout>
+        <Register onGoLogin={() => navigate("/login")} />
+      </AuthLayout>
+      <FooterBasilios />
+    </>
   );
 }
 
@@ -85,7 +91,12 @@ function CheckoutRoute() {
 
 function PixRoute() {
   const navigate = useNavigate();
-  return <PixCheckout onGoCheckout={() => navigate("/pix-checkout")} />;
+  return (
+    <>
+      <PixCheckout onGoCheckout={() => navigate("/pix-checkout")} />
+      <FooterBasilios />
+    </>
+  );
 }
 
 function OrderStatusRoute() {
@@ -137,13 +148,16 @@ export default function App() {
             <Route path="/" element={<Navigate to="/home" replace />} />
 
             {/* Públicas */}
-            <Route path="/about" element={<About />} />
+            <Route path="/about" element={<><About /><FooterBasilios /></>} />
             <Route
               path="/home"
               element={
-                <ProdutoLayout>
-                  <HomePage />
-                </ProdutoLayout>
+                <>
+                  <ProdutoLayout>
+                    <HomePage />
+                  </ProdutoLayout>
+                  <FooterBasilios />
+                </>
               }
             />
 
@@ -180,7 +194,7 @@ export default function App() {
         </Router>
       </main>
 
-      <FooterBasilios />
+      
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { AuthAPI } from '../services/api.js'
 import SidebarLogin from '../components/MenuButtonLogin.jsx'
 import toast from 'react-hot-toast';
 
+
 export default function Login({ onGoRegister, onGoHome }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -132,6 +133,8 @@ export default function Login({ onGoRegister, onGoHome }) {
           Cadastre-se
         </button>
       </div>
-    </form>
+      
+    </form>    
+    
   )
 }
