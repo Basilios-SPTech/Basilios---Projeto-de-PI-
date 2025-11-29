@@ -109,7 +109,7 @@ body{
 
 .dash-card__header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: baseline;
   gap: 10px;
 }
@@ -131,6 +131,9 @@ body{
 .dash-card__error {
   font-size: 13px;
   color: #bb3530;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .dash-card__empty {
@@ -239,8 +242,8 @@ body{
 /* ===== Gráfico simples de barras: Picos de pedido ===== */
 
 .order-peaks {
-  display: flex;
-  align-items: flex-end;
+  display: inline-flex;
+  margin-top: 12%;
   gap: 10px;
   min-height: 180px;
   overflow-x: auto;
@@ -293,6 +296,7 @@ body{
 .champion {
   display: flex;
   gap: 12px;
+  justify-content: center;
   align-items: center;
 }
 
@@ -319,6 +323,7 @@ body{
 .champion__name {
   margin: 0 0 4px;
   font-size: 16px;
+  color: #BB3530;
 }
 
 .champion__metric {

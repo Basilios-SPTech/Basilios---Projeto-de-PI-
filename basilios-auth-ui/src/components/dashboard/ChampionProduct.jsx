@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { http } from "../../services/http.js";
-import { extractStringArray, extractSingleValue } from "../../utils/apiMappers.js";
+import { formatInteger } from "../../utils/formatters.js";
 
 export default function ChampionProduct({ endpoint, range }) {
-  const [name, setName] = useState("");
+  const [champions, setChampions] = useState([]);  // agora é array
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -24,21 +24,31 @@ export default function ChampionProduct({ endpoint, range }) {
           },
         });
 
-        // se vier string pura ou obj com 1 valor
-        let value = extractSingleValue(res.data);
-        if (Array.isArray(res.data)) {
-          // se no futuro resolverem mandar array, pega o primeiro
-          const arr = extractStringArray(res.data);
-          value = arr[0] ?? "";
+        const raw = res.data;
+
+        let list = [];
+        if (Array.isArray(raw)) {
+          // caso o backend passe a devolver um array de campeões empatados
+          list = raw;
+        } else if (raw) {
+          // caso continue mandando só um campeão
+          list = [raw];
         }
 
+        const normalized = list.map((data) => ({
+          id: data.productId ?? data.id ?? null,
+          name: data.name ?? "Produto/s campeão",
+          unitsSold: data.unitsSold ?? data.totalSold ?? 0,
+          onPromotion: Boolean(data.onPromotion),
+        }));
+
         if (!cancelled) {
-          setName(value ? String(value) : "");
+          setChampions(normalized);
         }
       } catch (err) {
         if (!cancelled) {
           setError(err.message || "Erro ao carregar");
-          setName("");
+          setChampions([]);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -50,6 +60,8 @@ export default function ChampionProduct({ endpoint, range }) {
       cancelled = true;
     };
   }, [endpoint, range?.start, range?.end]);
+
+  const hasData = champions && champions.length > 0;
 
   return (
     <section className="dash-card dash-card--champion">
@@ -64,17 +76,47 @@ export default function ChampionProduct({ endpoint, range }) {
           <p className="dash-card__error">
             Não foi possível carregar o campeão de vendas.
           </p>
-        ) : !name ? (
+        ) : !hasData ? (
           <p className="dash-card__empty">Sem dados para o período.</p>
         ) : (
-          <div className="champion">
-            <div className="champion__info">
-              <h4 className="champion__name">{name}</h4>
-              <p className="champion__metric">
-                <span className="champion__metric-label">
-                  Produto mais vendido no período
-                </span>
-              </p>
+          <div className={`champion ${champions.length > 1 ? "champion--multi" : ""}`}>
+            <div className="champion__info-list">
+              {champions.map((c) => (
+                <div
+                  key={c.id ?? c.name}
+                  className="champion__info champion__info--row"
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <h4 className="champion__name">{c.name}</h4>
+
+                    {c.onPromotion && (
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          padding: "3px 8px",
+                          borderRadius: 999,
+                          background: "#fff5f5",
+                          color: "var(--bsl-red, #BB3530)",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.06em",
+                        }}
+                      >
+                        Promoção
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="champion__metric">
+                    <span className="champion__metric-label">
+                      Unidades vendidas
+                    </span>
+                    <span className="champion__metric-value">
+                      {formatInteger(c.unitsSold)}
+                    </span>
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         )}

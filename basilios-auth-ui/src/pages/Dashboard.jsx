@@ -89,10 +89,15 @@ export default function Dashboard() {
               format="currency"
             />
             <KpiCard
-              label="Pedidos"
-              endpoint="/orders"
-              range={appliedRange}
-              format="integer"
+             label="Pedidos"
+             endpoint="/api/dashboard/orders"
+             range={appliedRange}
+             format="integer"
+             mapResponse={(data) => {
+             // data = { orders: 20 }
+            if (!data) return null;
+            return Number(data.orders ?? 0);
+            }}
             />
             <KpiCard
               label="Ticket médio"
@@ -113,14 +118,20 @@ export default function Dashboard() {
             }}
             />
             <KpiCard
-              label="cancelamento"
-              endpoint="/dashboard/cancellation-rate"
-              range={appliedRange}
-              format="percent"
+            label="cancelamento"
+            endpoint="/api/dashboard/cancellation-rate"
+            range={appliedRange}
+            format="percent"
+            mapResponse={(data) => {
+            if (!data) return null;
+            // data = { cancellationRate: 10.0 }
+            return Number(data.cancellationRate ?? 0);
+            }}
             />
+
             <KpiCard
               label="Média entrega"
-              endpoint="/dashboard/average-delivery-time"
+              endpoint="api/dashboard/average-delivery-time"
               range={appliedRange}
               format="minutes"
             />
@@ -133,13 +144,13 @@ export default function Dashboard() {
         <div className="container">
           <div className="dashboard-charts">
             <OrderPeaksChart
-              endpoint="/dashboard/order-peaks"
+              endpoint="api/dashboard/order-peaks"
               range={appliedRange}
             />
 
             <div className="dashboard-charts__side">
               <ChampionProduct
-                endpoint="/dashboard/champion"
+                endpoint="api/dashboard/champion"
                 range={appliedRange}
               />
               <TopProducts
