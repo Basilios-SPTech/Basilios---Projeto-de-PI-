@@ -1,7 +1,6 @@
-// src/components/dashboard/TopProducts.jsx
 import { useEffect, useState } from "react";
 import { http } from "../../services/http.js";
-import { formatInteger } from "../../utils/formatters.js";
+import { extractStringArray } from "../../utils/apiMappers.js";
 
 export default function TopProducts({ endpoint, range }) {
   const [items, setItems] = useState([]);
@@ -20,20 +19,20 @@ export default function TopProducts({ endpoint, range }) {
 
         const res = await http.get(endpoint, {
           params: {
-            startDate: range.start,
-            endDate: range.end,
-            limit: 5, // se o backend aceitar, beleza; senão ignora
+            dta_inicio: range.start,
+            dta_fim: range.end,
           },
         });
 
-        const raw = res.data || [];
-        const normalized = raw.slice(0, 5).map((p, idx) => ({
-          id: p.id ?? idx,
-          name: p.name ?? p.productName ?? `Produto ${idx + 1}`,
-          totalSold: p.totalSold ?? p.quantity ?? 0,
-        }));
+        const names = extractStringArray(res.data).slice(0, 5);
 
-        if (!cancelled) setItems(normalized);
+        if (!cancelled) {
+          const normalized = names.map((name, idx) => ({
+            id: idx,
+            name,
+          }));
+          setItems(normalized);
+        }
       } catch (err) {
         if (!cancelled) {
           setError(err.message || "Erro ao carregar");
@@ -73,9 +72,6 @@ export default function TopProducts({ endpoint, range }) {
                 <div className="top-products__info">
                   <span className="top-products__name">
                     {item.name}
-                  </span>
-                  <span className="top-products__qty">
-                    {formatInteger(item.totalSold)} vendidos
                   </span>
                 </div>
               </li>

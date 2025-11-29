@@ -82,36 +82,43 @@ export default function Dashboard() {
           <div className="dashboard-kpis">
             <KpiCard
               label="Receita"
-              endpoint="/dashboard/revenue"
+              endpoint="/api/dashboard/revenue"
               range={appliedRange}
               format="currency"
             />
             <KpiCard
               label="Pedidos"
-              endpoint="/dashboard/orders"
+              endpoint="/orders"
               range={appliedRange}
               format="integer"
             />
             <KpiCard
               label="Ticket médio"
-              endpoint="/dashboard/average-ticket"
+              endpoint="/api/dashboard/average-ticket"
               range={appliedRange}
               format="currency"
             />
+           <KpiCard
+  label="Itens vendidos"
+  endpoint="/api/dashboard/items-sold"
+  range={appliedRange}
+  format="integer"
+  mapResponse={(data) => {
+    // data = { productsNotSold: 10, itemsSold: 24 }
+    if (!data) return null;
+    // se vier string, Number já resolve
+    return Number(data.itemsSold ?? 0);
+  }}
+/>
+
             <KpiCard
-              label="Itens vendidos"
-              endpoint="/dashboard/items-sold"
-              range={appliedRange}
-              format="integer"
-            />
-            <KpiCard
-              label="Taxa de cancelamento"
+              label="cancelamento"
               endpoint="/dashboard/cancellation-rate"
               range={appliedRange}
               format="percent"
             />
             <KpiCard
-              label="Média de entrega"
+              label="Média entrega"
               endpoint="/dashboard/average-delivery-time"
               range={appliedRange}
               format="minutes"

@@ -33,10 +33,10 @@ body{
 }
 
 .dashboard-bar__inner {
-  display: flex;
+  display: inline-flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 18px;
+  gap: 65px;
   padding: 16px 20px;
   border-radius: var(--radius-lg, 18px);
   background: #ffffff;
@@ -148,27 +148,39 @@ body{
   padding: 16px 18px 18px;
   display: flex;
   flex-direction: column;
-  gap: 10px; 
+  /* NÃO usar gap grande aqui, pra não “empurrar” o conteúdo */
+  gap: 6px;
 }
 
-
+/* título fixo no topo, centralizado */
 .kpi-card__header {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.09em;
   color: rgba(17, 17, 17, 0.62);
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
+/* área do meio ocupa o resto do card e centraliza o valor */
 .kpi-card__body {
-  margin-top: 6px;
+  flex: 1;                    /* ocupa todo o espaço disponível */
+  display: flex;              /* vira container flex */
+  align-items: center;        /* centraliza vertical */
+  justify-content: center;    /* centraliza horizontal */
+  margin-top: 0;              /* tira aquele espaçamento extra */
 }
 
+/* o value em si fica central, mas sem estourar nada */
 .kpi-card__value {
   font-size: 22px;
   font-weight: 900;
   color: var(--bsl-ink, #111);
+  text-align: center;
 }
 
+/* estados especiais continuam iguais */
 .kpi-card__value--error {
   color: #bb3530;
 }
@@ -180,6 +192,8 @@ body{
 }
 
 .kpi-card__skeleton {
+  width: 60%;
+  max-width: 120px;
   height: 26px;
   border-radius: 999px;
   background: linear-gradient(

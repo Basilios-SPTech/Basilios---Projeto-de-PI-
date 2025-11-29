@@ -1,6 +1,31 @@
-// src/components/dashboard/OrderPeaksChart.jsx
 import { useEffect, useState, useMemo } from "react";
 import { http } from "../../services/http.js";
+
+function buildPeaks(data) {
+  if (!Array.isArray(data)) return [];
+
+  const counts = {};
+
+  data.forEach((iso) => {
+    if (!iso) return;
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return;
+
+    const label = d.toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    counts[label] = (counts[label] || 0) + 1;
+  });
+
+  return Object.entries(counts)
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 12); // mostra só os 12 maiores picos
+}
 
 export default function OrderPeaksChart({ endpoint, range }) {
   const [points, setPoints] = useState([]);
@@ -18,18 +43,12 @@ export default function OrderPeaksChart({ endpoint, range }) {
 
         const res = await http.get(endpoint, {
           params: {
-            startDate: range.start,
-            endDate: range.end,
+            dta_inicio: range.start,
+            dta_fim: range.end,
           },
         });
 
-        // Ajuste esse mapping de acordo com o que seu backend devolver
-        const raw = res.data || [];
-        const normalized = raw.map((item, idx) => ({
-          // ex.: dia/hora concatenados ou uma label que venha do backend
-          label: item.label ?? item.slot ?? `Pico ${idx + 1}`,
-          value: item.count ?? item.total ?? 0,
-        }));
+        const normalized = buildPeaks(res.data);
 
         if (!cancelled) setPoints(normalized);
       } catch (err) {

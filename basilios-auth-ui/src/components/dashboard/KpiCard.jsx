@@ -7,6 +7,7 @@ import {
   formatPercent,
   formatMinutes,
 } from "../../utils/formatters.js";
+import { extractSingleValue } from "../../utils/apiMappers.js";
 
 const formatterMap = {
   currency: formatCurrency,
@@ -17,9 +18,10 @@ const formatterMap = {
 
 export default function KpiCard({
   label,
-  endpoint,      // ex: "/dashboard/revenue"
-  range,         // { start: "2025-11-01", end: "2025-11-28" }
+  endpoint,
+  range,          // { start, end }
   format = "integer",
+  mapResponse,    // opcional: (data) => qualquer valor
 }) {
   const [value, setValue] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -36,13 +38,18 @@ export default function KpiCard({
 
         const res = await http.get(endpoint, {
           params: {
-            startDate: range.start,
-            endDate: range.end,
+            dta_inicio: range.start,
+            dta_fim: range.end,
           },
         });
 
-        // Ajuste aqui se o backend devolver em outro formato
-        const raw = res.data?.value ?? res.data;
+        let raw;
+        if (typeof mapResponse === "function") {
+          // deixa cada KPI customizar como quiser
+          raw = mapResponse(res.data);
+        } else {
+          raw = extractSingleValue(res.data);
+        }
 
         if (!cancelled) setValue(raw);
       } catch (err) {
@@ -59,7 +66,7 @@ export default function KpiCard({
     return () => {
       cancelled = true;
     };
-  }, [endpoint, range?.start, range?.end]);
+  }, [endpoint, range?.start, range?.end, mapResponse]);
 
   const fn = formatterMap[format] ?? ((v) => v ?? "—");
   const displayValue = fn(value);
