@@ -6,6 +6,7 @@ import KpiCard from "../components/dashboard/KpiCard.jsx";
 import OrderPeaksChart from "../components/dashboard/OrderPeaksChart.jsx";
 import ChampionProduct from "../components/dashboard/ChampionProduct.jsx";
 import TopProducts from "../components/dashboard/TopProducts.jsx";
+import MenuButton from "../components/MenuButtonAdm.jsx";
 
 function getTodayRange() {
   const today = new Date();
@@ -37,6 +38,7 @@ export default function Dashboard() {
 
   return (
     <main className="dashboard-root">
+        <MenuButton />
       {/* Barra de filtro de data */}
       <section className="dashboard-bar">
         <div className="container">
@@ -98,19 +100,18 @@ export default function Dashboard() {
               range={appliedRange}
               format="currency"
             />
-           <KpiCard
-  label="Itens vendidos"
-  endpoint="/api/dashboard/items-sold"
-  range={appliedRange}
-  format="integer"
-  mapResponse={(data) => {
-    // data = { productsNotSold: 10, itemsSold: 24 }
-    if (!data) return null;
-    // se vier string, Number já resolve
-    return Number(data.itemsSold ?? 0);
-  }}
-/>
-
+            <KpiCard
+              label="Itens vendidos"
+              endpoint="/api/dashboard/items-sold"
+              range={appliedRange}
+              format="integer"
+              mapResponse={(data) => {
+              // data = { productsNotSold: 10, itemsSold: 24 }
+              if (!data) return null;
+              // se vier string, Number já resolve
+              return Number(data.itemsSold ?? 0);
+            }}
+            />
             <KpiCard
               label="cancelamento"
               endpoint="/dashboard/cancellation-rate"
