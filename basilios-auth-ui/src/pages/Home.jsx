@@ -4,6 +4,7 @@ import Header from "../components/header.jsx";
 import Cart from "../components/Cart.jsx";
 import CustomizeBurger from "../components/CustomizeBurger.jsx";
 import { listarProdutos } from "../services/produtosApi.js";
+import FooterBasilios from "../components/FooterBasilios.jsx";
 
 const CHAVE_STORAGE = "produtos-basilios";
 const CHAVE_CART = "carrinho-basilios";
@@ -228,6 +229,7 @@ export default function Home( ) {
               </div>
             ))
           )
+          
         ) : filtrados.length === 0 ? (
           <p className="hp-empty">
             Nada por aqui… Experimente limpar filtros ou cadastrar novos itens.
@@ -268,8 +270,11 @@ export default function Home( ) {
               </article>
             ))}
           </div>
+          
         )}
       </section>
     </div>
+    
+    
   );
 }

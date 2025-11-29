@@ -228,7 +228,7 @@ export default function About() {
           </div>
         </div>
       </section>
-
+      
       {/* CTA FINAL */}
       <section className="cta" data-reveal="up" data-delay="0">
         <div className="cta__bg" aria-hidden="true" />
@@ -236,22 +236,22 @@ export default function About() {
           <h3>Bora morder essa história?</h3>
           <p>Faça o pedido agora ou venha nos visitar!</p>
           <div className="cta__actions">
-  <Link className="btn btn--primary" to="/home">Fazer pedido</Link>
-
-  {/* Botão Voltar (padronizado) + classe extra para custom só no de baixo */}
+      <Link className="btn btn--primary" to="/home">Fazer pedido</Link>
+    
+    {/* Botão Voltar (padronizado) + classe extra para custom só no de baixo */}
         <a
-  className="btn btn--ghost btn--back btn--back-bottom"
-  href="#top"
-  aria-label="Voltar ao topo"
->
-  <ArrowUp size={18} />
-  Topo
-</a>
-
+        className="btn btn--ghost btn--back btn--back-bottom"
+        href="#top"
+        aria-label="Voltar ao topo"
+      >
+      <ArrowUp size={18} />
+      Topo
+      </a>
         </div>
-
         </div>
       </section>
     </main>
+    
+    
   );
 }
