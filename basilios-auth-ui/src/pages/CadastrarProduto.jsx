@@ -5,8 +5,16 @@ import ProdutoForm from "../components/ProdutoForm.jsx";
 import Modal from "../components/Modal.jsx";
 import Header from "../components/HeaderAdm.jsx";
 import SidebarAdm from "../components/SidebarAdm.jsx";
-import { criarProduto } from "../services/produtosApi.js";
-import { http } from "../services/http.js"; // <-- usa o mesmo axios da API
+import {
+  criarProduto,
+  listarProdutos,
+  atualizarProduto,
+  deletarProduto,
+  pausarProduto,
+  ativarProduto,
+} from "../services/produtosApi.js";
+
+import { http } from "../services/http.js";
 
 const CHAVE_STORAGE = "produtos-basilios";
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -62,13 +70,40 @@ export default function CadastrarProduto() {
   const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
-    try {
-      const salvo = JSON.parse(localStorage.getItem(CHAVE_STORAGE) || "[]");
-      setProdutos(Array.isArray(salvo) ? salvo : []);
-    } catch {
-      setProdutos([]);
+    async function carregarProdutos() {
+      try {
+        const data = await listarProdutos(false);
+
+        const adaptados = (data || []).map((p, index) => ({
+          index: p.id ?? index,
+          nome: p.name ?? p.nome ?? "",
+          descricao: p.description ?? p.descricao ?? "",
+          preco: p.finalPrice ?? p.price ?? p.preco ?? 0,
+          categoria: p.category ?? p.categoria ?? "",
+          subcategoria: p.subcategory ?? p.subcategoria ?? "",
+          pausado: p.isPaused ?? p.paused ?? false,
+          imagem: p.imageUrl
+            ? `${API_BASE}${p.imageUrl}`
+            : p.imagem || "",
+        }));
+
+        setProdutos(adaptados);
+        localStorage.setItem(CHAVE_STORAGE, JSON.stringify(adaptados));
+      } catch (err) {
+        console.error("💥 Erro ao carregar produtos no cadastro:", err);
+
+        try {
+          const salvo = JSON.parse(localStorage.getItem(CHAVE_STORAGE) || "[]");
+          setProdutos(Array.isArray(salvo) ? salvo : []);
+        } catch {
+          setProdutos([]);
+        }
+      }
     }
+
+    carregarProdutos();
   }, []);
+
 
   useEffect(() => {
     localStorage.setItem(CHAVE_STORAGE, JSON.stringify(produtos));
@@ -168,24 +203,40 @@ export default function CadastrarProduto() {
 
     // EDIÇÃO LOCAL (você ainda não está chamando update no back)
     if (indiceEdicao !== null) {
-      const atualizadoLocal = {
-        index: indiceEdicao,
-        nome: formData.nome,
-        descricao: formData.descricao,
-        preco: precoNum.toFixed(2),
-        categoria: formData.categoria,
-        subcategoria: formData.subcategoria || "",
-        pausado: !!formData.pausado,
-        imagem: formData.imagem || "",
-      };
+      try {
+        // 1) chama o backend pra atualizar
+        const atualizadoBack = await atualizarProduto(indiceEdicao, dto);
 
-      setProdutos((prev) =>
-        prev.map((p) => (p.index === indiceEdicao ? atualizadoLocal : p))
-      );
+        // 2) reaproveita a imagem que já tava no estado (não estamos re-upando aqui)
+        const imagemAtual =
+          produtos.find((p) => p.index === indiceEdicao)?.imagem || formData.imagem || "";
 
-      setIndiceEdicao(null);
-      setModalOpen(false);
-      clearForm();
+        // 3) adapta pro formato que a tela usa
+        const atualizadoLocal = {
+          index: atualizadoBack.id,
+          nome: atualizadoBack.name ?? formData.nome,
+          descricao: atualizadoBack.description ?? formData.descricao,
+          preco:
+            atualizadoBack.finalPrice ??
+            atualizadoBack.price ??
+            precoNum,
+          categoria: atualizadoBack.category ?? formData.categoria,
+          subcategoria: (atualizadoBack.subcategory ?? formData.subcategoria) || "",
+          pausado: atualizadoBack.isPaused ?? !!formData.pausado,
+          imagem: imagemAtual,
+        };
+
+        setProdutos((prev) =>
+          prev.map((p) => (p.index === indiceEdicao ? atualizadoLocal : p))
+        );
+
+        setIndiceEdicao(null);
+        setModalOpen(false);
+        clearForm();
+      } catch (err) {
+        console.error("Erro ao atualizar produto:", err);
+        alert("Não foi possível atualizar o produto.");
+      }
       return;
     }
 
@@ -217,9 +268,9 @@ export default function CadastrarProduto() {
         tags: [],
         ingredientes: formData.ingrediente
           ? formData.ingrediente
-              .split(",")
-              .map((s) => s.trim())
-              .filter(Boolean)
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
           : [],
         ingredientsDetailed: [],
         isPaused: !!formData.pausado,
@@ -289,22 +340,58 @@ export default function CadastrarProduto() {
     clearForm();
   }
 
-  function handleDeletar(index) {
+  async function handleDeletar(index) {
     if (!confirm("Apagar este produto?")) return;
-    setProdutos((prev) => prev.filter((p) => p.index !== index));
+
+    try {
+      await deletarProduto(index);
+      setProdutos((prev) => prev.filter((p) => p.index !== index));
+    } catch (err) {
+      console.error("Erro ao deletar produto:", err);
+      alert("Não foi possível deletar o produto.");
+    }
   }
 
-  function handlePausar(index) {
-    setProdutos((prev) =>
-      prev.map((p) =>
-        p.index === index ? { ...p, pausado: !p.pausado } : p
-      )
-    );
+
+  async function handlePausar(index) {
+    const alvo = produtos.find((p) => p.index === index);
+    if (!alvo) return;
+
+    try {
+      const atualizadoBack = alvo.pausado
+        ? await ativarProduto(index)
+        : await pausarProduto(index);
+
+      const imagemAtual =
+        produtos.find((p) => p.index === index)?.imagem || "";
+
+      const atualizadoLocal = {
+        index: atualizadoBack.id,
+        nome: atualizadoBack.name ?? alvo.nome,
+        descricao: atualizadoBack.description ?? alvo.descricao,
+        preco:
+          atualizadoBack.finalPrice ??
+          atualizadoBack.price ??
+          alvo.preco,
+        categoria: atualizadoBack.category ?? alvo.categoria,
+        subcategoria: atualizadoBack.subcategory ?? alvo.subcategoria,
+        pausado: atualizadoBack.isPaused ?? !alvo.pausado,
+        imagem: imagemAtual,
+      };
+
+      setProdutos((prev) =>
+        prev.map((p) => (p.index === index ? atualizadoLocal : p))
+      );
+    } catch (err) {
+      console.error("Erro ao alterar status do produto:", err);
+      alert("Não foi possível alterar o status do produto.");
+    }
   }
+
 
   const previewPreco =
     formData.preco !== "" &&
-    !isNaN(Number(String(formData.preco).replace(",", ".")))
+      !isNaN(Number(String(formData.preco).replace(",", ".")))
       ? Number(String(formData.preco).replace(",", ".")).toFixed(2)
       : "0,00";
 
@@ -455,9 +542,8 @@ export default function CadastrarProduto() {
                 {itens.map((p) => (
                   <article
                     key={p.index}
-                    className={`product-card ${
-                      p.pausado ? "is-paused" : ""
-                    }`}
+                    className={`product-card ${p.pausado ? "is-paused" : ""
+                      }`}
                   >
                     <div className="product-media">
                       {p.imagem ? (

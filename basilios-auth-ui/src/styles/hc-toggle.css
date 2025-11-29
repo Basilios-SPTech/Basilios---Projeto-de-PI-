@@ -44,3 +44,13 @@
 .hc-item:hover, .hc-item:focus { background: #111; }
 .hc-sep { height: 1px; background: #FFD400; opacity: .4; margin: 6px 0; }
 
+@media (min-width: 1024px) {
+  body.cart-open .hc-toggle {
+    inset-inline-end: 460px; /* ajusta esse valor até ficar coladinho no carrinho */
+  }
+
+  /* VLibras: botão de acesso (widget padrão usa esse atributo) */
+  body.cart-open [vw-access-button] {
+    right: 460px !important; /* mesmo deslocamento do carrinho */
+  }
+}

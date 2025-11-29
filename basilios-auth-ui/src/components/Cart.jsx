@@ -30,6 +30,21 @@ export default function Cart() {
     return () => window.removeEventListener("cartUpdated", atualizar);
   }, []);
 
+  useEffect(() => {
+    const body = document.body;
+    if (!body) return;
+
+    if (isOpen) {
+      body.classList.add("cart-open");
+    } else {
+      body.classList.remove("cart-open");
+    }
+
+    // limpeza: se o componente desmontar, garante que a classe sai
+    return () => body.classList.remove("cart-open");
+  }, [isOpen]);
+
+
   const totalItems = cartItems.reduce((sum, item) => sum + item.qtd, 0);
   const totalPrice = cartItems.reduce(
     (sum, item) => sum + item.preco * item.qtd,
@@ -88,9 +103,8 @@ export default function Cart() {
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-[999] transform transition-transform duration-300 ease-in-out ${
-          isOpen ? "translate-x-0" : "translate-x-full"
-        }`}
+        className={`fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-[999] transform transition-transform duration-300 ease-in-out ${isOpen ? "translate-x-0" : "translate-x-full"
+          }`}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
