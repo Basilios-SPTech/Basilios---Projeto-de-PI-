@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { http } from "../../services/http.js";
-import { extractStringArray } from "../../utils/apiMappers.js";
 
-export default function TopProducts({ endpoint, range }) {
+export default function TopProducts({ endpoint, range, rangeVersion }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -21,16 +20,19 @@ export default function TopProducts({ endpoint, range }) {
           params: {
             dta_inicio: range.start,
             dta_fim: range.end,
+            limit: 5, // bate com o que você já está passando na URL
           },
         });
 
-        const names = extractStringArray(res.data).slice(0, 5);
+        const raw = Array.isArray(res.data) ? res.data : [];
+
+        const normalized = raw.slice(0, 5).map((p) => ({
+          id: p.productId ?? p.id ?? p.name,
+          name: p.name ?? "Produto",
+          unitsSold: p.unitsSold ?? 0,
+        }));
 
         if (!cancelled) {
-          const normalized = names.map((name, idx) => ({
-            id: idx,
-            name,
-          }));
           setItems(normalized);
         }
       } catch (err) {
@@ -47,7 +49,7 @@ export default function TopProducts({ endpoint, range }) {
     return () => {
       cancelled = true;
     };
-  }, [endpoint, range?.start, range?.end]);
+  }, [endpoint, range?.start, range?.end, rangeVersion]);
 
   return (
     <section className="dash-card dash-card--tall">
@@ -72,6 +74,9 @@ export default function TopProducts({ endpoint, range }) {
                 <div className="top-products__info">
                   <span className="top-products__name">
                     {item.name}
+                  </span>
+                  <span className="top-products__qty">
+                    {item.unitsSold} vendidos
                   </span>
                 </div>
               </li>

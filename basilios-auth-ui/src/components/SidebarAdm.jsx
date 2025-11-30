@@ -1,5 +1,5 @@
 /** SidebarAdm */
-import { Home, ListOrdered, LogOut, Package, Hamburger, LayoutDashboard, LogIn } from "lucide-react";
+import { Home, ListOrdered, LogOut, Package, Hamburger, LayoutDashboard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { AuthAPI } from "../services/api";

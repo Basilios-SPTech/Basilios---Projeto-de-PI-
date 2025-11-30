@@ -139,6 +139,9 @@ body{
 .dash-card__empty {
   font-size: 13px;
   color: rgba(17, 17, 17, 0.65);
+  display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 /* ===== KPIs ===== */
@@ -209,26 +212,35 @@ body{
 }
 
 /* ===== Layout dos gráficos ===== */
+/* ===== Layout dos gráficos ===== */
 
 .dashboard-section--charts {
   padding-top: 8px;
 }
 
+/* grid genérica */
 .dashboard-charts {
+  width: 100%;
+}
+
+/* Linha 1: apenas o heatmap, ocupando a linha inteira */
+.dashboard-charts--full {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1.3fr);
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  margin-bottom: 18px;
+}
+
+/* Linha 2: campeão de vendas + top produtos lado a lado */
+.dashboard-charts--bottom {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
   gap: 18px;
   align-items: stretch;
 }
 
-.dashboard-charts__side {
-  display: grid;
-  grid-template-rows: auto auto;
-  gap: 18px;
-}
-
 .dash-card--wide {
-  min-height: 260px;
+  min-height: 260px;    
 }
 
 .dash-card--champion {
@@ -238,6 +250,18 @@ body{
 .dash-card--tall {
   min-height: 230px;
 }
+
+/* Card específico do heatmap */
+.dash-card--heatmap {
+  min-height: 280px;
+}
+
+/* Header do heatmap com título à esquerda e período à direita */
+.dash-card--heatmap .dash-card__header {
+  justify-content: space-between;
+  align-items: center;
+}
+
 
 /* ===== Gráfico simples de barras: Picos de pedido ===== */
 
@@ -291,6 +315,36 @@ body{
   font-weight: 700;
 }
 
+/* ===== Heatmap de picos de pedido ===== */
+
+.order-heatmap-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  padding: 8px 6px 10px;
+  /* center the heatmap grid when it doesn't need horizontal scroll */
+  display: flex;
+  justify-content: center;
+}
+
+/* root gerado pelo HeatMapGrid */
+/* div raiz do HeatMapGrid (className="order-heatmap-grid") */
+.order-heatmap-grid {
+  /* keep a sensible max width but allow the grid to size itself */
+  width: min(1000px, 100%);   /* até 1000px, mas nunca passa da largura do card */
+  min-width: 560px;           /* em telas menores que isso, ativa scroll */
+  margin: 4px 0 0;            /* top spacing; horizontal centering handled by wrapper */
+  display: inline-block;      /* shrink-to-fit so wrapper can center it */
+}
+
+
+/* Em telas bem pequenas, deixa o min-width mais amigável */
+@media (max-width: 768px) {
+  .order-heatmap-wrapper > div,
+  .order-heatmap-grid {
+    min-width: 520px;
+  }
+}
+
 /* ===== Campeão de vendas ===== */
 
 .champion {
@@ -340,6 +394,24 @@ body{
   font-weight: 700;
 }
 
+/* quando houver mais de um campeão, organiza em coluna */
+.champion--multi {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.champion__info-list {
+  display: grid;
+  gap: 6px;
+}
+
+/* separa visualmente um campeão do outro */
+.champion__info--row + .champion__info--row {
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  padding-top: 4px;
+  margin-top: 4px;
+}
+
 /* ===== Top produtos (lista vertical) ===== */
 
 .top-products {
@@ -355,6 +427,7 @@ body{
   grid-template-columns: auto 1fr;
   gap: 8px;
   align-items: center;
+  justify-content: center;
 }
 
 .top-products__rank {
@@ -367,6 +440,7 @@ body{
   font-weight: 800;
   background: #fff5f5;
   color: var(--bsl-red, #bb3530);
+ 
 }
 
 .top-products__info {
@@ -412,12 +486,8 @@ body{
 /* ===== Responsividade ===== */
 
 @media (max-width: 900px) {
-  .dashboard-charts {
+  .dashboard-charts--bottom {
     grid-template-columns: 1fr;
-  }
-
-  .dashboard-charts__side {
-    grid-template-rows: auto auto;
   }
 
   .dashboard-bar__inner {

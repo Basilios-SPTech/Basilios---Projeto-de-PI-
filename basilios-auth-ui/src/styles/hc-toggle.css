@@ -53,19 +53,4 @@
   body.cart-open [vw-access-button] {
     right: 460px !important; /* mesmo deslocamento do carrinho */
   }
-
-  /* Forçar o wrapper do plugin a acompanhar o botão quando o carrinho está aberto
-     e fazer o pop-up abrir para a esquerda (quando houver pouco espaço à direita). */
-  body.cart-open [vw-plugin-wrapper] {
-    right: 460px !important;
-    left: auto !important;
-  }
-
-  /* A classe interna do widget que contém o pop-up costuma ser .vw-plugin-top-wrapper
-     — aqui forçamos o pop-up a posicionar-se à esquerda do botão (abertura para a esquerda). */
-  body.cart-open .vw-plugin-top-wrapper {
-    left: auto !important;
-    right: calc(100% + 12px) !important;
-    transform-origin: right center !important;
-  }
 }

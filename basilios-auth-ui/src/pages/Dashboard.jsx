@@ -24,6 +24,7 @@ function getTodayRange() {
 export default function Dashboard() {
   const [filters, setFilters] = useState(getTodayRange());
   const [appliedRange, setAppliedRange] = useState(getTodayRange());
+  const [appliedVersion, setAppliedVersion] = useState(0);
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -34,6 +35,7 @@ export default function Dashboard() {
     e.preventDefault();
     if (!filters.start || !filters.end) return;
     setAppliedRange(filters);
+    setAppliedVersion((v) => v + 1);
   }
 
   return (
@@ -86,12 +88,14 @@ export default function Dashboard() {
               label="Receita"
               endpoint="/api/dashboard/revenue"
               range={appliedRange}
+              rangeVersion={appliedVersion}
               format="currency"
             />
             <KpiCard
              label="Pedidos"
              endpoint="/api/dashboard/orders"
              range={appliedRange}
+             rangeVersion={appliedVersion}
              format="integer"
              mapResponse={(data) => {
              // data = { orders: 20 }
@@ -103,12 +107,14 @@ export default function Dashboard() {
               label="Ticket médio"
               endpoint="/api/dashboard/average-ticket"
               range={appliedRange}
+              rangeVersion={appliedVersion}
               format="currency"
             />
             <KpiCard
               label="Itens vendidos"
               endpoint="/api/dashboard/items-sold"
               range={appliedRange}
+              rangeVersion={appliedVersion}
               format="integer"
               mapResponse={(data) => {
               // data = { productsNotSold: 10, itemsSold: 24 }
@@ -121,6 +127,7 @@ export default function Dashboard() {
             label="cancelamento"
             endpoint="/api/dashboard/cancellation-rate"
             range={appliedRange}
+            rangeVersion={appliedVersion}
             format="percent"
             mapResponse={(data) => {
             if (!data) return null;
@@ -133,6 +140,7 @@ export default function Dashboard() {
               label="Média entrega"
               endpoint="api/dashboard/average-delivery-time"
               range={appliedRange}
+              rangeVersion={appliedVersion}
               format="minutes"
             />
           </div>
@@ -142,25 +150,31 @@ export default function Dashboard() {
       {/* Bloco dos gráficos grandes */}
       <section className="dashboard-section dashboard-section--charts">
         <div className="container">
-          <div className="dashboard-charts">
+          {/* Linha 1: Picos de pedidos ocupando a largura toda */}
+          <div className="dashboard-charts dashboard-charts--full">
             <OrderPeaksChart
-              endpoint="api/dashboard/order-peaks"
+              endpoint="/api/dashboard/order-peaks"
               range={appliedRange}
+              rangeVersion={appliedVersion}
             />
+          </div>
 
-            <div className="dashboard-charts__side">
-              <ChampionProduct
-                endpoint="api/dashboard/champion"
-                range={appliedRange}
-              />
-              <TopProducts
-                endpoint="/dashboard/top-products"
-                range={appliedRange}
-              />
-            </div>
+          {/* Linha 2: Campeão de vendas + Top produtos */}
+          <div className="dashboard-charts dashboard-charts--bottom">
+            <ChampionProduct
+              endpoint="/api/dashboard/champion"
+              range={appliedRange}
+              rangeVersion={appliedVersion}
+            />
+            <TopProducts
+              endpoint="/api/dashboard/top-products"
+              range={appliedRange}
+              rangeVersion={appliedVersion}
+            />
           </div>
         </div>
       </section>
+
     </main>
   );
 }

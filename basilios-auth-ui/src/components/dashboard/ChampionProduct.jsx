@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { http } from "../../services/http.js";
 import { formatInteger } from "../../utils/formatters.js";
 
-export default function ChampionProduct({ endpoint, range }) {
+export default function ChampionProduct({ endpoint, range, rangeVersion }) {
   const [champions, setChampions] = useState([]);  // agora é array
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -37,7 +37,7 @@ export default function ChampionProduct({ endpoint, range }) {
 
         const normalized = list.map((data) => ({
           id: data.productId ?? data.id ?? null,
-          name: data.name ?? "Produto/s campeão",
+          name: data.name ?? "Indeterminado",
           unitsSold: data.unitsSold ?? data.totalSold ?? 0,
           onPromotion: Boolean(data.onPromotion),
         }));
@@ -59,7 +59,7 @@ export default function ChampionProduct({ endpoint, range }) {
     return () => {
       cancelled = true;
     };
-  }, [endpoint, range?.start, range?.end]);
+  }, [endpoint, range?.start, range?.end, rangeVersion]);
 
   const hasData = champions && champions.length > 0;
 
@@ -109,7 +109,7 @@ export default function ChampionProduct({ endpoint, range }) {
 
                   <p className="champion__metric">
                     <span className="champion__metric-label">
-                      Unidades vendidas
+                      Unidades vendidas:
                     </span>
                     <span className="champion__metric-value">
                       {formatInteger(c.unitsSold)}

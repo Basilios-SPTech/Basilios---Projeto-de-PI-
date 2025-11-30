@@ -20,6 +20,7 @@ export default function KpiCard({
   label,
   endpoint,
   range,          // { start, end }
+  rangeVersion,   // number that increments on each Apply
   format = "integer",
   mapResponse,    // opcional: (data) => qualquer valor
 }) {
@@ -66,7 +67,7 @@ export default function KpiCard({
     return () => {
       cancelled = true;
     };
-  }, [endpoint, range?.start, range?.end, mapResponse]);
+  }, [endpoint, range?.start, range?.end, mapResponse, rangeVersion]);
 
   const fn = formatterMap[format] ?? ((v) => v ?? "—");
   const displayValue = fn(value);
