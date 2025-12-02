@@ -1,0 +1,254 @@
+/* === CONTAINER PRINCIPAL === */ 
+.perfil-container {
+  background-color: #f7f7f7;
+  color: #333;
+  font-family: var(--font-sans, "Montserrat", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial);
+  padding: 2rem 4rem;
+  min-height: 100vh;
+  margin-top: 3%; 
+}
+
+/* ============================
+   BOTÕES (baseado em about.css)
+   Garante que BackButton e variações fiquem visíveis
+============================ */
+.btn{
+  display:inline-flex; align-items:center; gap:10px;
+  padding:12px 18px; border-radius:14px; border:1.5px solid transparent;
+  font-weight:800; letter-spacing:.2px; cursor:pointer;
+  transition:transform .15s ease, box-shadow .2s ease, background .2s ease, color .2s ease, border-color .2s ease, filter .2s ease;
+}
+.btn:active{ transform:translateY(1px) }
+.btn--ghost{ background:transparent; border-color:rgba(17,17,17,.18); color:var(--bsl-ink, #111) }
+.btn--ghost:hover{ border-color:#fffcfc }
+.back-btn{ gap:8px; padding:10px 14px; color:#111; border-color:rgba(0,0,0,.08) }
+
+/* quando o botão estiver dentro do container de perfil, adiciona espaçamento */
+.perfil-container .back-btn{ margin-bottom:1rem; display:inline-flex }
+
+/* estilo usado no About para botões sobre fundo escuro */
+.btn--on-dark{
+  color: #fff !important;
+  background: transparent !important;
+  border-color: rgba(255,255,255,.28) !important;
+}
+.btn--on-dark:hover{
+  border-color: #fff !important;
+  background: rgba(255,255,255,.08) !important;
+  filter: none !important;
+  box-shadow: none !important;
+}
+
+/* === TÍTULO PRINCIPAL === */
+.titulo {
+  color: #222;
+  margin-bottom: 1.5rem;
+  font-size: 2.0rem;
+  text-align: left;
+}
+
+/* === CARDS GERAIS === */
+.perfil-card,
+.info-card {
+  width: 90%;
+  margin: 0 auto 2rem auto;
+  border-radius: 14px;
+  padding: 2rem;
+  background-color: #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Welcome card (replaced profile/photo card) */
+.welcome-card{
+  width: 90%;
+  margin: 0 auto 2rem auto;
+  border-radius: 14px;
+  padding: 1.6rem;
+  background-color: #ffffff;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+}
+.welcome-inner{ display:flex; flex-direction:column; gap:6px }
+.welcome-inner h3{ margin:0; font-size:1.25rem; color:#111 }
+.welcome-text { margin:0; display:inline-block }
+
+/* removed welcome-username (no side username anymore) */
+.welcome-sub{ color:#666; margin:0 }
+
+.perfil-card:hover,
+.info-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.10);
+}
+
+/* === CARD DE PERFIL === */
+.perfil-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+/* profile photo removed — no styles needed */
+
+.perfil-info-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 300px;
+}
+
+.perfil-info h3,
+.perfil-info .cargo,
+.perfil-info .local {
+  margin: 0;
+  font-size: 1rem;
+  color: #555;
+}
+
+.perfil-info .cargo {
+  color: #777;
+}
+
+.perfil-info .local {
+  color: #999;
+}
+
+/* === INFO CARD === */
+.info-card {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Cabeçalho (título + botão editar) */
+.info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.info-header h3 {
+  font-size: 1.1rem;
+  color: #111; /* mudou para preto */
+}
+
+/* Botão editar */
+.edit-btn {
+  margin-left: 200px;
+  background-color: #BB3530;
+  border: none;
+  color: white;
+  border-radius: 6px;
+  padding: 0.6rem 1.2rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.edit-btn:hover {
+  background-color: #e04a3a;
+}
+
+/* === GRID DAS INFORMAÇÕES === */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  margin-top: 1.5rem;
+}
+
+.info-grid span {
+  font-size: 0.85rem;
+  color: #777;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.info-grid p {
+  font-size: 1rem;
+  color: #333;
+  margin-top: 0.3rem;
+}
+
+/* === FORMULÁRIO DE EDIÇÃO === */
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.edit-form input {
+  background-color: #ffffff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+    font-weight: 600;
+  color: #333;
+  font-size: 1rem;
+}
+
+.edit-form input:focus {
+  outline: none;
+  border-color: #BB3530;
+}
+
+/* Botões do formulário */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.save-btn {
+  background-color: #BB3530;
+  border: none;
+  color: #fff;
+  border-radius: 6px;
+  padding: 0.6rem 1.2rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.save-btn:hover {
+  background-color: #e04a3a;
+}
+
+.cancel-btn {
+  background-color: #ddd;
+  border: none;
+  color: #333;
+  border-radius: 6px;
+  padding: 0.6rem 1.2rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.cancel-btn:hover {
+  background-color: #ccc;
+}
+
+/* === RESPONSIVIDADE === */
+@media (max-width: 768px) {
+  .perfil-container {
+    padding: 1rem 2rem;
+  }
+
+  .perfil-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .info-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+}

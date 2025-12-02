@@ -1,0 +1,168 @@
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap');
+
+/* Fundo escurecido */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 50;
+}
+
+/* Caixa do modal com efeito glass */
+.modal-content {
+  width: min(560px, 94vw);
+  padding: 0.9rem 0.9rem;
+  max-height: calc(100vh - 96px);
+  /* extra top space so modal sits lower on the screen */
+  margin-top: 64px; /* increased as requested */
+  overflow-y: auto;
+  background: #fff; /* white modal background */
+  backdrop-filter: blur(8px);
+  border-radius: 14px;
+  box-shadow: 0 0 25px rgba(255, 255, 255, 0.1);
+  color: #111; /* dark text */
+  font-family: 'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  animation: zoomIn 0.15s ease;
+}
+
+/* Título */
+.modal-title {
+  font-size: 1.05rem;
+  text-align: center;
+  margin-bottom: 0.6rem;
+  font-weight: 700;
+  color: #111;
+}
+
+/* Colunas alinhadas */
+.form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem; /* even tighter vertical spacing */
+}
+
+/* Labels */
+.form-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9rem;
+  color: #222;
+}
+
+/* field title inside label */
+.field-title{ display:block; font-weight:600; color:#111; margin-bottom:2px }
+
+/* Inputs */
+  .form-input {
+  width: 100%;
+  background: #fff; /* input background white */
+  padding: 0.35rem 0.45rem; /* smaller input height to reduce form height */
+  border-radius: 8px;
+  color: #111; /* input text should be dark on white background */
+  caret-color: #7a1f1b;
+  border: 1px solid rgba(187,53,48,0.12); /* subtle red border */
+  transition: border 0.2s ease;
+}
+
+.form-input::placeholder{ color: rgba(0,0,0,0.45) }
+
+/* lock icon */
+.input-with-lock{ display:flex; align-items:center; gap:8px }
+.lock-icon{ display:inline-flex; align-items:center; justify-content:center; min-width:26px; height:26px; color:#7a1f1b; border-radius:6px; background: rgba(187,53,48,0.06); border: 1px solid rgba(187,53,48,0.08); font-size:12px }
+
+.form-input:focus {
+  border-color: rgba(187,53,48,0.9);
+  box-shadow: 0 6px 18px rgba(187,53,48,0.08);
+}
+
+/* removed photo preview styling (photo removed) */
+
+/* Botões */
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 0.5rem; /* bring buttons closer to inputs */
+}
+
+.save-btn {
+  background: #7a1f1b; /* dark red */
+  padding: 0.36rem 0.9rem;
+  border: none;
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.save-btn:hover { filter: brightness(.95) }
+
+.cancel-btn {
+  background: transparent;
+  padding: 0.38rem 0.85rem;
+  border: none;
+  color: #7a1f1b;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.cancel-btn:hover {
+  background: rgba(187,53,48,0.06);
+}
+
+/* Animação do modal */
+@keyframes zoomIn {
+  from {
+    transform: scale(0.88);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ------------------
+   Responsive adjustments
+   ------------------ */
+@media (max-width: 640px) {
+  .modal-content {
+    width: min(92vw, 520px);
+    padding: 0.65rem 0.6rem;
+    margin-top: 48px;
+    border-radius: 12px;
+    max-height: calc(100vh - 48px);
+  }
+
+  .modal-title { font-size: 1rem; margin-bottom: 0.45rem }
+
+  .form-container { gap: 0.22rem }
+  .form-label { font-size: 0.88rem; gap: 3px }
+  .form-input { padding: 0.35rem 0.5rem; border-radius: 8px }
+
+  .modal-buttons { gap: 8px; margin-top: 0.4rem }
+  .save-btn, .cancel-btn { padding: 0.38rem 0.8rem; font-size: 13px }
+}
+
+@media (max-width: 420px) {
+  /* mobile: full width with compact layout */
+  .modal-content {
+    width: 94vw;
+    padding: 0.5rem 0.55rem;
+    margin-top: 24px;
+    border-radius: 10px;
+    max-height: calc(100vh - 24px);
+  }
+
+  .modal-title { font-size: 0.98rem }
+
+  /* stack buttons full width on small screens for easier tapping */
+  .modal-buttons { display: flex; flex-direction: column-reverse; gap: 8px; margin-top: 0.35rem }
+  .modal-buttons button { width: 100%; display: block }
+  .save-btn { margin: 0 }
+}
