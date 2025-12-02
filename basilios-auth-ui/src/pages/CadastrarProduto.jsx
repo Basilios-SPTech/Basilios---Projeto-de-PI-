@@ -3,8 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ProdutoForm from "../components/ProdutoForm.jsx";
 import Modal from "../components/Modal.jsx";
-import Header from "../components/HeaderAdm.jsx";
-import SidebarAdm from "../components/SidebarAdm.jsx";
+import MenuButton from "../components/MenuButtonAdm.jsx";
 import {
   criarProduto,
   listarProdutos,
@@ -61,8 +60,8 @@ export default function CadastrarProduto() {
     preco: "",
     categoria: "",
     subcategoria: "",
-    imagem: "",          // preview (base64)
-    imagemArquivo: null, // File real pra upload
+    imagem: "",         
+    imagemArquivo: null, 
     pausado: false,
   });
 
@@ -132,8 +131,8 @@ export default function CadastrarProduto() {
       fr.onload = (ev) => {
         setFormData((prev) => ({
           ...prev,
-          imagem: ev.target.result, // preview base64
-          imagemArquivo: file,      // arquivo real
+          imagem: ev.target.result, 
+          imagemArquivo: file,      
         }));
       };
       fr.readAsDataURL(file);
@@ -201,19 +200,50 @@ export default function CadastrarProduto() {
       return;
     }
 
-    // EDIÇÃO LOCAL (você ainda não está chamando update no back)
+    // EDIÇÃO: monta DTO, faz upload da imagem se necessário e chama o back
     if (indiceEdicao !== null) {
       try {
-        // 1) chama o backend pra atualizar
-        const atualizadoBack = await atualizarProduto(indiceEdicao, dto);
+        // upload de imagem apenas para o caso de ter trocado o arquivo
+        let imageUrl = null;
 
-        // 2) reaproveita a imagem que já tava no estado (não estamos re-upando aqui)
+        if (formData.imagemArquivo) {
+          const fd = new FormData();
+          fd.append("file", formData.imagemArquivo);
+
+          const respUpload = await http.post("/api/upload/image", fd, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+
+          imageUrl = respUpload.data;
+        }
+
+        const dtoUpdate = {
+          name: formData.nome.trim(),
+          description: formData.descricao.trim(),
+          price: precoNum,
+          category: formData.categoria || null,
+          subcategory: formData.subcategoria || null,
+          tags: [],
+          ingredientes: formData.ingrediente
+            ? formData.ingrediente
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean)
+            : [],
+          ingredientsDetailed: [],
+          isPaused: !!formData.pausado,
+          ...(imageUrl ? { imageUrl } : {}),
+        };
+
+        const atualizadoBack = await atualizarProduto(indiceEdicao, dtoUpdate);
+
         const imagemAtual =
-          produtos.find((p) => p.index === indiceEdicao)?.imagem || formData.imagem || "";
+          atualizadoBack.imageUrl
+            ? `${API_BASE}${atualizadoBack.imageUrl}`
+            : produtos.find((p) => p.index === indiceEdicao)?.imagem || formData.imagem || "";
 
-        // 3) adapta pro formato que a tela usa
         const atualizadoLocal = {
-          index: atualizadoBack.id,
+          index: atualizadoBack.id ?? indiceEdicao,
           nome: atualizadoBack.name ?? formData.nome,
           descricao: atualizadoBack.description ?? formData.descricao,
           preco:
@@ -237,6 +267,7 @@ export default function CadastrarProduto() {
         console.error("Erro ao atualizar produto:", err);
         alert("Não foi possível atualizar o produto.");
       }
+
       return;
     }
 
@@ -328,7 +359,7 @@ export default function CadastrarProduto() {
       categoria: produto.categoria || "",
       subcategoria: produto.subcategoria || "",
       imagem: produto.imagem || "",
-      imagemArquivo: null, // não temos o File original
+      imagemArquivo: null, 
       pausado: !!produto.pausado,
     });
 
@@ -414,8 +445,7 @@ export default function CadastrarProduto() {
 
   return (
     <div className="cp-page">
-      <Header variant="adm" MenuComponent={SidebarAdm} />
-
+      <MenuButton />
       <main className="cp-grid">
         <section className="cp-card cp-form">
           <h2>Informações do produto</h2>
@@ -429,39 +459,8 @@ export default function CadastrarProduto() {
             onChange={handleChange}
             onSubmit={handleSubmit}
             onCancel={handleCancel}
+            subcatOptions={subcatOptions}
           />
-
-          <div className="cp-field">
-            <label htmlFor="subcategoria" className="cp-label">
-              Subcategoria
-            </label>
-
-            <select
-              id="subcategoria"
-              name="subcategoria"
-              className="cp-input"
-              value={formData.subcategoria}
-              onChange={handleChange}
-              disabled={subcatOptions.length === 0}
-              required={subcatOptions.length > 0}
-            >
-              <option value="">
-                {subcatOptions.length === 0
-                  ? "Sem subcategoria para esta categoria"
-                  : "Selecione..."}
-              </option>
-
-              {subcatOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-
-            <small className="cp-hint">
-              As opções mudam conforme a categoria selecionada.
-            </small>
-          </div>
         </section>
 
         <aside className="cp-right">
@@ -628,18 +627,6 @@ export default function CadastrarProduto() {
               className="cp-modal"
               onClick={(e) => e.stopPropagation()}
             >
-              <header className="cp-modal__header">
-                <div className="cp-modal__logo" aria-hidden />
-                <h4>Editar Produto</h4>
-                <button
-                  className="cp-modal__close"
-                  onClick={handleCloseModal}
-                  aria-label="Fechar"
-                >
-                  ×
-                </button>
-              </header>
-
               <div className="cp-modal__body">
                 <ProdutoForm
                   formData={formData}
@@ -647,35 +634,9 @@ export default function CadastrarProduto() {
                   onChange={handleChange}
                   onSubmit={handleSubmit}
                   onCancel={handleCloseModal}
+                  subcatOptions={subcatOptions}
+                  showCloseButton={true}
                 />
-
-                <div className="cp-field mt-2">
-                  <label htmlFor="subcategoria" className="cp-label">
-                    Subcategoria
-                  </label>
-
-                  <select
-                    id="subcategoria"
-                    name="subcategoria"
-                    className="cp-input"
-                    value={formData.subcategoria}
-                    onChange={handleChange}
-                    disabled={subcatOptions.length === 0}
-                    required={subcatOptions.length > 0}
-                  >
-                    <option value="">
-                      {subcatOptions.length === 0
-                        ? "Sem subcategoria para esta categoria"
-                        : "Selecione..."}
-                    </option>
-
-                    {subcatOptions.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
               </div>
             </div>
           </div>

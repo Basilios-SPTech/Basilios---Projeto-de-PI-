@@ -13,6 +13,8 @@ export default function ProdutoForm({
   onChange,
   onSubmit,
   onCancel,
+  subcatOptions = [],
+  showCloseButton = false,
 }) {
   return (
     <div>
@@ -36,6 +38,23 @@ export default function ProdutoForm({
 
       {/* Formulário */}
       <form id="form-produto" className="form-bloco" onSubmit={onSubmit}>
+        {showCloseButton && (
+          <button
+            type="button"
+            aria-label="Fechar"
+            onClick={onCancel}
+            className="cp-modal__close absolute right-3 top-3"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              fontSize: '22px',
+              lineHeight: 1,
+              cursor: 'pointer',
+            }}
+          >
+            ×
+          </button>
+        )}
         <div className="grid-1-2">
           {/* Nome */}
           <div className="field-row">
@@ -172,23 +191,59 @@ export default function ProdutoForm({
           </div>
 
           {/* Disponibilidade (pausado / ativo) */}
-          <div className="field-row">
-            <label className="field-label">Disponibilidade</label>
+          {/* Moved: this will render above the action buttons (see below) */}
+        </div>
 
-            <label className="flex items-center gap-2 text-[14px] text-[color:var(--text)]">
-              <input
-                type="checkbox"
-                id="pausado"
-                name="pausado"
-                checked={!!formData.pausado}
-                onChange={onChange}
-                className="h-[16px] w-[16px]"
-              />
-              <span>
-                Pausado (Marcar = não aparece pra venda / está fora do cardápio)
-              </span>
-            </label>
-          </div>
+        {/* Subcategoria (muda conforme categoria) */}
+        <div className="field-row">
+          <label htmlFor="subcategoria" className="field-label">
+            Subcategoria
+          </label>
+
+          <select
+            id="subcategoria"
+            name="subcategoria"
+            className="input-base"
+            value={formData.subcategoria}
+            onChange={onChange}
+            disabled={subcatOptions.length === 0}
+            required={subcatOptions.length > 0}
+          >
+            <option value="">
+              {subcatOptions.length === 0
+                ? "Sem subcategoria para esta categoria"
+                : "Selecione..."}
+            </option>
+
+            {subcatOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+
+          <p className="text-[12px] text-[color:var(--muted)] mt-1">
+            As opções mudam conforme a categoria selecionada.
+          </p>
+        </div>
+
+        {/* Disponibilidade (pausado / ativo) - placed above action buttons */}
+        <div className="field-row">
+          <label className="field-label">Disponibilidade</label>
+
+          <label className="flex items-center gap-2 text-[14px] text-[color:var(--text)]">
+            <input
+              type="checkbox"
+              id="pausado"
+              name="pausado"
+              checked={!!formData.pausado}
+              onChange={onChange}
+              className="h-[16px] w-[16px]"
+            />
+            <span>
+              Pausado (Marcar = não aparece pra venda / está fora do cardápio)
+            </span>
+          </label>
         </div>
 
         {/* Ações */}

@@ -4,4 +4,66 @@
 /* Optional: normalize font rendering */
 html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 
+/* Modal helpers (used by Modal.jsx and page-specific cp-modal markup) */
+.modal-overlay,
+.cp-modal-overlay {
+	position: fixed;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 1rem;
+	background: rgba(0,0,0,0.45);
+	z-index: 1000;
+}
+
+.modal-content,
+.cp-modal {
+	background: var(--bg, #fff);
+	width: 100%;
+	max-width: 920px;
+	border-radius: 8px;
+	box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+	position: relative;
+	/* keep modal within viewport */
+	max-height: calc(100vh - 2rem);
+	overflow: auto;
+}
+
+.modal-close,
+.cp-modal__close {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	background: transparent;
+	border: none;
+	font-size: 22px;
+	line-height: 1;
+	cursor: pointer;
+}
+
+/* modal body padding */
+.cp-modal__body,
+.modal-content > * {
+	padding: 1.25rem;
+}
+
+/* make sure very long forms scroll inside the modal */
+.cp-modal__body {
+	box-sizing: border-box;
+}
+
+/* Ensure modal layout allows internal scrolling of the body */
+.cp-modal {
+	display: flex;
+	flex-direction: column;
+}
+
+.cp-modal__body {
+	/* leave room for any header / footer and provide scrolling */
+	overflow: auto;
+	-webkit-overflow-scrolling: touch;
+	max-height: calc(100vh - 6rem);
+}
+
 
