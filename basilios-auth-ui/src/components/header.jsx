@@ -109,9 +109,8 @@ export default function Header() {
   };
 
   const handleUserClick = () => {
-    if (!isAuthenticated) return navigate("/login");
-    // 🔻 SEM ROLES: logado vai pra home
-    navigate("/home");
+    // Direciona para a página de perfil (pública)
+    navigate("/profile");
   };
 
   return (
