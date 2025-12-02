@@ -617,7 +617,8 @@
 /* GRID */
 .hp-grid-wrap {
   max-width: 1200px;
-  margin: 18px auto 40px;
+  /* aumentar espaçamento superior para dar respiro abaixo do header */
+  margin: 48px auto 40px;
   padding: 0 20px;
 }
 
