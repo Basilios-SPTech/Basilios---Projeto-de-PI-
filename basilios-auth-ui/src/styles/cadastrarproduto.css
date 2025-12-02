@@ -38,6 +38,11 @@
   min-height: 100dvh;
 }
 
+/* When a page does not render the fixed site header, reduce the top spacing */
+.cp-page.cp-page--no-header {
+  padding-top: 24px;
+}
+
 /* Header (topbar) */
 .cp-header {
   position: sticky;

@@ -445,7 +445,7 @@ export default function CadastrarProduto() {
   const subcatOptions = SUBCATEGORY_OPTIONS[formData.categoria] || [];
 
   return (
-    <div className="cp-page">
+    <div className="cp-page cp-page--no-header">
       <MenuButton />
       <main className="cp-grid">
         <section className="cp-card cp-form">
