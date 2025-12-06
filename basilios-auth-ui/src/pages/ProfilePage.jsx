@@ -87,7 +87,7 @@ export function ProfilePage({
 
             <div>
               <span>Data de Nascimento</span>
-              <p>{dados.data_nascimento}</p>
+              <p>{dados.data_nascimento ? dados.data_nascimento : "Dados não informados"}</p>
             </div>
 
             <div>
