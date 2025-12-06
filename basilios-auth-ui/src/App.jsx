@@ -145,17 +145,29 @@ export default function App() {
 
             {/* Públicas */}
             <Route path="/about" element={<><About /><FooterBasilios /></>} />
-            <Route
-              path="/profile"
-              element={
-                <>
+            {/* Rotas privadas - exige login */}
+            <Route element={<RequireAuth />}>
+              <Route
+                path="/profile"
+                element={
+                  <>
+                    <ProdutoLayout>
+                      <ProfilePage />
+                    </ProdutoLayout>
+                    <FooterBasilios />
+                  </>
+                }
+              />
+              <Route
+                path="/cadastro"
+                element={
                   <ProdutoLayout>
-                    <ProfilePage />
+                    <CadastrarProdutoRoute />
                   </ProdutoLayout>
-                  <FooterBasilios />
-                </>
-              }
-            />
+                }
+              />
+              <Route path="/board" element={<BoardRoute />} />
+            </Route>
             <Route
               path="/home"
               element={

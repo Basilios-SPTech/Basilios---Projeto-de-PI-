@@ -40,7 +40,7 @@ export default function Dashboard() {
 
   return (
     <main className="dashboard-root">
-        <MenuButton />
+      <MenuButton />
       {/* Barra de filtro de data */}
       <section className="dashboard-bar">
         <div className="container">
@@ -92,16 +92,16 @@ export default function Dashboard() {
               format="currency"
             />
             <KpiCard
-             label="Pedidos"
-             endpoint="/api/dashboard/orders"
-             range={appliedRange}
-             rangeVersion={appliedVersion}
-             format="integer"
-             mapResponse={(data) => {
-             // data = { orders: 20 }
-            if (!data) return null;
-            return Number(data.orders ?? 0);
-            }}
+              label="Pedidos"
+              endpoint="/api/dashboard/orders"
+              range={appliedRange}
+              rangeVersion={appliedVersion}
+              format="integer"
+              mapResponse={(data) => {
+                // data = { orders: 20 }
+                if (!data) return null;
+                return Number(data.orders ?? 0);
+              }}
             />
             <KpiCard
               label="Ticket médio"
@@ -117,32 +117,50 @@ export default function Dashboard() {
               rangeVersion={appliedVersion}
               format="integer"
               mapResponse={(data) => {
-              // data = { productsNotSold: 10, itemsSold: 24 }
-              if (!data) return null;
-              // se vier string, Number já resolve
-              return Number(data.itemsSold ?? 0);
-            }}
+                // data = { productsNotSold: 10, itemsSold: 24 }
+                if (!data) return null;
+                // se vier string, Number já resolve
+                return Number(data.itemsSold ?? 0);
+              }}
             />
             <KpiCard
-            label="cancelamento"
-            endpoint="/api/dashboard/cancellation-rate"
-            range={appliedRange}
-            rangeVersion={appliedVersion}
-            format="percent"
-            mapResponse={(data) => {
-            if (!data) return null;
-            // data = { cancellationRate: 10.0 }
-            return Number(data.cancellationRate ?? 0);
-            }}
+              label="cancelamento"
+              endpoint="/api/dashboard/cancellation-rate"
+              range={appliedRange}
+              rangeVersion={appliedVersion}
+              format="percent"
+              mapResponse={(data) => {
+                if (!data) return null;
+                // data = { cancellationRate: 10.0 }
+                return Number(data.cancellationRate ?? 0);
+              }}
             />
 
             <KpiCard
               label="Média entrega"
-              endpoint="api/dashboard/average-delivery-time"
+              endpoint="/api/dashboard/average-delivery-time"
               range={appliedRange}
               rangeVersion={appliedVersion}
               format="minutes"
+              mapResponse={(data) => {
+                if (!data) return null;
+
+                // backend: { averageSeconds: 0, averageText: "00:00:00" }
+                const rawSeconds = data.averageSeconds ?? 0;
+
+                const seconds =
+                  typeof rawSeconds === "number"
+                    ? rawSeconds
+                    : Number(rawSeconds);
+
+                if (Number.isNaN(seconds)) return null;
+
+                const minutes = seconds / 60;
+
+                return minutes; // KpiCard vai mandar isso pro formatMinutes
+              }}
             />
+
           </div>
         </div>
       </section>
