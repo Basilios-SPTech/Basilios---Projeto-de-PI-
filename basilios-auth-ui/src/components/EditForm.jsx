@@ -17,7 +17,6 @@ export default function EditForm({ secao, dados, onSave, onCancel }) {
 
     // we don't handle photos anymore — keep only fields from form
     onSave(novosDados);
-    toast.success("Informações salvas com sucesso!");
   };
 
   // Mapeia os campos do novo formato para o formulário

@@ -1,45 +1,72 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import "../styles/ProfilePage.css";
 import EditForm from "../components/EditForm.jsx";
-import axios from "axios";
+import { http } from "../services/http.js";
 import BackButton from "../components/BackButton.jsx";
+import toast from "react-hot-toast";
 
-export function ProfilePage({
-  nome_usuario,
-  cpf,
-  data_nascimento,
-  email,
-  telefone,
-}) {
+export function ProfilePage() {
   const [isEditing, setIsEditing] = useState(null);
-
+  const [loading, setLoading] = useState(true);
   const [dados, setDados] = useState({
-    nome_usuario,
-    cpf,
-    data_nascimento,
-    email,
-    telefone,
+    id: null,
+    nomeUsuario: "",
+    email: "",
+    cpf: "",
+    telefone: "",
+    dataNascimento: "",
+    roles: [],
+    enabled: true,
   });
 
+  const hasFetched = useRef(false);
+
   useEffect(() => {
-    axios
-      .get("http://localhost:8080/api/auth/me", {
-        headers: {
-          Authorization:
-            `Bearer ${localStorage.getItem("auth_token")}`,
-        },
-      })
-      .then((response) => {
-        console.log(response.data);
-        setDados(response.data);
-      });
+    async function fetchUserProfile() {
+      if (hasFetched.current) return;
+      hasFetched.current = true;
+
+      try {
+        setLoading(true);
+        const { data } = await http.get("/auth/me");
+
+        console.log("Perfil do usuário:", data);
+        setDados(data);
+      } catch (err) {
+        console.error("Erro ao carregar perfil:", err);
+        toast.error("Falha ao carregar perfil do usuário.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchUserProfile();
   }, []);
 
-  const handleSave = (novosDados) => {
-    setDados(novosDados);
-    setIsEditing(null);
+  const handleSave = async (novosDados) => {
+    try {
+      // Envia apenas os campos editáveis para o PATCH
+      const payload = {
+        nomeUsuario: novosDados.nomeUsuario,
+        email: novosDados.email,
+        telefone: novosDados.telefone,
+        dataNascimento: novosDados.dataNascimento,
+      };
+
+      const response = await http.patch(`/users/${dados.id}`, payload);
+
+      console.log("Perfil atualizado:", response.data);
+      setDados(response.data);
+      setIsEditing(null);
+      toast.success("Informações atualizadas com sucesso!");
+    } catch (err) {
+      console.error("Erro ao atualizar perfil:", err);
+      toast.error(
+        err?.response?.data?.message || "Falha ao atualizar informações."
+      );
+    }
   };
 
   const abrirEdicao = (secao) => setIsEditing(secao);
