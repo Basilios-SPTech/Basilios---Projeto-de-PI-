@@ -7,93 +7,113 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
 
   // Ingredientes
   const [ingredients, setIngredients] = useState([
-    { id: 1, name: "Presunto", desc: "Adicione presunto no seu lanche.", price: 4, selected: false },
-    { id: 2, name: "Bacon", desc: "Bacon crocante em fatias generosas.", price: 5, selected: false },
-    { id: 3, name: "Egg", desc: "Um ovo perfeito para completar seu lanche.", price: 4, selected: false },
-    { id: 4, name: "Picles", desc: "Picles na medida certa, delicioso.", price: 4, selected: false },
-    { id: 5, name: "Cheddar", desc: "Queijo cheddar derretido irresistível.", price: 5, selected: false },
-    { id: 6, name: "Catupiry", desc: "Recheio cremoso de catupiry.", price: 5, selected: false },
-    { id: 7, name: "Acebolado", desc: "Cebola dourada e saborosa.", price: 4, selected: false },
-    { id: 8, name: "Vinagrete", desc: "Vinagrete fresquinho.", price: 4, selected: false },
-    { id: 9, name: "Queijo", desc: "Queijo delicioso e derretido.", price: 4, selected: false },
+    { id: 1, name: "Presunto", desc: "Adicione presunto no seu lanche.", price: 4 },
+    { id: 2, name: "Bacon", desc: "Bacon crocante em fatias generosas.", price: 5 },
+    { id: 3, name: "Egg", desc: "Um ovo perfeito para completar seu lanche.", price: 4 },
+    { id: 4, name: "Picles", desc: "Picles na medida certa, delicioso.", price: 4 },
+    { id: 5, name: "Cheddar", desc: "Queijo cheddar derretido irresistível.", price: 5 },
+    { id: 6, name: "Catupiry", desc: "Recheio cremoso de catupiry.", price: 5 },
+    { id: 7, name: "Acebolado", desc: "Cebola dourada e saborosa.", price: 4 },
+    { id: 8, name: "Vinagrete", desc: "Vinagrete fresquinho.", price: 4 },
+    { id: 9, name: "Queijo", desc: "Queijo delicioso e derretido.", price: 4 },
   ]);
 
   // Bebidas
   const [drinks, setDrinks] = useState([
-    { id: 1, name: "Coca Cola", price: 6.5, selected: false },
-    { id: 2, name: "Coca Cola Zero", price: 6.5, selected: false },
-    { id: 3, name: "Guaraná", price: 6.5, selected: false },
-    { id: 4, name: "Guaraná Zero", price: 6.5, selected: false },
-    { id: 5, name: "Pepsi", price: 6.5, selected: false },
-    { id: 6, name: "Pepsi Twist", price: 6.5, selected: false },
-    { id: 7, name: "Soda Limonada", price: 6.5, selected: false },
-    { id: 8, name: "Citrus Schweppes", price: 6.5, selected: false },
+    { id: 1, name: "Coca Cola", price: 6.5 },
+    { id: 2, name: "Coca Cola Zero", price: 6.5 },
+    { id: 3, name: "Guaraná", price: 6.5 },
+    { id: 4, name: "Guaraná Zero", price: 6.5 },
+    { id: 5, name: "Pepsi", price: 6.5 },
+    { id: 6, name: "Pepsi Twist", price: 6.5 },
+    { id: 7, name: "Soda Limonada", price: 6.5 },
+    { id: 8, name: "Citrus Schweppes", price: 6.5 },
   ]);
 
   // Pães
   const [breads, setBreads] = useState([
-    { id: 1, name: "Pão de Gergelim", price: 4, selected: false },
-    { id: 2, name: "Pão Australiano", price: 4, selected: false },
-    { id: 3, name: "Pão de Brioche", price: 4, selected: false },
+    { id: 1, name: "Pão de Gergelim", price: 4 },
+    { id: 2, name: "Pão Australiano", price: 4 },
+    { id: 3, name: "Pão de Brioche", price: 4 },
   ]);
 
   // Molhos extras
-  const [sauces, setSauces] = useState([
-    { id: 1, name: "Maionese", desc: "100ml", price: 4, selected: false },
-    { id: 2, name: "Tártaro", desc: "100ml", price: 4, selected: false },
-    { id: 3, name: "Maionese de Alho", desc: "100ml", price: 4, selected: false },
+  const [saucesAvailable] = useState([
+    { id: 1, name: "Maionese", desc: "100ml", price: 4 },
+    { id: 2, name: "Tártaro", desc: "100ml", price: 4 },
+    { id: 3, name: "Maionese de Alho", desc: "100ml", price: 4 },
   ]);
+
+  const maxExtras = 5;
   const maxSauces = 2;
+
+  // Arrays para armazenar IDs selecionados (permite duplicatas)
+  const [selectedIngredientIds, setSelectedIngredientIds] = useState([]);
+  const [selectedDrinkIds, setSelectedDrinkIds] = useState([]);
+  const [selectedBreadId, setSelectedBreadId] = useState(null);
+  const [selectedSauceIds, setSelectedSauceIds] = useState([]);
 
   const [quantity, setQuantity] = useState(1);
   const [observation, setObservation] = useState("");
 
   useEffect(() => {
     if (item) {
-      setQuantity(item.quantity || 1);
+      setQuantity(item.qtd || item.quantity || 1);
       setMeatPoint(item.meatPoint || "médio");
-      if (item.ingredients) setIngredients(item.ingredients);
-      if (item.drinks) setDrinks(item.drinks);
-      if (item.breads) setBreads(item.breads);
-      if (item.sauces) setSauces(item.sauces);
-      if (item.observation) setObservation(item.observation);
+      setSelectedIngredientIds(item.selectedIngredientIds || []);
+      setSelectedDrinkIds(item.selectedDrinkIds || []);
+      setSelectedBreadId(item.selectedBreadId || null);
+      setSelectedSauceIds(item.selectedSauceIds || []);
+      setObservation(item.observation || "");
     }
   }, [item]);
 
-  // Funções de toggle
-  const toggleIngredient = (id) =>
-    setIngredients((prev) =>
-      prev.map((ing) =>
-        ing.id === id ? { ...ing, selected: !ing.selected } : ing
-      )
-    );
+  // Adicionar classe ao body quando o modal abrir/fechar para deslocar acessibilidade
+  useEffect(() => {
+    const body = document.body;
+    if (!body) return;
 
-  const toggleDrink = (id) =>
-    setDrinks((prev) =>
-      prev.map((d) =>
-        d.id === id ? { ...d, selected: !d.selected } : d
-      )
-    );
+    if (isOpen) {
+      body.classList.add("customize-open");
+    } else {
+      body.classList.remove("customize-open");
+    }
 
-  const selectBread = (id) =>
-    setBreads((prev) => prev.map((b) => ({ ...b, selected: b.id === id })));
+    return () => body.classList.remove("customize-open");
+  }, [isOpen]);
 
-  const toggleSauce = (id) =>
-    setSauces((prev) => {
-      const selectedCount = prev.filter((s) => s.selected).length;
-      return prev.map((s) =>
-        s.id === id
-          ? {
-              ...s,
-              selected:
-                s.selected || selectedCount < maxSauces ? !s.selected : s.selected,
-            }
-          : s
-      );
-    });
+  // Funções para adicionar/remover ingredientes (permite duplicatas)
+  const addIngredient = (id) => {
+    if (selectedIngredientIds.length < maxExtras) {
+      setSelectedIngredientIds([...selectedIngredientIds, id]);
+    }
+  };
 
-  const selectedCount = ingredients.filter((i) => i.selected).length;
-  const maxExtras = 10;
+  const removeIngredient = (index) => {
+    setSelectedIngredientIds(selectedIngredientIds.filter((_, i) => i !== index));
+  };
+
+  const addDrink = (id) => {
+    setSelectedDrinkIds([...selectedDrinkIds, id]);
+  };
+
+  const removeDrink = (index) => {
+    setSelectedDrinkIds(selectedDrinkIds.filter((_, i) => i !== index));
+  };
+
+  const selectBread = (id) => {
+    setSelectedBreadId(selectedBreadId === id ? null : id);
+  };
+
+  const addSauce = (id) => {
+    if (selectedSauceIds.length < maxSauces) {
+      setSelectedSauceIds([...selectedSauceIds, id]);
+    }
+  };
+
+  const removeSauce = (index) => {
+    setSelectedSauceIds(selectedSauceIds.filter((_, i) => i !== index));
+  };
 
   return (
     <>
@@ -162,12 +182,13 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
             <div>
               <div className="flex justify-between items-center mb-2">
                 <h3 className="text-lg font-semibold text-gray-800">
-                  Deseja adicional?
+                  Deseja adicional? (máx. 5)
                 </h3>
                 <span className="text-xs bg-gray-800 text-white px-2 py-0.5 rounded-full">
-                  {selectedCount}/{maxExtras}
+                  {selectedIngredientIds.length}/{maxExtras}
                 </span>
               </div>
+
               <div className="divide-y divide-gray-200">
                 {ingredients.map((ing) => (
                   <div
@@ -182,14 +203,15 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
                       </p>
                     </div>
                     <button
-                      onClick={() => toggleIngredient(ing.id)}
+                      onClick={() => addIngredient(ing.id)}
+                      disabled={selectedIngredientIds.length >= maxExtras}
                       className={`w-8 h-8 flex items-center justify-center rounded-full border text-orange-500 text-lg font-bold transition-all ${
-                        ing.selected
-                          ? "bg-orange-500 text-white border-orange-500"
+                        selectedIngredientIds.length >= maxExtras
+                          ? "opacity-50 cursor-not-allowed border-gray-300"
                           : "border-orange-500 hover:bg-orange-50"
                       }`}
                     >
-                      {ing.selected ? "✓" : "+"}
+                      +
                     </button>
                   </div>
                 ))}
@@ -201,6 +223,32 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
               <h3 className="text-lg font-semibold text-gray-800 mb-3">
                 Deseja um refrigerante?
               </h3>
+
+              {selectedDrinkIds.length > 0 && (
+                <div className="mb-4 p-3 bg-orange-50 rounded-lg">
+                  <p className="text-xs font-semibold text-gray-700 mb-2">Selecionados:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedDrinkIds.map((id, idx) => {
+                      const drink = drinks.find((d) => d.id === id);
+                      return (
+                        <div
+                          key={idx}
+                          className="bg-orange-500 text-white text-xs px-3 py-1 rounded-full flex items-center gap-1"
+                        >
+                          {drink?.name}
+                          <button
+                            onClick={() => removeDrink(idx)}
+                            className="ml-1 hover:bg-orange-600 rounded-full w-4 h-4 flex items-center justify-center"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <div className="divide-y divide-gray-200">
                 {drinks.map((drink) => (
                   <div
@@ -214,14 +262,10 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
                       </span>
                     </h4>
                     <button
-                      onClick={() => toggleDrink(drink.id)}
-                      className={`w-8 h-8 flex items-center justify-center rounded-full border text-orange-500 text-lg font-bold transition-all ${
-                        drink.selected
-                          ? "bg-orange-500 text-white border-orange-500"
-                          : "border-orange-500 hover:bg-orange-50"
-                      }`}
+                      onClick={() => addDrink(drink.id)}
+                      className={`w-8 h-8 flex items-center justify-center rounded-full border text-orange-500 text-lg font-bold transition-all border-orange-500 hover:bg-orange-50`}
                     >
-                      {drink.selected ? "✓" : "+"}
+                      +
                     </button>
                   </div>
                 ))}
@@ -249,12 +293,12 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
                     <button
                       onClick={() => selectBread(bread.id)}
                       className={`w-8 h-8 flex items-center justify-center rounded-full border text-orange-500 text-lg font-bold transition-all ${
-                        bread.selected
+                        selectedBreadId === bread.id
                           ? "bg-orange-500 text-white border-orange-500"
                           : "border-orange-500 hover:bg-orange-50"
                       }`}
                     >
-                      {bread.selected ? "✓" : "+"}
+                      {selectedBreadId === bread.id ? "✓" : "+"}
                     </button>
                   </div>
                 ))}
@@ -263,14 +307,42 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
 
             {/* Molhos Extras */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-1">
-                Deseja molho extra?
-              </h3>
-              <p className="text-sm text-gray-500 mb-3">
-                Escolha até {maxSauces} opções.
-              </p>
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Deseja molho extra? (máx. 2)
+                </h3>
+                <span className="text-xs bg-gray-800 text-white px-2 py-0.5 rounded-full">
+                  {selectedSauceIds.length}/{maxSauces}
+                </span>
+              </div>
+
+              {selectedSauceIds.length > 0 && (
+                <div className="mb-4 p-3 bg-orange-50 rounded-lg">
+                  <p className="text-xs font-semibold text-gray-700 mb-2">Selecionados:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedSauceIds.map((id, idx) => {
+                      const sauce = saucesAvailable.find((s) => s.id === id);
+                      return (
+                        <div
+                          key={idx}
+                          className="bg-orange-500 text-white text-xs px-3 py-1 rounded-full flex items-center gap-1"
+                        >
+                          {sauce?.name}
+                          <button
+                            onClick={() => removeSauce(idx)}
+                            className="ml-1 hover:bg-orange-600 rounded-full w-4 h-4 flex items-center justify-center"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <div className="divide-y divide-gray-200">
-                {sauces.map((s) => (
+                {saucesAvailable.map((s) => (
                   <div
                     key={s.id}
                     className="flex justify-between items-center py-3"
@@ -283,14 +355,15 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
                       </p>
                     </div>
                     <button
-                      onClick={() => toggleSauce(s.id)}
+                      onClick={() => addSauce(s.id)}
+                      disabled={selectedSauceIds.length >= maxSauces}
                       className={`w-8 h-8 flex items-center justify-center rounded-full border text-orange-500 text-lg font-bold transition-all ${
-                        s.selected
-                          ? "bg-orange-500 text-white border-orange-500"
+                        selectedSauceIds.length >= maxSauces
+                          ? "opacity-50 cursor-not-allowed border-gray-300"
                           : "border-orange-500 hover:bg-orange-50"
                       }`}
                     >
-                      {s.selected ? "✓" : "+"}
+                      +
                     </button>
                   </div>
                 ))}
@@ -317,12 +390,12 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
               onClick={() => {
                 const customItem = {
                   ...item,
-                  qtd: quantity, // Usar 'qtd' para consistência com o carrinho
+                  qtd: quantity,
                   meatPoint,
-                  ingredients,
-                  drinks,
-                  breads,
-                  sauces,
+                  selectedIngredientIds,
+                  selectedDrinkIds,
+                  selectedBreadId,
+                  selectedSauceIds,
                   observation,
                 };
                 setIsOpen(false);

@@ -44,13 +44,42 @@
 .hc-item:hover, .hc-item:focus { background: #111; }
 .hc-sep { height: 1px; background: #FFD400; opacity: .4; margin: 6px 0; }
 
+/* Deslocar acessibilidade quando carrinho abrir (todos os tamanhos) */
+body.cart-open .hc-toggle {
+  inset-inline-end: 370px; /* desloca para o lado esquerdo quando carrinho abre */
+}
+
+/* Deslocar acessibilidade quando modal de customização abrir */
+body.customize-open .hc-toggle {
+  inset-inline-end: 370px; /* desloca para o lado esquerdo quando customização abre */
+}
+
+/* VLibras: botão de acesso (widget padrão usa esse atributo) */
+body.cart-open [vw-access-button] {
+  right: 370px !important; /* mesmo deslocamento do toggle de contraste */
+}
+
+/* VLibras: botão de acesso quando customização abrir */
+body.customize-open [vw-access-button] {
+  right: 370px !important; /* mesmo deslocamento do toggle de contraste */
+}
+
 @media (min-width: 1024px) {
   body.cart-open .hc-toggle {
-    inset-inline-end: 460px; /* ajusta esse valor até ficar coladinho no carrinho */
+    inset-inline-end: 460px; /* ajusta mais para desktop */
+  }
+
+  body.customize-open .hc-toggle {
+    inset-inline-end: 460px; /* ajusta mais para desktop na customização */
   }
 
   /* VLibras: botão de acesso (widget padrão usa esse atributo) */
   body.cart-open [vw-access-button] {
-    right: 460px !important; /* mesmo deslocamento do carrinho */
+    right: 460px !important; /* mesmo deslocamento do carrinho em desktop */
+  }
+
+  /* VLibras: botão de acesso quando customização abrir */
+  body.customize-open [vw-access-button] {
+    right: 460px !important; /* mesmo deslocamento em desktop */
   }
 }
