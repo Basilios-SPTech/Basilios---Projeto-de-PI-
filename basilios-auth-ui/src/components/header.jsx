@@ -1,6 +1,6 @@
 /** Header  */
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Menu, User } from "lucide-react";
 import SearchBar from "./SearchBar.jsx";
 import SidebarAdm from "./SidebarAdm.jsx";
@@ -86,9 +86,31 @@ export default function Header() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  const location = useLocation();
+
   const goToSection = (label) => {
-    const el = document.querySelector(`section[data-section="${slug(label)}"]`);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    const target = slug(label);
+
+    console.log("Header.goToSection ->", { label, target, path: location.pathname });
+
+    // Save target in sessionStorage so Home can pick it up after navigation
+    try {
+      sessionStorage.setItem("scrollToSection", target);
+      console.log("Header: saved scrollToSection ->", target);
+    } catch (e) {
+      console.warn("Header: failed to write sessionStorage", e);
+    }
+
+    if (location.pathname !== "/home") {
+      navigate("/home"); return;
+    }
+
+    // If already on Home, dispatch event and also clear sessionStorage
+    const ev = new CustomEvent("scrollToSection", { detail: target });
+    window.dispatchEvent(ev);
+    try {
+      sessionStorage.removeItem("scrollToSection");
+    } catch (e) { }
   };
 
   // 🔎 quando o usuário busca (Enter / clique na lupa)
@@ -181,9 +203,8 @@ export default function Header() {
                 key={label}
                 role="button"
                 tabIndex={0}
-                className={`section-link ${
-                  activeSection === i ? "active" : ""
-                }`}
+                className={`section-link ${activeSection === i ? "active" : ""
+                  }`}
                 onClick={() => goToSection(label)}
                 onKeyDown={(e) =>
                   e.key === "Enter" ? goToSection(label) : null

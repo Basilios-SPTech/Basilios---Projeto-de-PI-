@@ -103,6 +103,136 @@ export default function Home( ) {
     return Array.from(map.entries());
   }, [produtosOrdenados]);
 
+  // Integração com a navbar: mapear seções fixas para produtos por nome
+  const slug = (s) =>
+    s
+      .toString()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, "-")
+      .toLowerCase();
+
+  const NAV_SECTION_ORDER = [
+    "Combos Individuais",
+    "Lanches Premium",
+    "Beirutes",
+    "Hot-Dog",
+    "Porções",
+  ];
+
+  const SECTION_PRODUCT_NAMES = {
+    "Combos Individuais": ["Combo X-Bacon Salada", "Combo X-Salada"],
+    "Lanches Premium": [
+      "Glicério",
+      "Vila Monumento",
+      "Basilios",
+      "Cambuci",
+      "Paraiso",
+      "Vila Mariana",
+      "Klabin",
+    ],
+    Beirutes: [
+      "Beirute médio (Filé Mignon)",
+      "Beirute Grande (Frango)",
+      "Beirute médio (Frango)",
+      "Beirute Grande (Filé Mignon)",
+    ],
+    "Hot-Dog": ["Dog Premium", "Dog Maionese Batata Palha"],
+    "Porções": [
+      "Batata Frita",
+      "Batata Crinkle",
+      "Batata Frita c/ Cheddar e Bacon",
+      "Onion Rings",
+      "Batata Canoa",
+    ],
+  };
+
+  const customSections = useMemo(() => {
+    const nameMap = {};
+    // normalize names to lowercase for comparison
+    for (const key of Object.keys(SECTION_PRODUCT_NAMES)) {
+      nameMap[key] = SECTION_PRODUCT_NAMES[key].map((n) => (n || "").toLowerCase().trim());
+    }
+
+    const included = new Set();
+
+    const sections = NAV_SECTION_ORDER.map((label) => {
+      const names = nameMap[label] || [];
+      const items = produtos.filter((p) => {
+        const pn = (p.nome || "").toLowerCase().trim();
+        if (names.includes(pn)) {
+          included.add(p.index);
+          return true;
+        }
+        return false;
+      });
+
+      return [label, items];
+    });
+
+    return { sections, included };
+  }, [produtos]);
+
+  // Escuta eventos de scroll disparados pelo Header para rolar até a seção
+  useEffect(() => {
+    const handler = (e) => {
+      const target = e?.detail;
+      if (!target) return;
+
+      const tryScroll = () => {
+        const el = document.querySelector(`[data-section="${target}"]`);
+        if (el) {
+          console.log("Home: scrolling to", target);
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+          return true;
+        }
+        return false;
+      };
+
+      if (!tryScroll()) {
+        // retry shortly in case Home is still rendering
+        setTimeout(() => tryScroll(), 350);
+      }
+    };
+
+    window.addEventListener("scrollToSection", handler);
+
+    // also try to read sessionStorage on mount (in case header navigated to / and set it)
+    try {
+      const pending = sessionStorage.getItem("scrollToSection");
+      if (pending) {
+        console.log("Home: found pending scrollToSection ->", pending);
+
+        // Polling attempts for up to ~2 seconds (10 attempts)
+        let attempts = 0;
+        const maxAttempts = 10;
+        const interval = setInterval(() => {
+          attempts += 1;
+          const el = document.querySelector(`[data-section="${pending}"]`);
+
+          if (el) {
+            console.log("Home: polling found element, scrolling ->", pending);
+            el.scrollIntoView({ behavior: "smooth", block: "start" });
+            clearInterval(interval);
+            try {
+              sessionStorage.removeItem("scrollToSection");
+            } catch (e) {}
+            return;
+          }
+
+          if (attempts >= maxAttempts) {
+            clearInterval(interval);
+            console.warn("Home: could not find section after polling:", pending);
+          }
+        }, 200);
+      }
+    } catch (err) {
+      console.warn("Home: sessionStorage read failed", err);
+    }
+
+    return () => window.removeEventListener("scrollToSection", handler);
+  }, []);
+
   function addToCart(produto, customOptions = {}) {
     const carrinho = JSON.parse(localStorage.getItem(CHAVE_CART) || "[]");
     const novo = Array.isArray(carrinho) ? carrinho : [];
@@ -182,54 +312,123 @@ export default function Home( ) {
       )}
       <section className="hp-grid-wrap">
         {cat === "Todas" ? (
-          secoesPorCategoria.length === 0 ? (
-            <p className="hp-empty">
-              Nada por aqui… Experimente limpar filtros ou cadastrar novos itens.
-            </p>
-          ) : (
-            secoesPorCategoria.map(([categoria, itens]) => (
-              <div key={categoria} className="hp-section">
-                <h2 className="hp-section__title">{categoria}</h2>
+          // Renderizamos primeiro as seções personalizadas mapeadas pela navbar
+          (function () {
+            const parts = [];
 
-                <div className="hp-grid">
-                  {itens.map((p) => (
-                    <article key={p.index} className="hp-card">
-                      <div className="hp-card__media">
-                        {p.imagem ? (
-                          <img src={p.imagem} alt={p.nome || "Produto"} />
-                        ) : (
-                          <div className="hp-card__placeholder">Sem imagem</div>
-                        )}
-                      </div>
+            // Seções customizadas (ordem definida em customSections)
+            for (const [label, items] of customSections.sections) {
+              parts.push(
+                <div key={label} className="hp-section" data-section={slug(label)}>
+                  <h2 className="hp-section__title">{label}</h2>
 
-                      <div className="hp-card__body">
-                        <h3 className="hp-card__title">{p.nome}</h3>
-                        <p className="hp-card__desc">{p.descricao}</p>
-                      </div>
+                  {items.length === 0 ? (
+                    <p className="hp-empty">Nenhum item encontrado nesta seção.</p>
+                  ) : (
+                    <div className="hp-grid">
+                      {items.map((p) => (
+                        <article key={p.index} className="hp-card">
+                          <div className="hp-card__media">
+                            {p.imagem ? (
+                              <img src={p.imagem} alt={p.nome || "Produto"} />
+                            ) : (
+                              <div className="hp-card__placeholder">Sem imagem</div>
+                            )}
+                          </div>
 
-                      <div className="hp-card__footer">
-                        <div className="hp-price">
-                          <span>R$</span>
-                          <strong>
-                            {Number(p.preco || "0")
-                              .toFixed(2)
-                              .replace(".", ",")}
-                          </strong>
-                        </div>
-                        <button
-                          className="btn btn-primary hp-add"
-                          onClick={() => handleCustomize(p)}
-                        >
-                          Adicionar
-                        </button>
-                      </div>
-                    </article>
-                  ))}
+                          <div className="hp-card__body">
+                            <h3 className="hp-card__title">{p.nome}</h3>
+                            <p className="hp-card__desc">{p.descricao}</p>
+                          </div>
+
+                          <div className="hp-card__footer">
+                            <div className="hp-price">
+                              <span>R$</span>
+                              <strong>
+                                {Number(p.preco || "0")
+                                  .toFixed(2)
+                                  .replace(".", ",")}
+                              </strong>
+                            </div>
+                            <button
+                              className="btn btn-primary hp-add"
+                              onClick={() => handleCustomize(p)}
+                            >
+                              Adicionar
+                            </button>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))
-          )
-          
+              );
+            }
+
+            // Produtos restantes (não incluídos nas seções customizadas)
+            const restantes = produtos.filter((p) => !customSections.included.has(p.index));
+            if (restantes.length > 0) {
+              const map = new Map();
+              for (const p of restantes) {
+                const categoria = (p.categoria || "").trim() || "Sem categoria";
+                if (!map.has(categoria)) map.set(categoria, []);
+                map.get(categoria).push(p);
+              }
+
+              for (const [categoria, itens] of map.entries()) {
+                parts.push(
+                  <div key={categoria} className="hp-section" data-section={slug(categoria)}>
+                    <h2 className="hp-section__title">{categoria}</h2>
+                    <div className="hp-grid">
+                      {itens.map((p) => (
+                        <article key={p.index} className="hp-card">
+                          <div className="hp-card__media">
+                            {p.imagem ? (
+                              <img src={p.imagem} alt={p.nome || "Produto"} />
+                            ) : (
+                              <div className="hp-card__placeholder">Sem imagem</div>
+                            )}
+                          </div>
+
+                          <div className="hp-card__body">
+                            <h3 className="hp-card__title">{p.nome}</h3>
+                            <p className="hp-card__desc">{p.descricao}</p>
+                          </div>
+
+                          <div className="hp-card__footer">
+                            <div className="hp-price">
+                              <span>R$</span>
+                              <strong>
+                                {Number(p.preco || "0")
+                                  .toFixed(2)
+                                  .replace(".", ",")}
+                              </strong>
+                            </div>
+                            <button
+                              className="btn btn-primary hp-add"
+                              onClick={() => handleCustomize(p)}
+                            >
+                              Adicionar
+                            </button>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+            }
+
+            if (parts.length === 0) {
+              return (
+                <p className="hp-empty">
+                  Nada por aqui… Experimente limpar filtros ou cadastrar novos itens.
+                </p>
+              );
+            }
+
+            return parts;
+          })()
         ) : filtrados.length === 0 ? (
           <p className="hp-empty">
             Nada por aqui… Experimente limpar filtros ou cadastrar novos itens.
@@ -270,7 +469,6 @@ export default function Home( ) {
               </article>
             ))}
           </div>
-          
         )}
       </section>
     </div>

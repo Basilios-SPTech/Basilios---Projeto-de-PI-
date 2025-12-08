@@ -1,7 +1,18 @@
 import React from "react";
 import { Plus, Minus, Trash2, Pencil } from "lucide-react"; // 👈 importa o Pencil também
 
-export default function CartItem({ item, onUpdateQuantity, onRemove, onEdit }) {
+export default function CartItem({
+  item,
+  onUpdateQuantity,
+  onRemove,
+  onEdit,
+  onRemoveAdicional,
+  onAddAdicional,
+  onRemoveSauce,
+  onAddSauce,
+  onRemoveAdicionalAt,
+  onRemoveSauceAt,
+}) {
   return (
     <div className="flex gap-4 p-4 bg-gray-50 rounded-lg">
       {/* Imagem do produto */}
@@ -26,36 +37,58 @@ export default function CartItem({ item, onUpdateQuantity, onRemove, onEdit }) {
           </span>
         )}
         {item.observation && (
-            <span className="block text-xs text-gray-500 italic mt-1">
-              Obs: {item.observation}
-            </span>
-          )}
-          {/* Exibir Adições/Customizações */}
-          {item.ingredients?.filter(i => i.selected).length > 0 && (
-            <span className="block text-xs text-gray-500 mt-1">
-              Adicionais: {item.ingredients.filter(i => i.selected).map(i => i.name).join(', ')}
-            </span>
-          )}
-          {item.drinks?.filter(d => d.selected).length > 0 && (
-            <span className="block text-xs text-gray-500 mt-1">
-              Bebidas: {item.drinks.filter(d => d.selected).map(d => d.name).join(', ')}
-            </span>
-          )}
-          {item.breads?.filter(b => b.selected).length > 0 && (
-            <span className="block text-xs text-gray-500 mt-1">
-              Pão: {item.breads.filter(b => b.selected).map(b => b.name).join(', ')}
-            </span>
-          )}
-          {item.sauces?.filter(s => s.selected).length > 0 && (
-            <span className="block text-xs text-gray-500 mt-1">
-              Molhos: {item.sauces.filter(s => s.selected).map(s => s.name).join(', ')}
-            </span>
-          )}
-          {item.meatPoint && item.meatPoint !== "médio" && (
-            <span className="block text-xs text-gray-500 mt-1">
-              Ponto da Carne: {item.meatPoint}
-            </span>
-          )}
+          <span className="block text-xs text-gray-500 italic mt-1">
+            Obs: {item.observation}
+          </span>
+        )}
+
+        {/* Exibir contadores de adicionais e molhos (sem nomes) */}
+        {Array.isArray(item.selectedIngredientNames) && item.selectedIngredientNames.length > 0 && (
+          <div className="mt-2">
+            <p className="text-xs text-gray-700 mb-2">Adicionais selecionados:</p>
+            <div className="flex flex-wrap gap-2">
+              {item.selectedIngredientNames.map((name, idx) => (
+                <div key={idx} className="bg-orange-500 text-white text-xs px-3 py-1 rounded-full flex items-center gap-2">
+                  <span>{name}</span>
+                  <button
+                    onClick={() => onRemoveAdicionalAt?.(item.id, idx)}
+                    className="ml-1 hover:bg-orange-600 rounded-full w-5 h-5 flex items-center justify-center cursor-pointer"
+                    aria-label={`Remover adicional ${name}`}
+                  >
+
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {Array.isArray(item.selectedSauceNames) && item.selectedSauceNames.length > 0 && (
+          <div className="mt-2">
+            <p className="text-xs text-gray-700 mb-2">Molhos selecionados:</p>
+            <div className="flex flex-wrap gap-2">
+              {item.selectedSauceNames.map((name, idx) => (
+                <div key={idx} className="bg-orange-500 text-white text-xs px-3 py-1 rounded-full flex items-center gap-2">
+                  <span>{name}</span>
+                  <button
+                    onClick={() => onRemoveSauceAt?.(item.id, idx)}
+                    className="ml-1 hover:bg-orange-600 rounded-full w-5 h-5 flex items-center justify-center"
+                    aria-label={`Remover molho ${name}`}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {item.meatPoint && item.meatPoint !== "médio" && (
+          <span className="block text-xs text-gray-500 mt-1">
+            Ponto da Carne: {item.meatPoint}
+          </span>
+        )}
         <p className="text-sm text-gray-600 mt-1">
           R$ {item.price.toFixed(2).replace(".", ",")}
         </p>
@@ -66,7 +99,7 @@ export default function CartItem({ item, onUpdateQuantity, onRemove, onEdit }) {
           <div className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg">
             <button
               onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
-              className="p-1.5 hover:bg-gray-100 rounded-l-lg transition-colors"
+              className="p-1.5 hover:bg-gray-100 rounded-l-lg transition-colors cursor-pointer"
             >
               <Minus className="w-4 h-4" />
             </button>
@@ -75,7 +108,7 @@ export default function CartItem({ item, onUpdateQuantity, onRemove, onEdit }) {
             </span>
             <button
               onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
-              className="p-1.5 hover:bg-gray-100 rounded-r-lg transition-colors"
+              className="p-1.5 hover:bg-gray-100 rounded-r-lg transition-colors cursor-pointer"
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -84,18 +117,20 @@ export default function CartItem({ item, onUpdateQuantity, onRemove, onEdit }) {
           {/* Botões de ação */}
           <div className="flex items-center gap-2">
             <button
-              onClick={() => onEdit?.(item)} // 👈 só chama se for passado
-              className="p-2 hover:bg-blue-50 rounded-lg transition-colors"
+              onClick={() => onEdit?.(item)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
             >
-              <Pencil className="w-4 h-4 text-blue-600" />
+              <Pencil className="w-4 h-4 text-gray-700" />
             </button>
+
 
             <button
               onClick={() => onRemove(item.id)}
-              className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+              className="p-2 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
             >
               <Trash2 className="w-4 h-4 text-red-600" />
             </button>
+
           </div>
         </div>
       </div>

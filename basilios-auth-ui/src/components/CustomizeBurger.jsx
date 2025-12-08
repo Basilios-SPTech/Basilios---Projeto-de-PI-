@@ -189,6 +189,33 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
                 </span>
               </div>
 
+              {/* Lista de adicionais selecionados (pills) */}
+              {selectedIngredientIds.length > 0 && (
+                <div className="mb-4 p-3 bg-orange-50 rounded-lg">
+                  <p className="text-xs font-semibold text-gray-700 mb-2">Selecionados:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedIngredientIds.map((id, idx) => {
+                      const ing = ingredients.find((i) => i.id === id);
+                      return (
+                        <div
+                          key={idx}
+                          className="bg-orange-500 text-white text-xs px-3 py-1 rounded-full flex items-center gap-1"
+                        >
+                          {ing?.name}
+                          <button
+                            onClick={() => removeIngredient(idx)}
+                            className="ml-1 hover:bg-orange-600 rounded-full w-4 h-4 flex items-center justify-center"
+                            aria-label={`Remover ${ing?.name}`}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <div className="divide-y divide-gray-200">
                 {ingredients.map((ing) => (
                   <div
@@ -388,16 +415,27 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
           <div className="border-t border-gray-200 p-6 bg-gray-50">
             <button
               onClick={() => {
+                const selectedIngredientNames = selectedIngredientIds.map((id) => {
+                  return ingredients.find((i) => i.id === id)?.name || "";
+                });
+
+                const selectedSauceNames = selectedSauceIds.map((id) => {
+                  return saucesAvailable.find((s) => s.id === id)?.name || "";
+                });
+
                 const customItem = {
                   ...item,
                   qtd: quantity,
                   meatPoint,
                   selectedIngredientIds,
+                  selectedIngredientNames,
                   selectedDrinkIds,
                   selectedBreadId,
                   selectedSauceIds,
+                  selectedSauceNames,
                   observation,
                 };
+
                 setIsOpen(false);
                 setTimeout(() => onSave(customItem), 300);
               }}

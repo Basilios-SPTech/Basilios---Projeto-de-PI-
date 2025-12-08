@@ -2,7 +2,6 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import ProdutoForm from "../components/ProdutoForm.jsx";
-import Modal from "../components/Modal.jsx";
 import MenuButton from "../components/MenuButtonAdm.jsx";
 import SidebarAdm from "../components/SidebarAdm.jsx";
 import {
@@ -61,8 +60,8 @@ export default function CadastrarProduto() {
     preco: "",
     categoria: "",
     subcategoria: "",
-    imagem: "",         
-    imagemArquivo: null, 
+    imagem: "",
+    imagemArquivo: null,
     pausado: false,
   });
 
@@ -82,9 +81,7 @@ export default function CadastrarProduto() {
           categoria: p.category ?? p.categoria ?? "",
           subcategoria: p.subcategory ?? p.subcategoria ?? "",
           pausado: p.isPaused ?? p.paused ?? false,
-          imagem: p.imageUrl
-            ? `${API_BASE}${p.imageUrl}`
-            : p.imagem || "",
+          imagem: p.imageUrl ? `${API_BASE}${p.imageUrl}` : p.imagem || "",
         }));
 
         setProdutos(adaptados);
@@ -103,7 +100,6 @@ export default function CadastrarProduto() {
 
     carregarProdutos();
   }, []);
-
 
   useEffect(() => {
     localStorage.setItem(CHAVE_STORAGE, JSON.stringify(produtos));
@@ -132,8 +128,8 @@ export default function CadastrarProduto() {
       fr.onload = (ev) => {
         setFormData((prev) => ({
           ...prev,
-          imagem: ev.target.result, 
-          imagemArquivo: file,      
+          imagem: ev.target.result,
+          imagemArquivo: file,
         }));
       };
       fr.readAsDataURL(file);
@@ -201,12 +197,12 @@ export default function CadastrarProduto() {
       return;
     }
 
-    // EDIÇÃO: monta DTO, faz upload da imagem se necessário e chama o back
+    // EDIÇÃO
     if (indiceEdicao !== null) {
       try {
-        // upload de imagem apenas para o caso de ter trocado o arquivo
         let imageUrl = null;
 
+        // se usuário trocou o arquivo, faz upload de novo
         if (formData.imagemArquivo) {
           const fd = new FormData();
           fd.append("file", formData.imagemArquivo);
@@ -215,7 +211,7 @@ export default function CadastrarProduto() {
             headers: { "Content-Type": "multipart/form-data" },
           });
 
-          imageUrl = respUpload.data;
+          imageUrl = respUpload.data; // ex: "/uploads/xxx.jpg"
         }
 
         const dtoUpdate = {
@@ -232,7 +228,6 @@ export default function CadastrarProduto() {
                 .filter(Boolean)
             : [],
           ingredientsDetailed: [],
-          isPaused: !!formData.pausado,
           ...(imageUrl ? { imageUrl } : {}),
         };
 
@@ -241,7 +236,9 @@ export default function CadastrarProduto() {
         const imagemAtual =
           atualizadoBack.imageUrl
             ? `${API_BASE}${atualizadoBack.imageUrl}`
-            : produtos.find((p) => p.index === indiceEdicao)?.imagem || formData.imagem || "";
+            : produtos.find((p) => p.index === indiceEdicao)?.imagem ||
+              formData.imagem ||
+              "";
 
         const atualizadoLocal = {
           index: atualizadoBack.id ?? indiceEdicao,
@@ -252,7 +249,8 @@ export default function CadastrarProduto() {
             atualizadoBack.price ??
             precoNum,
           categoria: atualizadoBack.category ?? formData.categoria,
-          subcategoria: (atualizadoBack.subcategory ?? formData.subcategoria) || "",
+          subcategoria:
+            (atualizadoBack.subcategory ?? formData.subcategoria) || "",
           pausado: atualizadoBack.isPaused ?? !!formData.pausado,
           imagem: imagemAtual,
         };
@@ -272,9 +270,8 @@ export default function CadastrarProduto() {
       return;
     }
 
-    // CRIAÇÃO → aqui vai pro backend
+    // CRIAÇÃO
     try {
-      // 1) Upload da imagem (se tiver arquivo)
       let imageUrl = null;
 
       if (formData.imagemArquivo) {
@@ -290,7 +287,6 @@ export default function CadastrarProduto() {
         imageUrl = respUpload.data; // ex: "/uploads/962690f8-....jpg"
       }
 
-      // 2) Monta DTO do produto incluindo imageUrl
       const dto = {
         name: formData.nome.trim(),
         description: formData.descricao.trim(),
@@ -300,18 +296,17 @@ export default function CadastrarProduto() {
         tags: [],
         ingredientes: formData.ingrediente
           ? formData.ingrediente
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean)
           : [],
         ingredientsDetailed: [],
         isPaused: !!formData.pausado,
-        imageUrl, // <-- vai pro backend
+        imageUrl,
       };
 
       const produtoCriadoDoBack = await criarProduto(dto);
 
-      // 3) Monta representação local (pra lista abaixo do form)
       const novoProdutoLocal = {
         index: produtoCriadoDoBack.id,
         nome: produtoCriadoDoBack.name,
@@ -325,10 +320,9 @@ export default function CadastrarProduto() {
           produtoCriadoDoBack.paused ??
           produtoCriadoDoBack.isPaused ??
           false,
-        // usa URL completa do back pra exibir no admin
         imagem: produtoCriadoDoBack.imageUrl
           ? `${API_BASE}${produtoCriadoDoBack.imageUrl}`
-          : (formData.imagem || ""),
+          : formData.imagem || "",
       };
 
       setProdutos((prev) => [novoProdutoLocal, ...prev]);
@@ -360,7 +354,7 @@ export default function CadastrarProduto() {
       categoria: produto.categoria || "",
       subcategoria: produto.subcategoria || "",
       imagem: produto.imagem || "",
-      imagemArquivo: null, 
+      imagemArquivo: null,
       pausado: !!produto.pausado,
     });
 
@@ -383,7 +377,6 @@ export default function CadastrarProduto() {
       alert("Não foi possível deletar o produto.");
     }
   }
-
 
   async function handlePausar(index) {
     const alvo = produtos.find((p) => p.index === index);
@@ -420,10 +413,9 @@ export default function CadastrarProduto() {
     }
   }
 
-
   const previewPreco =
     formData.preco !== "" &&
-      !isNaN(Number(String(formData.preco).replace(",", ".")))
+    !isNaN(Number(String(formData.preco).replace(",", ".")))
       ? Number(String(formData.preco).replace(",", ".")).toFixed(2)
       : "0,00";
 
@@ -542,8 +534,9 @@ export default function CadastrarProduto() {
                 {itens.map((p) => (
                   <article
                     key={p.index}
-                    className={`product-card ${p.pausado ? "is-paused" : ""
-                      }`}
+                    className={`product-card ${
+                      p.pausado ? "is-paused" : ""
+                    }`}
                   >
                     <div className="product-media">
                       {p.imagem ? (
@@ -622,26 +615,24 @@ export default function CadastrarProduto() {
       </section>
 
       {modalOpen && (
-        <Modal open={true} isOpen={true} onClose={handleCloseModal}>
-          <div className="cp-modal-overlay" onClick={handleCloseModal}>
-            <div
-              className="cp-modal"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="cp-modal__body">
-                <ProdutoForm
-                  formData={formData}
-                  indiceEdicao={indiceEdicao}
-                  onChange={handleChange}
-                  onSubmit={handleSubmit}
-                  onCancel={handleCloseModal}
-                  subcatOptions={subcatOptions}
-                  showCloseButton={true}
-                />
-              </div>
+        <div className="cp-modal-overlay" onClick={handleCloseModal}>
+          <div
+            className="cp-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="cp-modal__body">
+              <ProdutoForm
+                formData={formData}
+                indiceEdicao={indiceEdicao}
+                onChange={handleChange}
+                onSubmit={handleSubmit}
+                onCancel={handleCloseModal}
+                subcatOptions={subcatOptions}
+                showCloseButton={true}
+              />
             </div>
           </div>
-        </Modal>
+        </div>
       )}
     </div>
   );

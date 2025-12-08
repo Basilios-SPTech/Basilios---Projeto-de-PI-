@@ -83,7 +83,7 @@ export default function Cart() {
       {/* Botão Flutuante */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 bg-black text-white p-4 rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all z-[100]"
+        className="fixed bottom-6 right-6 bg-black text-white p-4 rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all z-[100] cursor-pointer"
       >
         <ShoppingCart className="w-6 h-6" />
         {totalItems > 0 && (
@@ -146,12 +146,102 @@ export default function Cart() {
                       price: item.preco,
                       quantity: item.qtd,
                       image: item.imagem,
+                      // custom fields (if exist)
+                      selectedIngredientIds: item.selectedIngredientIds || [],
+                      selectedIngredientNames: item.selectedIngredientNames || [],
+                      selectedSauceIds: item.selectedSauceIds || [],
+                      selectedSauceNames: item.selectedSauceNames || [],
+                      isCustom: !!item.isCustom,
+                      observation: item.observation || "",
+                      meatPoint: item.meatPoint || null,
                     }}
                     onUpdateQuantity={handleUpdateQuantity}
                     onRemove={handleRemoveItem}
-                    onEdit={(item) => {
-                      setSelectedItem(item);
-                      setIsCustomizeOpen(true);
+                    onEdit={(it) => {
+                      // open customize modal for this cart item
+                      const full = cartItems.find((c) => c.id === it.id);
+                      if (full) {
+                        setSelectedItem(full);
+                        setIsCustomizeOpen(true);
+                      }
+                    }}
+                    onRemoveAdicional={(itemId) => {
+                      const atualizados = cartItems.map((c) => {
+                        if (c.id !== itemId) return c;
+                        const ids = Array.isArray(c.selectedIngredientIds)
+                          ? [...c.selectedIngredientIds]
+                          : [];
+                        if (ids.length === 0) return c;
+                        ids.pop();
+                        return { ...c, selectedIngredientIds: ids };
+                      });
+                      setCartItems(atualizados);
+                      localStorage.setItem(CHAVE_CART, JSON.stringify(atualizados));
+                      window.dispatchEvent(new Event("cartUpdated"));
+                    }}
+                    onRemoveSauce={(itemId) => {
+                      const atualizados = cartItems.map((c) => {
+                        if (c.id !== itemId) return c;
+                        const ids = Array.isArray(c.selectedSauceIds)
+                          ? [...c.selectedSauceIds]
+                          : [];
+                        if (ids.length === 0) return c;
+                        ids.pop();
+                        return { ...c, selectedSauceIds: ids };
+                      });
+                      setCartItems(atualizados);
+                      localStorage.setItem(CHAVE_CART, JSON.stringify(atualizados));
+                      window.dispatchEvent(new Event("cartUpdated"));
+                    }}
+                    onRemoveAdicionalAt={(itemId, idx) => {
+                      const atualizados = cartItems.map((c) => {
+                        if (c.id !== itemId) return c;
+                        const names = Array.isArray(c.selectedIngredientNames)
+                          ? [...c.selectedIngredientNames]
+                          : [];
+                        const ids = Array.isArray(c.selectedIngredientIds)
+                          ? [...c.selectedIngredientIds]
+                          : [];
+                        if (idx < 0 || idx >= names.length) return c;
+                        names.splice(idx, 1);
+                        ids.splice(idx, 1);
+                        return { ...c, selectedIngredientNames: names, selectedIngredientIds: ids };
+                      });
+                      setCartItems(atualizados);
+                      localStorage.setItem(CHAVE_CART, JSON.stringify(atualizados));
+                      window.dispatchEvent(new Event("cartUpdated"));
+                    }}
+                    onRemoveSauceAt={(itemId, idx) => {
+                      const atualizados = cartItems.map((c) => {
+                        if (c.id !== itemId) return c;
+                        const names = Array.isArray(c.selectedSauceNames)
+                          ? [...c.selectedSauceNames]
+                          : [];
+                        const ids = Array.isArray(c.selectedSauceIds)
+                          ? [...c.selectedSauceIds]
+                          : [];
+                        if (idx < 0 || idx >= names.length) return c;
+                        names.splice(idx, 1);
+                        ids.splice(idx, 1);
+                        return { ...c, selectedSauceNames: names, selectedSauceIds: ids };
+                      });
+                      setCartItems(atualizados);
+                      localStorage.setItem(CHAVE_CART, JSON.stringify(atualizados));
+                      window.dispatchEvent(new Event("cartUpdated"));
+                    }}
+                    onAddAdicional={(it) => {
+                      const full = cartItems.find((c) => c.id === it.id);
+                      if (full) {
+                        setSelectedItem(full);
+                        setIsCustomizeOpen(true);
+                      }
+                    }}
+                    onAddSauce={(it) => {
+                      const full = cartItems.find((c) => c.id === it.id);
+                      if (full) {
+                        setSelectedItem(full);
+                        setIsCustomizeOpen(true);
+                      }
                     }}
                   />
                 ))}

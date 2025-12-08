@@ -15,27 +15,23 @@ export async function criarProduto(dto) {
  * Lista produtos.
  * GET /api/products?activeOnly=true|false
  */
-export async function listarProdutos(activeOnly = true) {
-  const { data } = await http.get("/api/products", {
-    params: { activeOnly },
-  });
+export async function listarProdutos(activeOnly = false) {
+  const params = {};
 
-  console.log("🔎 Resposta /api/products:", data, "tipo:", typeof data);
-
-  if (Array.isArray(data)) {
-    return data;
+  if (typeof activeOnly === "boolean") {
+    params.activeOnly = activeOnly;
   }
 
-  console.warn("⚠️ /api/products em formato inesperado:", data);
-  return [];
+  const { data } = await http.get("/api/products", { params });
+  return data;
 }
 
 /**
  * Atualiza um produto existente.
- * PUT /api/products/{id}
+ * PATCH /api/products/{id}
  */
 export async function atualizarProduto(id, dto) {
-  const { data } = await http.put(`/api/products/${id}`, dto);
+  const { data } = await http.patch(`/api/products/${id}`, dto);
   return data;
 }
 
