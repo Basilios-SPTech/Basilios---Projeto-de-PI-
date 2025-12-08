@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowUp,
   ArrowLeft,
@@ -23,7 +23,12 @@ import "../styles/about.css";
 
 export default function About() {
   const nav = useNavigate();
+  const location = useLocation();
   const containerRef = useRef(null);
+
+  const handleBackClick = () => {
+    nav("/home");
+  };
 
   useEffect(() => {
     const root = containerRef.current;
@@ -67,7 +72,7 @@ export default function About() {
         <div className="about-hero__edge" aria-hidden="true" />
         <div className="container about-hero__inner">
           <div className="about-hero__top">
-            <BackButton onClick={() => nav(-1)} className="btn--on-dark">
+            <BackButton onClick={handleBackClick} className="btn--on-dark">
               <ArrowLeft size={18} />
               <span>Voltar</span>
             </BackButton>
