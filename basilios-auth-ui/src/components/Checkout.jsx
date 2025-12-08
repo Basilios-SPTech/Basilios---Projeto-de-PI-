@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import axios from "axios";
+import AddAddress from "./AddAddress";
 
 const CHAVE_CART = "carrinho-basilios";
 
@@ -44,7 +45,29 @@ export default function Checkout() {
     );
   };
 
-  const endOrder = () => {
+  const endOrder = async () => {
+    let itensPedido = itens.map((i) => ({
+      productId: i.originalProductId,
+      quantity: i.qtd,
+      observations: i.observation,
+    }));
+
+    let body = {
+      addressId: enderecoSelecionado,
+      items: itensPedido,
+      deliveryFee: 0,
+      discount: 0,
+      observations: "",
+    };
+
+    let req = await axios.post("http://localhost:8080/cliente/orders", body, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+      },
+    });
+
+    // tem que pegar o ID de retorno do campo "order" pra usar como externalId no AbacatePay
+
     if (formaPagamento == "pix") {
       navigate("/pix-checkout");
     } else {
@@ -67,7 +90,7 @@ export default function Checkout() {
     try {
       async function getEnderecos() {
         try {
-          const response = await axios.get("http://localhost:8080/addresses", {
+          const response = await axios.get("http://localhost:8080/address", {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
             },
@@ -196,6 +219,8 @@ export default function Checkout() {
                     </div>
                   </label>
                 ))}
+
+                <AddAddress />
               </div>
             </div>
 
