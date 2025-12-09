@@ -1,14 +1,12 @@
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 
-export default function PixQRCode({ brCode }) {
+export default function PixQRCode() {
   const [copied, setCopied] = useState(false);
-
-  if (!brCode) return null;
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(brCode);
+      await navigator.clipboard.writeText(localStorage.getItem("brCode"));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -22,7 +20,9 @@ export default function PixQRCode({ brCode }) {
         Código PIX (Copia e Cola)
       </h3>
       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4">
-        <p className="text-sm text-gray-700 break-all font-mono">{brCode}</p>
+        <p className="text-sm text-gray-700 break-all font-mono">
+          {localStorage.getItem("brCode")}
+        </p>
       </div>
       <button
         onClick={handleCopy}

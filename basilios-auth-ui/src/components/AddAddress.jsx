@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Plus, X, Loader2 } from "lucide-react";
+import toast from "react-hot-toast";
 
 import axios from "axios";
 
@@ -86,7 +87,7 @@ export default function CadastroEndereco() {
       !novoEndereco.cidade ||
       !novoEndereco.estado
     ) {
-      alert("Por favor, preencha todos os campos obrigatórios!");
+      toast.error("Por favor, preencha todos os campos obrigatórios!");
       return;
     }
 
@@ -105,8 +106,8 @@ export default function CadastroEndereco() {
         bairro: novoEndereco.bairro,
         cidade: novoEndereco.cidade,
         estado: novoEndereco.estado,
-        latitude: 10,
-        longitude: 10,
+        latitude: -23.5505,
+        longitude: -46.6333,
       };
 
       const response = await axios.post("http://localhost:8080/address", body, {
@@ -116,11 +117,15 @@ export default function CadastroEndereco() {
       });
 
       console.log(response);
-
-      alert("Endereço cadastrado com sucesso!");
-      setMostrarModal(false);
-
-      window.location.reload();
+      if (response.status == 201) {
+        toast.success("Endereço cadastrado com sucesso", { duration: 3000 });
+        setTimeout(() => {
+          setMostrarModal(false);
+          window.location.reload();
+        }, 3500);
+      } else {
+        toast.error("Erro ao cadastrar endereço");
+      }
 
       setNovoEndereco({
         cep: "",

@@ -1,10 +1,19 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-   define: {
-    'process.env': {}
-  }
-})
+  define: {
+    "process.env": {},
+  },
+  server: {
+    proxy: {
+      "/api/abacate": {
+        target: "https://api.abacatepay.com",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/abacate/, ""),
+      },
+    },
+  },
+});
