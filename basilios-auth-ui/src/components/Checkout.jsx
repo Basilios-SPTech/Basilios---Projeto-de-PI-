@@ -52,24 +52,60 @@ export default function Checkout() {
       observations: i.observation,
     }));
 
+    console.log(`Itens pedido: ${itensPedido}`);
+
     let body = {
-      addressId: enderecoSelecionado,
+      addressId: Number(enderecoSelecionado),
       items: itensPedido,
       deliveryFee: 0,
       discount: 0,
       observations: "",
     };
 
-    let req = await axios.post("http://localhost:8080/cliente/orders", body, {
+    let req = await axios.post("http://localhost:8080/orders", body, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
       },
     });
 
-    // tem que pegar o ID de retorno do campo "order" pra usar como externalId no AbacatePay
+    let lastOrderId = req.data.id;
+    console.log(lastOrderId);
 
     if (formaPagamento == "pix") {
-      navigate("/pix-checkout");
+      let abacatePayReq = await axios.post(
+        "/api/abacate/v1/pixQrCode/create",
+        {
+          amount: calcularTotal().toFixed(2),
+          expiresIn: 600,
+          description: `Pedido Id: ${lastOrderId}`,
+          customer: {
+            name: "Pedro Morais",
+            cellphone: "(11) 4002-8922",
+            email: "daniel_lima@abacatepay.com",
+            taxId: "522.361.808.45",
+          },
+          metadata: {
+            externalId: lastOrderId,
+          },
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${import.meta.env.VITE_ABACATE_TOKEN}`,
+          },
+        },
+      );
+
+      localStorage.setItem("qrCode", abacatePayReq.data.data.brCodeBase64);
+      localStorage.setItem("brCode", abacatePayReq.data.data.brCode);
+      localStorage.setItem("pixId", abacatePayReq.data.data.id);
+
+      console.log(abacatePayReq);
+      console.log(abacatePayReq.data.data.brCodeBase64);
+      console.log(abacatePayReq.data.data.brCode);
+
+      setTimeout(() => {
+        navigate("/pix-checkout");
+      }, 2000);
     } else {
       toast.success(
         "Você selecionou 'Cartão de Crédito' como forma de pagamento! Você será redirecionado para a tela de acompanhamento do pedido e deverá realizar o pagamento na entrega",
@@ -83,7 +119,8 @@ export default function Checkout() {
       }, 6500);
     }
 
-    localStorage.removeItem(CHAVE_CART);
+    // tem que remover isso em outro lugar
+    // localStorage.removeItem(CHAVE_CART);
   };
 
   useEffect(() => {
@@ -129,7 +166,11 @@ export default function Checkout() {
                     key={item.id}
                     className="flex items-center gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200"
                   >
-                    <img src={item.imagem} alt={item.nome} className="w-16 h-16 object-cover rounded" />
+                    <img
+                      src={item.imagem}
+                      alt={item.nome}
+                      className="w-16 h-16 object-cover rounded"
+                    />
                     <div className="flex-1">
                       <h3 className="font-medium">{item.nome}</h3>
                       <p className="text-gray-600 text-sm">
