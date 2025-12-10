@@ -20,6 +20,8 @@ export function formatPercent(value) {
 }
 
 export function formatMinutes(value) {
-  if (value == null || Number.isNaN(value)) return "—";
-  return `${Math.round(Number(value))} min`;
+  if (value == null) return "—";
+  const n = Number(value);
+  if (!Number.isFinite(n) || Number.isNaN(n)) return "—";
+  return `${Math.round(n)} min`;
 }

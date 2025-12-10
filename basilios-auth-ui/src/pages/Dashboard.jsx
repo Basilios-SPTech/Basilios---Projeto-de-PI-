@@ -86,14 +86,14 @@ export default function Dashboard() {
           <div className="dashboard-kpis">
             <KpiCard
               label="Receita"
-              endpoint="/api/dashboard/revenue"
+              endpoint="/dashboard/revenue"
               range={appliedRange}
               rangeVersion={appliedVersion}
               format="currency"
             />
             <KpiCard
              label="Pedidos"
-             endpoint="/api/dashboard/orders"
+             endpoint="/dashboard/orders-period"
              range={appliedRange}
              rangeVersion={appliedVersion}
              format="integer"
@@ -105,14 +105,14 @@ export default function Dashboard() {
             />
             <KpiCard
               label="Ticket médio"
-              endpoint="/api/dashboard/average-ticket"
+              endpoint="/dashboard/average-ticket"
               range={appliedRange}
               rangeVersion={appliedVersion}
               format="currency"
             />
             <KpiCard
               label="Itens vendidos"
-              endpoint="/api/dashboard/items-sold"
+              endpoint="/dashboard/items-sold"
               range={appliedRange}
               rangeVersion={appliedVersion}
               format="integer"
@@ -125,7 +125,7 @@ export default function Dashboard() {
             />
             <KpiCard
             label="cancelamento"
-            endpoint="/api/dashboard/cancellation-rate"
+            endpoint="/dashboard/cancellation-rate"
             range={appliedRange}
             rangeVersion={appliedVersion}
             format="percent"
@@ -138,11 +138,23 @@ export default function Dashboard() {
 
             <KpiCard
               label="Média entrega"
-              endpoint="api/dashboard/average-delivery-time"
+              endpoint="/dashboard/average-delivery-time"
               range={appliedRange}
               rangeVersion={appliedVersion}
               format="minutes"
+              mapResponse={(data) => {
+                // API may return an object like:
+                // { averageSeconds: 0, averageText: "string", seconds: 0, text: "string" }
+                if (!data) return null;
+                if (typeof data === "object") {
+                  const n = Number(data.averageSeconds ?? data.seconds ?? data.average ?? null);
+                  return Number.isFinite(n) ? n : null;
+                }
+                const n = Number(data);
+                return Number.isFinite(n) ? n : null;
+              }}
             />
+
           </div>
         </div>
       </section>
@@ -153,7 +165,7 @@ export default function Dashboard() {
           {/* Linha 1: Picos de pedidos ocupando a largura toda */}
           <div className="dashboard-charts dashboard-charts--full">
             <OrderPeaksChart
-              endpoint="/api/dashboard/order-peaks"
+              endpoint="/dashboard/order-peaks"
               range={appliedRange}
               rangeVersion={appliedVersion}
             />
@@ -162,12 +174,12 @@ export default function Dashboard() {
           {/* Linha 2: Campeão de vendas + Top produtos */}
           <div className="dashboard-charts dashboard-charts--bottom">
             <ChampionProduct
-              endpoint="/api/dashboard/champion"
+              endpoint="/dashboard/champion"
               range={appliedRange}
               rangeVersion={appliedVersion}
             />
             <TopProducts
-              endpoint="/api/dashboard/top-products"
+              endpoint="/dashboard/top-products"
               range={appliedRange}
               rangeVersion={appliedVersion}
             />
