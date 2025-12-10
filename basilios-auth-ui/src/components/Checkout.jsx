@@ -75,9 +75,9 @@ export default function Checkout() {
       let abacatePayReq = await axios.post(
         "/api/abacate/v1/pixQrCode/create",
         {
-          amount: calcularTotal().toFixed(2),
+          amount: 3100,
           expiresIn: 600,
-          description: `Pedido Id: ${lastOrderId}`,
+          description: "Pedido teste",
           customer: {
             name: "Pedro Morais",
             cellphone: "(11) 4002-8922",
@@ -90,7 +90,7 @@ export default function Checkout() {
         },
         {
           headers: {
-            Authorization: `Bearer ${import.meta.env.VITE_ABACATE_TOKEN}`,
+            Authorization: `Bearer abc_dev_J24NemeHukwqGwfe2bj63G2q`,
           },
         },
       );
