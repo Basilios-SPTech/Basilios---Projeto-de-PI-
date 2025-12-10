@@ -1,6 +1,7 @@
 // src/pages/CadastrarProduto.jsx
 
 import React, { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 import ProdutoForm from "../components/ProdutoForm.jsx";
 import MenuButton from "../components/MenuButtonAdm.jsx";
 import SidebarAdm from "../components/SidebarAdm.jsx";
@@ -176,24 +177,24 @@ export default function CadastrarProduto() {
     if (e?.preventDefault) e.preventDefault();
 
     if (!formData.nome?.trim()) {
-      alert("Informe o nome do produto.");
+      toast.error("Informe o nome do produto.");
       return;
     }
 
     const precoNum = parsePreco(formData.preco);
     if (precoNum === null) {
-      alert("Preço inválido.");
+      toast.error("Preço inválido.");
       return;
     }
 
     if (!formData.categoria) {
-      alert("Selecione uma categoria válida.");
+      toast.error("Selecione uma categoria válida.");
       return;
     }
 
     const subOpts = SUBCATEGORY_OPTIONS[formData.categoria] || [];
     if (subOpts.length > 0 && !formData.subcategoria) {
-      alert("Selecione uma subcategoria.");
+      toast.error("Selecione uma subcategoria.");
       return;
     }
 
@@ -264,7 +265,7 @@ export default function CadastrarProduto() {
         clearForm();
       } catch (err) {
         console.error("Erro ao atualizar produto:", err);
-        alert("Não foi possível atualizar o produto.");
+        toast.error("Não foi possível atualizar o produto.");
       }
 
       return;
@@ -327,15 +328,12 @@ export default function CadastrarProduto() {
 
       setProdutos((prev) => [novoProdutoLocal, ...prev]);
       clearForm();
-      alert("Produto criado com sucesso!");
+      toast.success("Produto criado com sucesso!");
     } catch (err) {
       const payload = err?.response?.data ?? err?.message ?? "Erro desconhecido";
       console.error("Erro ao criar produto:", err);
-      alert(
-        typeof payload === "string"
-          ? payload
-          : JSON.stringify(payload, null, 2)
-      );
+      const msg = typeof payload === "string" ? payload : JSON.stringify(payload, null, 2);
+      toast.error(msg);
     }
   }
 
@@ -374,7 +372,7 @@ export default function CadastrarProduto() {
       setProdutos((prev) => prev.filter((p) => p.index !== index));
     } catch (err) {
       console.error("Erro ao deletar produto:", err);
-      alert("Não foi possível deletar o produto.");
+      toast.error("Não foi possível deletar o produto.");
     }
   }
 
@@ -409,7 +407,7 @@ export default function CadastrarProduto() {
       );
     } catch (err) {
       console.error("Erro ao alterar status do produto:", err);
-      alert("Não foi possível alterar o status do produto.");
+      toast.error("Não foi possível alterar o status do produto.");
     }
   }
 
