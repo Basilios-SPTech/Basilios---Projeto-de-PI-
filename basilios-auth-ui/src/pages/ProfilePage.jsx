@@ -30,7 +30,7 @@ export function ProfilePage() {
 
       try {
         setLoading(true);
-        const { data } = await http.get("/auth/me");
+        const { data } = await http.get("users/me");
 
         console.log("Perfil do usuário:", data);
         setDados(data);
