@@ -7,7 +7,7 @@ import { http } from "./http.js";
  * POST /api/products
  */
 export async function criarProduto(dto) {
-  const { data } = await http.post("/api/products", dto);
+  const { data } = await http.post("/products", dto);
   return data;
 }
 
@@ -22,7 +22,7 @@ export async function listarProdutos(activeOnly = false) {
     params.activeOnly = activeOnly;
   }
 
-  const { data } = await http.get("/api/products", { params });
+  const { data } = await http.get("/products", { params });
   return data;
 }
 
@@ -31,7 +31,7 @@ export async function listarProdutos(activeOnly = false) {
  * PATCH /api/products/{id}
  */
 export async function atualizarProduto(id, dto) {
-  const { data } = await http.patch(`/api/products/${id}`, dto);
+  const { data } = await http.patch(`/products/${id}`, dto);
   return data;
 }
 
@@ -40,7 +40,7 @@ export async function atualizarProduto(id, dto) {
  * DELETE /api/products/{id}
  */
 export async function deletarProduto(id) {
-  await http.delete(`/api/products/${id}`);
+  await http.delete(`/products/${id}`);
 }
 
 /**
