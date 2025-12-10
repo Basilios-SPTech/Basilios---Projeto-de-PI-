@@ -192,7 +192,9 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
               {/* Lista de adicionais selecionados (pills) */}
               {selectedIngredientIds.length > 0 && (
                 <div className="mb-4 p-3 bg-orange-50 rounded-lg">
-                  <p className="text-xs font-semibold text-gray-700 mb-2">Selecionados:</p>
+                  <p className="text-xs font-semibold text-gray-700 mb-2">
+                    Selecionados:
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {selectedIngredientIds.map((id, idx) => {
                       const ing = ingredients.find((i) => i.id === id);
@@ -253,7 +255,9 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
 
               {selectedDrinkIds.length > 0 && (
                 <div className="mb-4 p-3 bg-orange-50 rounded-lg">
-                  <p className="text-xs font-semibold text-gray-700 mb-2">Selecionados:</p>
+                  <p className="text-xs font-semibold text-gray-700 mb-2">
+                    Selecionados:
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {selectedDrinkIds.map((id, idx) => {
                       const drink = drinks.find((d) => d.id === id);
@@ -345,7 +349,9 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
 
               {selectedSauceIds.length > 0 && (
                 <div className="mb-4 p-3 bg-orange-50 rounded-lg">
-                  <p className="text-xs font-semibold text-gray-700 mb-2">Selecionados:</p>
+                  <p className="text-xs font-semibold text-gray-700 mb-2">
+                    Selecionados:
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {selectedSauceIds.map((id, idx) => {
                       const sauce = saucesAvailable.find((s) => s.id === id);
@@ -423,8 +429,40 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
                   return saucesAvailable.find((s) => s.id === id)?.name || "";
                 });
 
+                // Soma dos adicionais selecionados
+                const extraIngredientsPrice = selectedIngredientIds
+                  .map((id) => ingredients.find((i) => i.id === id)?.price || 0)
+                  .reduce((acc, v) => acc + v, 0);
+
+                const extraSaucesPrice = selectedSauceIds
+                  .map((id) => saucesAvailable.find((s) => s.id === id)?.price || 0)
+                  .reduce((acc, v) => acc + v, 0);
+
+                const extraDrinksPrice = selectedDrinkIds
+                  .map((id) => drinks.find((d) => d.id === id)?.price || 0)
+                  .reduce((acc, v) => acc + v, 0);
+
+                const breadPrice =
+                  selectedBreadId != null
+                    ? breads.find((b) => b.id === selectedBreadId)?.price || 0
+                    : 0;
+
+                // Preço base do produto (tanto preco quanto price)
+                const basePrice = item.preco ?? item.price ?? 0;
+
+                // Preço final do produto personalizado
+                const finalPrice =
+                  basePrice +
+                  extraIngredientsPrice +
+                  extraSaucesPrice +
+                  extraDrinksPrice +
+                  breadPrice;
+
                 const customItem = {
                   ...item,
+                  precoBase: basePrice,
+                  preco: finalPrice,
+                  price: finalPrice,
                   qtd: quantity,
                   meatPoint,
                   selectedIngredientIds,

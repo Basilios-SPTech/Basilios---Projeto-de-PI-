@@ -182,7 +182,6 @@ export default function Home( ) {
       const tryScroll = () => {
         const el = document.querySelector(`[data-section="${target}"]`);
         if (el) {
-          console.log("Home: scrolling to", target);
           el.scrollIntoView({ behavior: "smooth", block: "start" });
           return true;
         }
@@ -201,8 +200,6 @@ export default function Home( ) {
     try {
       const pending = sessionStorage.getItem("scrollToSection");
       if (pending) {
-        console.log("Home: found pending scrollToSection ->", pending);
-
         // Polling attempts for up to ~2 seconds (10 attempts)
         let attempts = 0;
         const maxAttempts = 10;
@@ -211,7 +208,6 @@ export default function Home( ) {
           const el = document.querySelector(`[data-section="${pending}"]`);
 
           if (el) {
-            console.log("Home: polling found element, scrolling ->", pending);
             el.scrollIntoView({ behavior: "smooth", block: "start" });
             clearInterval(interval);
             try {
@@ -222,12 +218,11 @@ export default function Home( ) {
 
           if (attempts >= maxAttempts) {
             clearInterval(interval);
-            console.warn("Home: could not find section after polling:", pending);
           }
         }, 200);
       }
     } catch (err) {
-      console.warn("Home: sessionStorage read failed", err);
+      /* ignore */
     }
 
     return () => window.removeEventListener("scrollToSection", handler);
@@ -246,7 +241,7 @@ export default function Home( ) {
         id: produto.index + "-" + Date.now(), // ID único para item customizado
         originalProductId: produto.index, // ID do produto original
         nome: produto.nome,
-        preco: Number(produto.preco || "0"),
+        preco: Number(customOptions.price || produto.preco || "0"),
         qtd: 1,
         imagem: produto.imagem || "",
         categoria: produto.categoria || "",

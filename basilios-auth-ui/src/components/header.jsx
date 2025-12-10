@@ -91,18 +91,16 @@ export default function Header() {
   const goToSection = (label) => {
     const target = slug(label);
 
-    console.log("Header.goToSection ->", { label, target, path: location.pathname });
-
     // Save target in sessionStorage so Home can pick it up after navigation
     try {
       sessionStorage.setItem("scrollToSection", target);
-      console.log("Header: saved scrollToSection ->", target);
     } catch (e) {
-      console.warn("Header: failed to write sessionStorage", e);
+      /* ignore */
     }
 
     if (location.pathname !== "/home") {
-      navigate("/home"); return;
+      navigate("/home");
+      return;
     }
 
     // If already on Home, dispatch event and also clear sessionStorage
@@ -110,7 +108,7 @@ export default function Header() {
     window.dispatchEvent(ev);
     try {
       sessionStorage.removeItem("scrollToSection");
-    } catch (e) { }
+    } catch (e) {}
   };
 
   // 🔎 quando o usuário busca (Enter / clique na lupa)
