@@ -69,7 +69,7 @@ export default function Checkout() {
     });
 
     let lastOrderId = req.data.id;
-    console.log(lastOrderId);
+    localStorage.setItem("lastOrderId", lastOrderId);
 
     if (formaPagamento == "pix") {
       let abacatePayReq = await axios.post(
