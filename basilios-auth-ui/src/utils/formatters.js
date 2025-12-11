@@ -20,8 +20,30 @@ export function formatPercent(value) {
 }
 
 export function formatMinutes(value) {
+  // Accept seconds as input and return a human-friendly duration string.
+  // Examples:
+  //  - 45   -> "0:45" (mm:ss)
+  //  - 1807 -> "30:07"
+  //  - 3750 -> "1h:02"
   if (value == null) return "—";
-  const n = Number(value);
-  if (!Number.isFinite(n) || Number.isNaN(n)) return "—";
-  return `${Math.round(n)} min`;
+  const secs = Number(value);
+  if (!Number.isFinite(secs) || Number.isNaN(secs)) return "—";
+
+  const s = Math.max(0, Math.round(secs));
+  if (s < 60) {
+    return `${s}s`;
+  }
+
+  const hrs = Math.floor(s / 3600);
+  const mins = Math.round((s % 3600) / 60);
+
+  // If less than one hour, show rounded minutes with unit, e.g. "30 min"
+  if (hrs === 0) {
+    return `${mins} min`;
+  }
+
+  // For hours, show HH:MMh (pad minutes). Example: 3600 -> "01:00h", 3660 -> "01:01h"
+  const displayHours = String(hrs).padStart(2, "0");
+  const displayMins = String(mins).padStart(2, "0");
+  return `${displayHours}:${displayMins}h`;
 }
