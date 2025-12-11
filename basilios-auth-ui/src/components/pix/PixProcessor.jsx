@@ -34,6 +34,7 @@ export default function PixProcessor({ pixData }) {
 
     if (response.data.data.status == "PAID") {
       console.log("pagoo");
+      localStorage.removeItem("carrinho-basilios");
       navigate("/order-status");
     }
   };
