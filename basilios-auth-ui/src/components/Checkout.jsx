@@ -26,7 +26,7 @@ export default function Checkout() {
     return itens.reduce((total, item) => total + item.preco * item.qtd, 0);
   };
 
-  const calcularFrete = () => 15.0;
+  const calcularFrete = () => 5.0;
 
   const calcularTotal = () => {
     return calcularSubtotal() + calcularFrete();

@@ -213,7 +213,7 @@ export default function OrderStatus() {
                     )}
                   </div>
                   <span className="font-medium">
-                    R$ {item.subtotal.toFixed(2)}
+                    R$ {item.total}
                   </span>
                 </div>
               ))}
@@ -236,7 +236,7 @@ export default function OrderStatus() {
               <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200">
                 <span>Total</span>
                 <span className="text-green-600">
-                  R$ {order.total.toFixed(2)}
+                  R$ {(order.subtotal + order.deliveryFee - order.discount).toFixed(2)}
                 </span>
               </div>
             </div>
