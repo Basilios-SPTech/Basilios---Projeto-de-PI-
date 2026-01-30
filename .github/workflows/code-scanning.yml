@@ -78,18 +78,18 @@ jobs:
             }
 
             const body = `
-### 🔐 Security Scan Summary
+            ### 🔐 Security Scan Summary
 
-#### 🔍 SAST (Semgrep)
-- 🚨 **High:** ${sastHigh}
-- 📦 **Total findings:** ${sastTotal}
+            #### 🔍 SAST (Semgrep)
+            - 🚨 **High:** ${sastHigh}
+            - 📦 **Total findings:** ${sastTotal}
 
-#### 📦 SCA (Trivy)
-- 🔴 **Critical:** ${scaCritical}
-- 🟠 **High:** ${scaHigh}
+            #### 📦 SCA (Trivy)
+            - 🔴 **Critical:** ${scaCritical}
+            - 🟠 **High:** ${scaHigh}
 
-📎 Veja os logs do job para detalhes completos.
-`;
+            📎 Veja os logs do job para detalhes completos.
+            `;
 
             github.rest.issues.createComment({
               owner: context.repo.owner,
