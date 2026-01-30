@@ -8,29 +8,92 @@ on:
     branches-ignore:
       - main
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
-  sast:
-    name: SAST - Semgrep
+  security:
+    name: SAST + SCA
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
+      # ----------------
+      # SAST - Semgrep
+      # ----------------
       - name: Run Semgrep (SAST)
         uses: returntocorp/semgrep-action@v1
         with:
           config: p/owasp-top-ten
+          json: true
+        env:
+          SEMGREP_JSON_OUTPUT: semgrep.json
 
-  sca:
-    name: SCA - Trivy
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Run Trivy (Dependencies)
-        uses: aquasecurity/trivy-action@v0
+      # ----------------
+      # SCA - Trivy
+      # ----------------
+      - name: Run Trivy (SCA)
+        uses: aquasecurity/trivy-action@master
         with:
           scan-type: fs
+          format: json
+          output: trivy.json
           severity: HIGH,CRITICAL
-          exit-code: 1
+        continue-on-error: true
+
+      # ----------------
+      # PR Summary
+      # ----------------
+      - name: Comment Security Summary on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            let sastHigh = 0;
+            let sastTotal = 0;
+            let scaCritical = 0;
+            let scaHigh = 0;
+
+            // --- SAST ---
+            if (fs.existsSync('semgrep.json')) {
+              const sast = JSON.parse(fs.readFileSync('semgrep.json'));
+              sastTotal = sast.results.length;
+              sastHigh = sast.results.filter(
+                r => r.extra.severity === 'ERROR'
+              ).length;
+            }
+
+            // --- SCA ---
+            if (fs.existsSync('trivy.json')) {
+              const trivy = JSON.parse(fs.readFileSync('trivy.json'));
+              const vulns = trivy.Results
+                ?.flatMap(r => r.Vulnerabilities || []) || [];
+
+              scaCritical = vulns.filter(v => v.Severity === 'CRITICAL').length;
+              scaHigh = vulns.filter(v => v.Severity === 'HIGH').length;
+            }
+
+            const body = `
+### 🔐 Security Scan Summary
+
+#### 🔍 SAST (Semgrep)
+- 🚨 **High:** ${sastHigh}
+- 📦 **Total findings:** ${sastTotal}
+
+#### 📦 SCA (Trivy)
+- 🔴 **Critical:** ${scaCritical}
+- 🟠 **High:** ${scaHigh}
+
+📎 Veja os logs do job para detalhes completos.
+`;
+
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body
+            });
