@@ -1,42 +1,42 @@
 <!doctype html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Basilios Burguer</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-  </head>
-    <link rel="icon" href="/logo.png" type="image/x-icon">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Basilios Burguer</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+    </head>
+    <link rel="icon" href="/logo.png" type="image/x-icon" />
     <body class="font-sans antialiased">
-      <div id="root"></div>
+        <div id="root"></div>
 
-      <!-- Botão e contêiner do VLibras -->
-    <div vw class="enabled">
-      <div vw-access-button class="active"></div>
-      <div vw-plugin-wrapper>
-      <div class="vw-plugin-top-wrapper"></div>
-      </div>
-    </div>
+        <!-- Botão e contêiner do VLibras -->
+        <div vw class="enabled">
+            <div vw-access-button class="active"></div>
+            <div vw-plugin-wrapper>
+                <div class="vw-plugin-top-wrapper"></div>
+            </div>
+        </div>
 
-<!-- Script do plugin + inicialização -->
-    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
-    <script>
-      new window.VLibras.Widget('https://vlibras.gov.br/app');
-    </script>
-  
-<!-- Config opcional do HC (posicionamento) -->
-    <script>
-       window.HC_TOGGLE_CONFIG = { side: 'right', baseOffset: 392};
-    </script>
+        <!-- Script do plugin + inicialização -->
+        <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+        <script>
+            new window.VLibras.Widget("https://vlibras.gov.br/app");
+        </script>
 
-<!-- Carrega o plugin de Alto Contraste (módulo Vite) -->
-    <script type="module" src="/src/utils/highContrast.js"></script>
+        <!-- Config opcional do HC (posicionamento) -->
+        <script>
+            window.HC_TOGGLE_CONFIG = { side: "right", baseOffset: 392 };
+        </script>
 
+        <!-- Carrega o plugin de Alto Contraste (módulo Vite) -->
+        <script type="module" src="/src/utils/highContrast.js"></script>
 
-      <script type="module" src="/src/main.jsx"></script>
+        <script type="module" src="/src/main.jsx"></script>
     </body>
 </html>
-

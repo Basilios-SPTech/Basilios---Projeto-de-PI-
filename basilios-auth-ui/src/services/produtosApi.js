@@ -48,7 +48,7 @@ export async function deletarProduto(id) {
  * POST /api/products/{id}/pause
  */
 export async function pausarProduto(id) {
-  const { data } = await http.post(`/api/products/${id}/pause`);
+  const { data } = await http.post(`/products/${id}/pause`);
   return data;
 }
 
@@ -57,6 +57,6 @@ export async function pausarProduto(id) {
  * POST /api/products/{id}/activate
  */
 export async function ativarProduto(id) {
-  const { data } = await http.post(`/api/products/${id}/activate`);
+  const { data } = await http.post(`/products/${id}/activate`);
   return data;
 }
