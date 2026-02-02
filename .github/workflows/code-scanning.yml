@@ -19,17 +19,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
       # ----------------
-      # SAST - Semgrep
+      # SAST - Snyk
       # ----------------
-      - name: Run Semgrep (SAST)
-        uses: returntocorp/semgrep-action@v1
-        with:
-          config: p/owasp-top-ten
-          json: true
+      - name: Run Snyk (SAST)
+        uses: snyk/actions/node@master
         env:
-          SEMGREP_JSON_OUTPUT: semgrep.json
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
       # ----------------
       # SCA - Trivy
