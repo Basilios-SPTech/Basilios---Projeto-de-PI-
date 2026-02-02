@@ -26,6 +26,7 @@ jobs:
         uses: snyk/actions/node@master
         with:
           command: code test
+          args: --severity-threshold=high --json-file-output=snyk-sast.json
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
@@ -55,13 +56,18 @@ jobs:
             let sastTotal = 0;
             let scaCritical = 0;
             let scaHigh = 0;
+            // --- SAST (Snyk Code) ---
+            if (fs.existsSync('snyk-sast.json')) {
+              const snyk = JSON.parse(fs.readFileSync('snyk-sast.json'));
 
-            // --- SAST ---
-            if (fs.existsSync('semgrep.json')) {
-              const sast = JSON.parse(fs.readFileSync('semgrep.json'));
-              sastTotal = sast.results.length;
-              sastHigh = sast.results.filter(
-                r => r.extra.severity === 'ERROR'
+              const issues = snyk.runs?.[0]?.results || [];
+
+              sastTotal = issues.length;
+
+              sastHigh = issues.filter(
+                r => ['high', 'critical'].includes(
+                  r.properties?.severity?.toLowerCase()
+                )
               ).length;
             }
 
