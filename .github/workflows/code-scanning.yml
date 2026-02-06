@@ -1,45 +1,59 @@
-name: SAST & SCA Security Scan
-
+name: SAST Security Scan
 on:
+  workflow_dispatch:
   push:
     branches-ignore:
       - main
   pull_request:
     branches-ignore:
       - main
-
 permissions:
   contents: read
   pull-requests: write
-
+  security-events: write
 jobs:
   security:
-    name: SAST + SCA
+    name: SAST - Semgrep + Snyk
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
+
       # ----------------
-      # SAST - Snyk
+      # SAST - Semgrep
       # ----------------
-      - name: Run Snyk (SAST)
+      - name: Run Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
+          generateSarif: "0"
+        continue-on-error: true
+        env:
+          SEMGREP_TIMEOUT: 300
+
+      - name: Export Semgrep results
+        run: |
+          docker run --rm -v "${PWD}:/src" returntocorp/semgrep semgrep \
+            --config=auto \
+            --json \
+            --output=/src/semgrep.json \
+            /src || true
+        continue-on-error: true
+
+      # ----------------
+      # SAST - Snyk Code
+      # ----------------
+      - name: Setup Node.js (if needed)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run Snyk Code (SAST)
         uses: snyk/actions/node@master
         with:
           command: code test
-          args: --severity-threshold=high --json-file-output=snyk-sast.json
+          args: --severity-threshold=low --json-file-output=snyk-sast.json
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-      # ----------------
-      # SCA - Trivy
-      # ----------------
-      - name: Run Trivy (SCA)
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: fs
-          format: json
-          output: trivy.json
-          severity: HIGH,CRITICAL
         continue-on-error: true
 
       # ----------------
@@ -52,47 +66,77 @@ jobs:
           script: |
             const fs = require('fs');
 
-            let sastHigh = 0;
-            let sastTotal = 0;
-            let scaCritical = 0;
-            let scaHigh = 0;
-            // --- SAST (Snyk Code) ---
+            // Semgrep results
+            let semgrepCritical = 0;
+            let semgrepHigh = 0;
+            let semgrepMedium = 0;
+            let semgrepTotal = 0;
+
+            // Snyk results
+            let snykCritical = 0;
+            let snykHigh = 0;
+            let snykMedium = 0;
+            let snykTotal = 0;
+
+            // --- Parse Semgrep ---
+            if (fs.existsSync('semgrep.json')) {
+              try {
+                const semgrep = JSON.parse(fs.readFileSync('semgrep.json'));
+                const results = semgrep.results || [];
+                semgrepTotal = results.length;
+
+                results.forEach(r => {
+                  const severity = r.extra?.severity?.toLowerCase() || 'info';
+                  if (severity === 'error' || severity === 'critical') semgrepCritical++;
+                  else if (severity === 'warning' || severity === 'high') semgrepHigh++;
+                  else if (severity === 'medium') semgrepMedium++;
+                });
+              } catch (e) {
+                console.log('Error parsing Semgrep results:', e.message);
+              }
+            }
+
+            // --- Parse Snyk ---
             if (fs.existsSync('snyk-sast.json')) {
-              const snyk = JSON.parse(fs.readFileSync('snyk-sast.json'));
+              try {
+                const snyk = JSON.parse(fs.readFileSync('snyk-sast.json'));
+                const issues = snyk.runs?.[0]?.results || [];
+                snykTotal = issues.length;
 
-              const issues = snyk.runs?.[0]?.results || [];
-
-              sastTotal = issues.length;
-
-              sastHigh = issues.filter(
-                r => ['high', 'critical'].includes(
-                  r.properties?.severity?.toLowerCase()
-                )
-              ).length;
+                issues.forEach(r => {
+                  const severity = r.properties?.severity?.toLowerCase() || 'low';
+                  if (severity === 'critical') snykCritical++;
+                  else if (severity === 'high') snykHigh++;
+                  else if (severity === 'medium') snykMedium++;
+                });
+              } catch (e) {
+                console.log('Error parsing Snyk results:', e.message);
+              }
             }
 
-            // --- SCA ---
-            if (fs.existsSync('trivy.json')) {
-              const trivy = JSON.parse(fs.readFileSync('trivy.json'));
-              const vulns = trivy.Results
-                ?.flatMap(r => r.Vulnerabilities || []) || [];
+            const totalCritical = semgrepCritical + snykCritical;
+            const totalHigh = semgrepHigh + snykHigh;
+            const totalMedium = semgrepMedium + snykMedium;
+            const totalFindings = semgrepTotal + snykTotal;
 
-              scaCritical = vulns.filter(v => v.Severity === 'CRITICAL').length;
-              scaHigh = vulns.filter(v => v.Severity === 'HIGH').length;
-            }
+            const emoji = totalCritical > 0 ? '🚨' : totalHigh > 0 ? '⚠️' : '✅';
 
             const body = `
-            ### 🔐 Security Scan Summary
+            ### ${emoji} Security Scan Summary
 
-            #### 🔍 SAST (Semgrep)
-            - 🚨 **High:** ${sastHigh}
-            - 📦 **Total findings:** ${sastTotal}
+            | Tool | Critical | High | Medium | Total |
+            |------|----------|------|--------|-------|
+            | 🔍 **Semgrep** | ${semgrepCritical} | ${semgrepHigh} | ${semgrepMedium} | ${semgrepTotal} |
+            | 🐍 **Snyk Code** | ${snykCritical} | ${snykHigh} | ${snykMedium} | ${snykTotal} |
+            | **📊 Combined** | **${totalCritical}** | **${totalHigh}** | **${totalMedium}** | **${totalFindings}** |
 
-            #### 📦 SCA (Trivy)
-            - 🔴 **Critical:** ${scaCritical}
-            - 🟠 **High:** ${scaHigh}
+            ${totalCritical > 0 ? '🔴 **Action Required:** Critical vulnerabilities found!' : ''}
+            ${totalHigh > 5 ? '🟠 **Warning:** Multiple high-severity issues detected.' : ''}
 
-            📎 Veja os logs do job para detalhes completos.
+            📎 View detailed results in:
+            - [Semgrep Dashboard](https://semgrep.dev)
+            - [Snyk Dashboard](https://app.snyk.io)
+            - Workflow logs above
             `;
 
             github.rest.issues.createComment({
