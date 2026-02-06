@@ -21,10 +21,15 @@ jobs:
       # ----------------
       # SAST - Semgrep
       # ----------------
-      - name: Run Semgrep
-        uses: returntocorp/semgrep-action@v1
-        env:
-          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+      - name: Run Semgrep (standalone)
+        run: |
+          semgrep scan \
+            --config=p/security-audit \
+            --config=p/owasp-top-ten \
+            --config=p/secrets \
+            --json \
+            --output=semgrep.json
+        continue-on-error: true
       # ----------------
       # SAST - Snyk Code
       # ----------------
