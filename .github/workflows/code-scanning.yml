@@ -22,18 +22,13 @@ jobs:
       # SAST - Semgrep
       # ----------------
       # ----------------
-      - name: Run Semgrep (via Docker)
-        run: |
-          docker run --rm \
-            -v "${{ github.workspace }}:/src" \
-            returntocorp/semgrep semgrep scan \
-            --config=p/security-audit \
-            --config=p/owasp-top-ten \
-            --config=p/secrets \
-            --json \
-            --output=/src/semgrep.json \
-            /src
-        continue-on-error: true
+      - name: Run Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/owasp-top-ten
+            p/secrets
       # ----------------
       # SAST - Snyk Code
       # ----------------
