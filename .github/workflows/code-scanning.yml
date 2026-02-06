@@ -23,22 +23,8 @@ jobs:
       # ----------------
       - name: Run Semgrep
         uses: returntocorp/semgrep-action@v1
-        with:
-          publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
-          generateSarif: "0"
-        continue-on-error: true
         env:
-          SEMGREP_TIMEOUT: 300
-
-      - name: Export Semgrep results
-        run: |
-          docker run --rm -v "${PWD}:/src" returntocorp/semgrep semgrep \
-            --config=auto \
-            --json \
-            --output=/src/semgrep.json \
-            /src || true
-        continue-on-error: true
-
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
       # ----------------
       # SAST - Snyk Code
       # ----------------
@@ -55,93 +41,3 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         continue-on-error: true
-
-      # ----------------
-      # PR Summary
-      # ----------------
-      - name: Comment Security Summary on PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-
-            // Semgrep results
-            let semgrepCritical = 0;
-            let semgrepHigh = 0;
-            let semgrepMedium = 0;
-            let semgrepTotal = 0;
-
-            // Snyk results
-            let snykCritical = 0;
-            let snykHigh = 0;
-            let snykMedium = 0;
-            let snykTotal = 0;
-
-            // --- Parse Semgrep ---
-            if (fs.existsSync('semgrep.json')) {
-              try {
-                const semgrep = JSON.parse(fs.readFileSync('semgrep.json'));
-                const results = semgrep.results || [];
-                semgrepTotal = results.length;
-
-                results.forEach(r => {
-                  const severity = r.extra?.severity?.toLowerCase() || 'info';
-                  if (severity === 'error' || severity === 'critical') semgrepCritical++;
-                  else if (severity === 'warning' || severity === 'high') semgrepHigh++;
-                  else if (severity === 'medium') semgrepMedium++;
-                });
-              } catch (e) {
-                console.log('Error parsing Semgrep results:', e.message);
-              }
-            }
-
-            // --- Parse Snyk ---
-            if (fs.existsSync('snyk-sast.json')) {
-              try {
-                const snyk = JSON.parse(fs.readFileSync('snyk-sast.json'));
-                const issues = snyk.runs?.[0]?.results || [];
-                snykTotal = issues.length;
-
-                issues.forEach(r => {
-                  const severity = r.properties?.severity?.toLowerCase() || 'low';
-                  if (severity === 'critical') snykCritical++;
-                  else if (severity === 'high') snykHigh++;
-                  else if (severity === 'medium') snykMedium++;
-                });
-              } catch (e) {
-                console.log('Error parsing Snyk results:', e.message);
-              }
-            }
-
-            const totalCritical = semgrepCritical + snykCritical;
-            const totalHigh = semgrepHigh + snykHigh;
-            const totalMedium = semgrepMedium + snykMedium;
-            const totalFindings = semgrepTotal + snykTotal;
-
-            const emoji = totalCritical > 0 ? '🚨' : totalHigh > 0 ? '⚠️' : '✅';
-
-            const body = `
-            ### ${emoji} Security Scan Summary
-
-            | Tool | Critical | High | Medium | Total |
-            |------|----------|------|--------|-------|
-            | 🔍 **Semgrep** | ${semgrepCritical} | ${semgrepHigh} | ${semgrepMedium} | ${semgrepTotal} |
-            | 🐍 **Snyk Code** | ${snykCritical} | ${snykHigh} | ${snykMedium} | ${snykTotal} |
-            | **📊 Combined** | **${totalCritical}** | **${totalHigh}** | **${totalMedium}** | **${totalFindings}** |
-
-            ${totalCritical > 0 ? '🔴 **Action Required:** Critical vulnerabilities found!' : ''}
-            ${totalHigh > 5 ? '🟠 **Warning:** Multiple high-severity issues detected.' : ''}
-
-            📎 View detailed results in:
-            - [Semgrep Dashboard](https://semgrep.dev)
-            - [Snyk Dashboard](https://app.snyk.io)
-            - Workflow logs above
-            `;
-
-            github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body
-            });
