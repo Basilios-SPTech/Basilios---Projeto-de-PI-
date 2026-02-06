@@ -1,12 +1,12 @@
 name: SAST Security Scan
 on:
-  workflow_dispatch:
   push:
     branches-ignore:
       - main
   pull_request:
     branches-ignore:
       - main
+  workflow_dispatch:
 permissions:
   contents: read
   pull-requests: write
