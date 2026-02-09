@@ -4,6 +4,31 @@ import { useEffect, useState } from "react";
 export default function PixQRCode() {
   const [imageBlob, setImageBlob] = useState(null);
 
+  const sanitizeQRCode = (qrCode) => {
+    if (!qrCode) return null;
+
+    // Bloqueia protocolos perigosos
+    if (
+      qrCode.startsWith("javascript:") ||
+      qrCode.startsWith("data:text/") ||
+      qrCode.startsWith("vbscript:")
+    ) {
+      console.warn("QR Code inválido detectado");
+      return null;
+    }
+
+    // Aceita apenas data:image base64
+    if (qrCode.startsWith("data:image/")) {
+      // Valida estrutura do base64
+      const [header, data] = qrCode.split(",");
+      if (data && /^[A-Za-z0-9+/=]+$/.test(data)) {
+        return qrCode;
+      }
+    }
+
+    return null;
+  };
+
   // useEffect(() => {
   //   const url = URL.createObjectURL(img);
   //   console.log(base64Image);
@@ -21,7 +46,7 @@ export default function PixQRCode() {
 
       <div className="flex justify-center items-center p-2 sm:p-4">
         <img
-          src={localStorage.getItem("qrCode")}
+          src={sanitizeQRCode(localStorage.getItem("qrCode"))}
           alt="QR Code PIX"
           className="w-full max-w-[250px] sm:max-w-[280px] md:max-w-[300px] h-auto border-4 border-gray-100 rounded-lg shadow-sm"
         />
