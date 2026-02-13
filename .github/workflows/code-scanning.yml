@@ -1,0 +1,47 @@
+name: SAST Security Scan
+on:
+  push:
+    branches-ignore:
+      - main
+  pull_request:
+    branches-ignore:
+      - main
+  workflow_dispatch:
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
+jobs:
+  security:
+    name: SAST - Semgrep + Snyk
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # ----------------
+      # SAST - Semgrep
+      # ----------------
+      # ----------------
+      - name: Run Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/owasp-top-ten
+            p/secrets
+      # ----------------
+      # SAST - Snyk Code
+      # ----------------
+      - name: Setup Node.js (if needed)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run Snyk Code (SAST)
+        uses: snyk/actions/node@master
+        with:
+          command: code test
+          args: --severity-threshold=low --json-file-output=snyk-sast.json
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        continue-on-error: true

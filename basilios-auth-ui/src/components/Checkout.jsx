@@ -45,6 +45,26 @@ export default function Checkout() {
     );
   };
 
+  const sanitizeImageUrl = (url) => {
+    if (!url) return "/placeholder.jpg";
+
+    // Bloqueia javascript: e data: URIs maliciosos
+    if (url.startsWith("javascript:") || url.startsWith("data:text/html")) {
+      return "/placeholder.jpg";
+    }
+
+    // Aceita apenas HTTP(S) ou caminhos relativos
+    if (
+      url.startsWith("http://") ||
+      url.startsWith("https://") ||
+      url.startsWith("/")
+    ) {
+      return url;
+    }
+
+    return "/placeholder.jpg";
+  };
+
   const endOrder = async () => {
     let itensPedido = itens.map((i) => ({
       productId: i.originalProductId,
@@ -167,7 +187,7 @@ export default function Checkout() {
                     className="flex items-center gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200"
                   >
                     <img
-                      src={item.imagem}
+                      src={sanitizeImageUrl(item.imagem)}
                       alt={item.nome}
                       className="w-16 h-16 object-cover rounded"
                     />

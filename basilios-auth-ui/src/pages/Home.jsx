@@ -1,4 +1,4 @@
-// src/pages/Home.jsx 
+// src/pages/Home.jsx
 import { useEffect, useMemo, useState } from "react";
 import Header from "../components/header.jsx";
 import Cart from "../components/Cart.jsx";
@@ -10,7 +10,7 @@ const CHAVE_STORAGE = "produtos-basilios";
 const CHAVE_CART = "carrinho-basilios";
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
-export default function Home( ) {
+export default function Home() {
   const [produtos, setProdutos] = useState([]);
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("Todas");
@@ -33,9 +33,7 @@ export default function Home( ) {
           categoria: p.category ?? p.categoria ?? "",
           subcategoria: p.subcategory ?? p.subcategoria ?? "",
           pausado: p.isPaused ?? p.paused ?? false,
-          imagem: p.imageUrl
-            ? `${API_BASE}${p.imageUrl}` 
-            : p.imagem || "",        
+          imagem: p.imageUrl ? `${API_BASE}${p.imageUrl}` : p.imagem || "",
         }));
 
         const ativos = adaptados.filter((p) => !p.pausado);
@@ -49,7 +47,7 @@ export default function Home( ) {
         try {
           const salvo = JSON.parse(localStorage.getItem(CHAVE_STORAGE) || "[]");
           const ativos = (Array.isArray(salvo) ? salvo : []).filter(
-            (p) => !p.pausado
+            (p) => !p.pausado,
           );
           setProdutos(ativos);
         } catch {
@@ -66,6 +64,41 @@ export default function Home( ) {
     setCartCount(Array.isArray(c) ? c.length : 0);
   }, []);
 
+  const sanitizeImageUrl = (url) => {
+    if (!url) return "/placeholder.jpg";
+
+    // Bloqueia javascript: e data: URIs maliciosos
+    if (url.startsWith("javascript:") || url.startsWith("data:text/html")) {
+      return "/placeholder.jpg";
+    }
+
+    // Aceita apenas HTTP(S) ou caminhos relativos
+    if (
+      url.startsWith("http://") ||
+      url.startsWith("https://") ||
+      url.startsWith("/")
+    ) {
+      return url;
+    }
+
+    return "/placeholder.jpg";
+  };
+
+  const sanitizePrice = (price) => {
+    // Remove tudo que não é número, ponto ou vírgula
+    const limpo = String(preco).replace(/[^\d.,]/g, "");
+
+    // Converte para número
+    const numero = parseFloat(limpo.replace(",", "."));
+
+    // Valida se é número válido
+    if (isNaN(numero) || numero < 0) {
+      return "0,00";
+    }
+
+    return numero.toFixed(2).replace(".", ",");
+  };
+
   const categorias = useMemo(() => {
     const set = new Set(["Todas"]);
     for (const p of produtos) {
@@ -78,8 +111,7 @@ export default function Home( ) {
   const filtrados = useMemo(() => {
     const termo = q.trim().toLowerCase();
     return produtos.filter((p) => {
-      const okCat =
-        cat === "Todas" || (p.categoria || "").trim() == cat;
+      const okCat = cat === "Todas" || (p.categoria || "").trim() == cat;
       const okTermo =
         !termo ||
         (p.nome || "").toLowerCase().includes(termo) ||
@@ -90,7 +122,7 @@ export default function Home( ) {
 
   const produtosOrdenados = useMemo(
     () => [...filtrados].sort((a, b) => Number(b.index) - Number(a.index)),
-    [filtrados]
+    [filtrados],
   );
 
   const secoesPorCategoria = useMemo(() => {
@@ -138,7 +170,7 @@ export default function Home( ) {
       "Beirute Grande (Filé Mignon)",
     ],
     "Hot-Dog": ["Dog Premium", "Dog Maionese Batata Palha"],
-    "Porções": [
+    Porções: [
       "Batata Frita",
       "Batata Crinkle",
       "Batata Frita c/ Cheddar e Bacon",
@@ -151,7 +183,9 @@ export default function Home( ) {
     const nameMap = {};
     // normalize names to lowercase for comparison
     for (const key of Object.keys(SECTION_PRODUCT_NAMES)) {
-      nameMap[key] = SECTION_PRODUCT_NAMES[key].map((n) => (n || "").toLowerCase().trim());
+      nameMap[key] = SECTION_PRODUCT_NAMES[key].map((n) =>
+        (n || "").toLowerCase().trim(),
+      );
     }
 
     const included = new Set();
@@ -234,7 +268,9 @@ export default function Home( ) {
 
     // A busca por existente deve ser mais robusta para itens não customizados, mas por enquanto, mantemos assim.
     // Para itens customizados, sempre criamos um novo.
-    const existente = novo.find((item) => item.id === produto.index && !item.isCustom);
+    const existente = novo.find(
+      (item) => item.id === produto.index && !item.isCustom,
+    );
 
     if (customOptions.isCustom) {
       novo.push({
@@ -314,20 +350,31 @@ export default function Home( ) {
             // Seções customizadas (ordem definida em customSections)
             for (const [label, items] of customSections.sections) {
               parts.push(
-                <div key={label} className="hp-section" data-section={slug(label)}>
+                <div
+                  key={label}
+                  className="hp-section"
+                  data-section={slug(label)}
+                >
                   <h2 className="hp-section__title">{label}</h2>
 
                   {items.length === 0 ? (
-                    <p className="hp-empty">Nenhum item encontrado nesta seção.</p>
+                    <p className="hp-empty">
+                      Nenhum item encontrado nesta seção.
+                    </p>
                   ) : (
                     <div className="hp-grid">
                       {items.map((p) => (
                         <article key={p.index} className="hp-card">
                           <div className="hp-card__media">
                             {p.imagem ? (
-                              <img src={p.imagem} alt={p.nome || "Produto"} />
+                              <img
+                                src={sanitizeImageUrl(p.imagem)}
+                                alt={p.nome || "Produto"}
+                              />
                             ) : (
-                              <div className="hp-card__placeholder">Sem imagem</div>
+                              <div className="hp-card__placeholder">
+                                Sem imagem
+                              </div>
                             )}
                           </div>
 
@@ -356,12 +403,14 @@ export default function Home( ) {
                       ))}
                     </div>
                   )}
-                </div>
+                </div>,
               );
             }
 
             // Produtos restantes (não incluídos nas seções customizadas)
-            const restantes = produtos.filter((p) => !customSections.included.has(p.index));
+            const restantes = produtos.filter(
+              (p) => !customSections.included.has(p.index),
+            );
             if (restantes.length > 0) {
               const map = new Map();
               for (const p of restantes) {
@@ -372,7 +421,11 @@ export default function Home( ) {
 
               for (const [categoria, itens] of map.entries()) {
                 parts.push(
-                  <div key={categoria} className="hp-section" data-section={slug(categoria)}>
+                  <div
+                    key={categoria}
+                    className="hp-section"
+                    data-section={slug(categoria)}
+                  >
                     <h2 className="hp-section__title">{categoria}</h2>
                     <div className="hp-grid">
                       {itens.map((p) => (
@@ -381,7 +434,9 @@ export default function Home( ) {
                             {p.imagem ? (
                               <img src={p.imagem} alt={p.nome || "Produto"} />
                             ) : (
-                              <div className="hp-card__placeholder">Sem imagem</div>
+                              <div className="hp-card__placeholder">
+                                Sem imagem
+                              </div>
                             )}
                           </div>
 
@@ -394,7 +449,7 @@ export default function Home( ) {
                             <div className="hp-price">
                               <span>R$</span>
                               <strong>
-                                {Number(p.preco || "0")
+                                {Number(sanitizePrice(p.preco) || "0")
                                   .toFixed(2)
                                   .replace(".", ",")}
                               </strong>
@@ -409,7 +464,7 @@ export default function Home( ) {
                         </article>
                       ))}
                     </div>
-                  </div>
+                  </div>,
                 );
               }
             }
@@ -417,7 +472,8 @@ export default function Home( ) {
             if (parts.length === 0) {
               return (
                 <p className="hp-empty">
-                  Nada por aqui… Experimente limpar filtros ou cadastrar novos itens.
+                  Nada por aqui… Experimente limpar filtros ou cadastrar novos
+                  itens.
                 </p>
               );
             }
@@ -467,7 +523,5 @@ export default function Home( ) {
         )}
       </section>
     </div>
-    
-    
   );
 }
