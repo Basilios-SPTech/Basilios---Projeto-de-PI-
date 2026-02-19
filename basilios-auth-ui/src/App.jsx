@@ -21,7 +21,6 @@ import PixCheckout from "./pages/PixCheckout.jsx";
 import StatusOrderPage from "./pages/StatusOrderPage.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import { ProfilePage } from "./pages/ProfilePage.jsx";
-import TestePage from "./pages/TestePage.jsx";
 // Layouts
 import AuthLayout from "./layouts/AuthLayout.jsx";
 
