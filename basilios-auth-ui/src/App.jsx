@@ -123,7 +123,6 @@ function CadastrarProdutoRoute() {
 function ProdutoLayout({ children }) {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      
       <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
     </div>
   );
@@ -144,7 +143,15 @@ export default function App() {
             <Route path="/" element={<Navigate to="/home" replace />} />
 
             {/* Públicas */}
-            <Route path="/about" element={<><About /><FooterBasilios /></>} />
+            <Route
+              path="/about"
+              element={
+                <>
+                  <About />
+                  <FooterBasilios />
+                </>
+              }
+            />
             {/* Rotas privadas - exige login */}
             <Route element={<RequireAuth />}>
               <Route
@@ -196,10 +203,18 @@ export default function App() {
                   </ProdutoLayout>
                 }
               />
-              
-            <Route path="/board" element={<BoardRoute />} /></Route>
 
-            <Route path="/dashboard" element={<ProdutoLayout><Dashboard /></ProdutoLayout>} />
+              <Route path="/board" element={<BoardRoute />} />
+            </Route>
+
+            <Route
+              path="/dashboard"
+              element={
+                <ProdutoLayout>
+                  <Dashboard />
+                </ProdutoLayout>
+              }
+            />
 
             <Route path="/checkout" element={<CheckoutRoute />} />
 
@@ -212,8 +227,6 @@ export default function App() {
           </Routes>
         </Router>
       </main>
-
-      
     </div>
   );
 }

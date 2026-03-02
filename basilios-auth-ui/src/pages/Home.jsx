@@ -86,7 +86,7 @@ export default function Home() {
 
   const sanitizePrice = (price) => {
     // Remove tudo que não é número, ponto ou vírgula
-    const limpo = String(preco).replace(/[^\d.,]/g, "");
+    const limpo = String(price).replace(/[^\d.,]/g, "");
 
     // Converte para número
     const numero = parseFloat(limpo.replace(",", "."));
