@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
+  ArrowLeft,
+  Hamburger,
   CreditCard,
   QrCode,
   MapPin,
@@ -167,33 +169,43 @@ export default function Checkout() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100 text-gray-900 p-4 md:p-8">
+    <div className="min-h-screen bg-gray-100 text-gray-900 px-4 py-6 md:p-8">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold mb-12 flex items-center gap-5">
-          <ShoppingCart size={32} />
+        {/* Voltar ao cardápio */}
+        <button
+          onClick={() => navigate("/home")}
+          className="cursor-pointer inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-red-600 transition-colors mb-4"
+        >
+          <ArrowLeft size={16} />
+          <Hamburger size={16} />
+          Ainda não acabou a fome? Continue comprando
+        </button>
+
+        <h1 className="text-2xl md:text-3xl font-bold pb-6 mb-8 border-b border-gray-300 flex items-center gap-3 md:gap-5">
+          <ShoppingCart size={28} className="shrink-0" />
           Finalizar Pedido
         </h1>
-        <br />
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Coluna Principal */}
           <div className="lg:col-span-2 space-y-6">
             {/* Revisão dos Itens */}
-            <div className="bg-white rounded-lg p-6 shadow-md">
-              <h2 className="text-xl font-semibold mb-4">Itens do Pedido</h2>
+            <div className="bg-white rounded-lg p-4 md:p-6 shadow-md">
+              <h2 className="text-lg md:text-xl font-semibold mb-4">Itens do Pedido</h2>
               <div className="space-y-4">
                 {itens.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200"
+                    className="flex flex-wrap md:flex-nowrap items-center gap-3 md:gap-4 bg-gray-50 p-3 md:p-4 rounded-lg border border-gray-200"
                   >
                     <img
                       src={sanitizeImageUrl(item.imagem)}
                       alt={item.nome}
-                      className="w-16 h-16 object-cover rounded"
+                      className="w-14 h-14 md:w-16 md:h-16 object-cover rounded shrink-0"
                     />
-                    <div className="flex-1">
-                      <h3 className="font-medium">{item.nome}</h3>
-                      <p className="text-gray-600 text-sm">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-sm md:text-base truncate">{item.nome}</h3>
+                      <p className="text-gray-600 text-xs md:text-sm">
                         R$ {item.preco.toFixed(2)}
                       </p>
                     </div>
@@ -206,7 +218,7 @@ export default function Checkout() {
                       >
                         -
                       </button>
-                      <span className="w-12 text-center">{item.qtd}</span>
+                      <span className="w-8 md:w-12 text-center text-sm">{item.qtd}</span>
                       <button
                         onClick={() =>
                           atualizarQuantidade(item.id, item.qtd + 1)
@@ -216,8 +228,8 @@ export default function Checkout() {
                         +
                       </button>
                     </div>
-                    <div className="text-right min-w-24">
-                      <p className="font-semibold">
+                    <div className="text-right min-w-[70px] md:min-w-24">
+                      <p className="font-semibold text-sm md:text-base">
                         R$ {(item.preco * item.qtd).toFixed(2)}
                       </p>
                     </div>
@@ -233,17 +245,16 @@ export default function Checkout() {
             </div>
 
             {/* Endereço de Entrega */}
-            <div className="bg-white rounded-lg p-6 shadow-md">
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <MapPin size={24} />
+            <div className="bg-white rounded-lg p-4 md:p-6 shadow-md">
+              <h2 className="text-lg md:text-xl font-semibold mb-4 flex items-center gap-2">
+                <MapPin size={22} className="shrink-0" />
                 Endereço de Entrega
               </h2>
-              <br />
               <div className="space-y-3">
                 {endUser.map((endereco) => (
                   <label
                     key={endereco.id}
-                    className={`block p-4 rounded-lg cursor-pointer transition-all ${
+                    className={`block p-3 md:p-4 rounded-lg cursor-pointer transition-all ${
                       Number(enderecoSelecionado) === endereco.id
                         ? "bg-gray-800 text-white border-2 border-gray-700"
                         : "bg-gray-50 border-2 border-gray-200 hover:border-gray-400"
@@ -270,7 +281,7 @@ export default function Checkout() {
                         )}
                       </div>
                       <div>
-                        <p className="font-semibold">
+                        <p className="font-semibold text-sm md:text-base">
                           {endereco.enderecoCompleto}
                         </p>
                         <p
@@ -286,23 +297,22 @@ export default function Checkout() {
             </div>
 
             {/* Forma de Pagamento */}
-            <div className="bg-white rounded-lg p-6 shadow-md">
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <Banknote size={24} />
+            <div className="bg-white rounded-lg p-4 md:p-6 shadow-md">
+              <h2 className="text-lg md:text-xl font-semibold mb-4 flex items-center gap-2">
+                <Banknote size={22} className="shrink-0" />
                 Forma de Pagamento
               </h2>
-              <br />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <button
                   onClick={() => setFormaPagamento("pix")}
-                  className={`p-6 rounded-lg border-2 transition-all cursor-pointer ${
+                  className={`p-4 md:p-6 rounded-lg border-2 transition-all cursor-pointer ${
                     formaPagamento === "pix"
                       ? "bg-gray-800 text-white border-gray-700"
                       : "bg-gray-50 border-gray-200 hover:border-gray-400"
                   }`}
                 >
-                  <QrCode size={48} className="mx-auto mb-3" />
-                  <p className="font-semibold text-lg">PIX</p>
+                  <QrCode size={36} className="mx-auto mb-2 md:mb-3 md:!w-12 md:!h-12" />
+                  <p className="font-semibold text-base md:text-lg">PIX</p>
                   <p
                     className={`text-sm mt-1 ${formaPagamento === "pix" ? "text-gray-300" : "text-gray-600"}`}
                   ></p>
@@ -310,14 +320,14 @@ export default function Checkout() {
 
                 <button
                   onClick={() => setFormaPagamento("cartao")}
-                  className={`p-6 rounded-lg border-2 transition-all cursor-pointer ${
+                  className={`p-4 md:p-6 rounded-lg border-2 transition-all cursor-pointer ${
                     formaPagamento === "cartao"
                       ? "bg-gray-800 text-white border-gray-700"
                       : "bg-gray-50 border-gray-200 hover:border-gray-400"
                   }`}
                 >
-                  <CreditCard size={48} className="mx-auto mb-3" />
-                  <p className="font-semibold text-lg">Cartão de Crédito</p>
+                  <CreditCard size={36} className="mx-auto mb-2 md:mb-3 md:!w-12 md:!h-12" />
+                  <p className="font-semibold text-base md:text-lg">Cartão de Crédito</p>
                   <p
                     className={`text-sm mt-1 ${formaPagamento === "cartao" ? "text-gray-300" : "text-gray-600"}`}
                   ></p>
@@ -325,7 +335,7 @@ export default function Checkout() {
               </div>
 
               {formaPagamento === "cartao" && (
-                <div className="mt-6 bg-gray-50 p-6 rounded-lg border-2 border-gray-300">
+                <div className="mt-4 md:mt-6 bg-gray-50 p-4 md:p-6 rounded-lg border-2 border-gray-300">
                   <div className="flex items-start gap-3">
                     <div className="text-2xl">ℹ️</div>
                     <div>
@@ -346,19 +356,19 @@ export default function Checkout() {
 
           {/* Resumo do Pedido */}
           <div className="lg:col-span-1">
-            <div className="gray-50 rounded-lg p-6 sticky top-8">
-              <h2 className="text-xl font-semibold mb-4">Resumo do Pedido</h2>
+            <div className="bg-white rounded-lg p-4 md:p-6 shadow-md lg:sticky lg:top-8">
+              <h2 className="text-lg md:text-xl font-semibold mb-4">Resumo do Pedido</h2>
               <div className="space-y-3 mb-6">
-                <div className="flex justify-between text-gray-400">
+                <div className="flex justify-between text-sm md:text-base text-gray-600">
                   <span>Subtotal</span>
                   <span>R$ {calcularSubtotal().toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-gray-400">
+                <div className="flex justify-between text-sm md:text-base text-gray-600">
                   <span>Frete</span>
                   <span>R$ {calcularFrete().toFixed(2)}</span>
                 </div>
-                <div className="border-t border-zinc-700 pt-3">
-                  <div className="flex justify-between text-xl font-bold">
+                <div className="border-t border-gray-200 pt-3">
+                  <div className="flex justify-between text-lg md:text-xl font-bold">
                     <span>Total</span>
                     <span className="text-red-500">
                       R$ {calcularTotal().toFixed(2)}
@@ -369,7 +379,7 @@ export default function Checkout() {
 
               <button
                 onClick={endOrder}
-                className="cursor-pointer w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-lg font-semibold text-lg transition-colors"
+                className="cursor-pointer w-full bg-red-600 hover:bg-red-700 text-white py-3 md:py-4 rounded-lg font-semibold text-base md:text-lg transition-colors"
               >
                 Finalizar Pedido
               </button>

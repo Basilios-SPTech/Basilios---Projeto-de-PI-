@@ -152,24 +152,25 @@ export default function App() {
               <Route path="/register" element={<RegisterRoute />} />
             </Route>
 
+            {/* Home é pública (carrinho funciona sem login) */}
+            <Route
+              path="/home"
+              element={
+                <>
+                  <ProdutoLayout>
+                    <HomePage />
+                  </ProdutoLayout>
+                  <FooterBasilios />
+                </>
+              }
+            />
+
             {/* Rotas autenticadas para CLIENTE e FUNCIONARIO */}
             <Route
               element={
                 <RequireAuth roles={["ROLE_CLIENTE", "ROLE_FUNCIONARIO"]} />
               }
             >
-              <Route
-                path="/home"
-                element={
-                  <>
-                    <ProdutoLayout>
-                      <HomePage />
-                    </ProdutoLayout>
-                    <FooterBasilios />
-                  </>
-                }
-              />
-
               <Route
                 path="/profile"
                 element={

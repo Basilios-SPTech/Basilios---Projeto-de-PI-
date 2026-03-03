@@ -30,8 +30,16 @@ export default function Login({ onGoRegister, onGoHome }) {
     setServerError("");
     try {
       const data = await AuthAPI.login(email, password);
-      console.log("login ok:", data);
       toast.success("Bem-vindo!");
+
+      // Se havia redirect pendente (ex: veio do carrinho), vai pra lá
+      const redirect = sessionStorage.getItem("redirectAfterLogin");
+      if (redirect) {
+        sessionStorage.removeItem("redirectAfterLogin");
+        window.location.href = redirect;
+        return;
+      }
+
       // navegação via prop (App controla o destino)
       if (typeof onGoHome === "function") onGoHome();
     } catch (err) {
