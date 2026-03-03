@@ -13,12 +13,16 @@ export default function SidebarAdm({ open, onClose }) {
   let isLogged = false;
   try { isLogged = !!authStorage.getToken(); } catch { isLogged = false; }
 
+  const isFuncionario = authStorage.hasAnyRole('ROLE_FUNCIONARIO');
+
   const items = isLogged
     ? [
         { icon: Home,     label: "Início",              href: "/home" },
-        { icon: Package,  label: "Cadastrar Produto",   href: "/cadastro" },
-        { icon: ListOrdered, label: "Pedidos (Board)",     href: "/board" },
-        { icon: LayoutDashboard, label: "Dashboard",     href: "/dashboard" },
+        ...(isFuncionario ? [
+          { icon: Package,  label: "Cadastrar Produto",   href: "/cadastro" },
+          { icon: ListOrdered, label: "Pedidos (Board)",  href: "/board" },
+          { icon: LayoutDashboard, label: "Dashboard",    href: "/dashboard" },
+        ] : []),
         { icon: Hamburger,label: "Sobre Nós",           href: "/about" },
         { icon: LogOut,   label: "Sair",                href: "#logout" },
       ]
@@ -56,7 +60,7 @@ export default function SidebarAdm({ open, onClose }) {
     <>
       <div className="sidebar-user">
         <div className="sidebar-user__header">
-          <span className="sidebar-user__title">ADMIN</span>
+          <span className="sidebar-user__title">{isFuncionario ? 'ADMIN' : 'MENU'}</span>
           <button className="sidebar-user__close" onClick={onClose}>✕</button>
         </div>
 

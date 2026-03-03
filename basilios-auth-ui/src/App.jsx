@@ -23,6 +23,7 @@ import Dashboard from "./pages/Dashboard.jsx";
 import { ProfilePage } from "./pages/ProfilePage.jsx";
 // Layouts
 import AuthLayout from "./layouts/AuthLayout.jsx";
+import RequireAuth from "./routes/RequireAuth.jsx";
 
 // Auth storage
 import { authStorage } from "./services/storageAuth.js";
@@ -38,14 +39,6 @@ function PublicRoute() {
   ) : (
     <Outlet />
   );
-}
-
-// 🔻 SEM ROLES: exige apenas estar logado
-function RequireAuth() {
-  if (!authStorage.isAuthenticated()) {
-    return <Navigate to="/login" replace />;
-  }
-  return <Outlet />;
 }
 
 /* ============================
@@ -152,8 +145,31 @@ export default function App() {
                 </>
               }
             />
-            {/* Rotas privadas - exige login */}
-            <Route element={<RequireAuth />}>
+
+            {/* Login/Register públicas, mas se já logado, manda pra /home */}
+            <Route element={<PublicRoute />}>
+              <Route path="/login" element={<LoginRoute />} />
+              <Route path="/register" element={<RegisterRoute />} />
+            </Route>
+
+            {/* Rotas autenticadas para CLIENTE e FUNCIONARIO */}
+            <Route
+              element={
+                <RequireAuth roles={["ROLE_CLIENTE", "ROLE_FUNCIONARIO"]} />
+              }
+            >
+              <Route
+                path="/home"
+                element={
+                  <>
+                    <ProdutoLayout>
+                      <HomePage />
+                    </ProdutoLayout>
+                    <FooterBasilios />
+                  </>
+                }
+              />
+
               <Route
                 path="/profile"
                 element={
@@ -165,36 +181,14 @@ export default function App() {
                   </>
                 }
               />
-              <Route
-                path="/cadastro"
-                element={
-                  <ProdutoLayout>
-                    <CadastrarProdutoRoute />
-                  </ProdutoLayout>
-                }
-              />
-              <Route path="/board" element={<BoardRoute />} />
-            </Route>
-            <Route
-              path="/home"
-              element={
-                <>
-                  <ProdutoLayout>
-                    <HomePage />
-                  </ProdutoLayout>
-                  <FooterBasilios />
-                </>
-              }
-            />
 
-            {/* Login/Register públicas, mas se já logado, manda pra /home */}
-            <Route element={<PublicRoute />}>
-              <Route path="/login" element={<LoginRoute />} />
-              <Route path="/register" element={<RegisterRoute />} />
+              <Route path="/checkout" element={<CheckoutRoute />} />
+              <Route path="/pix-checkout" element={<PixRoute />} />
+              <Route path="/order-status" element={<StatusOrderPage />} />
             </Route>
 
-            {/* 🔻 SEM ROLES: áreas internas exigem apenas login */}
-            <Route element={<RequireAuth />}>
+            {/* Rotas exclusivas de FUNCIONARIO */}
+            <Route element={<RequireAuth roles={["ROLE_FUNCIONARIO"]} />}>
               <Route
                 path="/cadastro"
                 element={
@@ -205,22 +199,16 @@ export default function App() {
               />
 
               <Route path="/board" element={<BoardRoute />} />
+
+              <Route
+                path="/dashboard"
+                element={
+                  <ProdutoLayout>
+                    <Dashboard />
+                  </ProdutoLayout>
+                }
+              />
             </Route>
-
-            <Route
-              path="/dashboard"
-              element={
-                <ProdutoLayout>
-                  <Dashboard />
-                </ProdutoLayout>
-              }
-            />
-
-            <Route path="/checkout" element={<CheckoutRoute />} />
-
-            <Route path="/pix-checkout" element={<PixRoute />} />
-
-            <Route path="/order-status" element={<StatusOrderPage />} />
 
             {/* 404 -> home */}
             <Route path="*" element={<Navigate to="/home" replace />} />

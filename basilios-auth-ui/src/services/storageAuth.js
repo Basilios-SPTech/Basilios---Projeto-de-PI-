@@ -38,7 +38,7 @@ function normalizeRoleName(r) {
   if (!r) return null
   let up = String(r).trim().toUpperCase()
   // aceita ADMIN / CLIENTE sem prefixo
-  if (!up.startsWith('ROLE_') && /^(ADMIN|CLIENTE)$/.test(up)) {
+  if (!up.startsWith('ROLE_') && /^(ADMIN|CLIENTE|FUNCIONARIO)$/.test(up)) {
     up = `ROLE_${up}`
   }
   return up
@@ -150,6 +150,13 @@ export const authStorage = {
     if (!want.length) return true
     const have = new Set(this.getRoles())
     return want.every(r => have.has(r))
+  },
+
+  hasAnyRole(...required) {
+    const want = required.map(normalizeRoleName).filter(Boolean)
+    if (!want.length) return true
+    const have = new Set(this.getRoles())
+    return want.some(r => have.has(r))
   },
 
   isAdmin() {

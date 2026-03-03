@@ -215,7 +215,7 @@ export default function Header() {
         </div>
       </header>
 
-      {/* 🔻 SEM ROLES */}
+      {/* Sidebar por role: funcionário vê menu admin, cliente vê menu padrão */}
       <SidebarAdm open={isMenuOpen} onClose={toggleMenu} />
     </>
   );
