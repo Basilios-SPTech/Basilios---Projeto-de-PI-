@@ -23,13 +23,19 @@ export default function AuthRequiredModal({ isOpen, onClose }) {
     <>
       {/* Overlay */}
       <div
+        role="button"
+        tabIndex={0}
         className="fixed inset-0 bg-black/50 z-[1100] animate-[fadeIn_.2s_ease-out]"
         onClick={onClose}
+        onKeyDown={(e) => e.key === "Enter" && onClose()}
+        aria-label="Fechar modal"
       />
 
       {/* Modal */}
       <div className="fixed inset-0 z-[1101] flex items-center justify-center p-4">
         <div
+          role="dialog"
+          aria-modal="true"
           className="relative bg-white rounded-2xl shadow-2xl max-w-sm w-full p-8 animate-[scaleIn_.25s_ease-out]"
           onClick={(e) => e.stopPropagation()}
         >

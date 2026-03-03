@@ -102,8 +102,12 @@ export default function Cart() {
       {/* Overlay */}
       {isOpen && (
         <div
+          role="button"
+          tabIndex={0}
           onClick={() => setIsOpen(false)}
+          onKeyDown={(e) => e.key === "Enter" && setIsOpen(false)}
           className="fixed inset-0 bg-black/50 z-[998] transition-opacity"
+          aria-label="Fechar carrinho"
         />
       )}
 

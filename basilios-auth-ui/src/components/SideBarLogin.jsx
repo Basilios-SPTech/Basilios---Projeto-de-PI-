@@ -59,7 +59,7 @@ export default function SidebarUser({ open, onClose }) {
       </div>
 
       {/* Overlay */}
-      <div className="sidebar-overlay" onClick={onClose} />
+      <div className="sidebar-overlay" role="button" tabIndex={0} onClick={onClose} onKeyDown={(e) => e.key === "Enter" && onClose()} aria-label="Fechar menu" />
     </>
   );
 }

@@ -14,8 +14,12 @@ export default function SidebarBase({
     <>
       {/* overlay */}
       <div
+        role="button"
+        tabIndex={0}
         onClick={onClose}
+        onKeyDown={(e) => e.key === "Enter" && onClose()}
         className="fixed inset-0 z-[999] bg-black/50 animate-[fadeIn_.3s_ease-out]"
+        aria-label="Fechar menu"
       />
       {/* drawer */}
       <aside
