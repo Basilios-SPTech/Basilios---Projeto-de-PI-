@@ -6,7 +6,6 @@ import { AuthAPI } from "../services/api.js";
 import SidebarLogin from "../components/MenuButtonLogin.jsx";
 import toast from "react-hot-toast";
 
-import OrbitLoading from "../components/loading/OrbitLoading.jsx";
 import ProgressBar from "../components/loading/ProgressBar.jsx";
 
 export default function Login({ onGoRegister, onGoHome }) {
@@ -143,8 +142,7 @@ export default function Login({ onGoRegister, onGoHome }) {
         >
           Cadastre-se
         </button>
-        {/* <OrbitLoading visible={true} message="Carregando..." />*/}
-        <ProgressBar visible={true} message="Carregando..." />
+        <ProgressBar visible={submitting} message="Carregando..." />
       </div>
     </form>
   );
