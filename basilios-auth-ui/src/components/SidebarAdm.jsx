@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { AuthAPI } from "../services/api";
 import { authStorage } from "../services/storageAuth";
+import ThemeSwitcher from "./ThemeSwitcher";
 import "../styles/side-bar.css";
 
 export default function SidebarAdm({ open, onClose }) {
@@ -77,6 +78,7 @@ export default function SidebarAdm({ open, onClose }) {
         </nav>
 
         <div className="sidebar-user__footer">
+          <ThemeSwitcher />
           <p style={{ margin: "0.5rem 0" }}>Versão 1.0.0</p>
           <p style={{ margin: "0.5rem 0" }}>© 2025 - Basilios</p>
         </div>

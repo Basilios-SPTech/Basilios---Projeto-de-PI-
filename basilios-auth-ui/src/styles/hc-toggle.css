@@ -1,85 +1,47 @@
-.hc-toggle {
-  position: fixed;
-  z-index: 9999;
-  inset-inline-end: 9px; /* lado direito por padrão */
-  bottom: 120px;          /* ajustável via config */
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: center;
-  font-family: var(--font-sans, ui-sans-serif);
-}
-.hc-btn {
-  width: 44px; height: 44px;
-  border-radius: 999px;
-  background: #000;
-  border: 2px solid #FFD400;
-  display: grid; place-items: center;
-  cursor: pointer;
-  box-shadow: 0 6px 20px rgba(0,0,0,.35);
-}
-.hc-btn img { width: 24px; height: 24px; filter: invert(86%) sepia(92%) saturate(716%) hue-rotate(3deg) brightness(105%) contrast(104%); }
+/* ================================================================
+   VLIBRAS — Ajustes de posicionamento
+   Quando o carrinho / customização abrem:
+   - O botão se desloca para a esquerda do carrinho
+   - O popup (painel) é reposicionado via JS (MutationObserver)
+     para ficar à esquerda do carrinho, acima dele (z-index alto)
+   ================================================================ */
 
-.hc-pop {
-  position: absolute;
-  display: none;
-  min-width: 210px;
-  background: #000;
-  color: #FFD400;
-  border: 2px solid #FFD400;
-  border-radius: 10px;
-  padding: 8px;
-  box-shadow: 0 10px 24px rgba(0,0,0,.5);
-  right: 50px;
+/* ---------- Botão do VLibras: transição suave ---------- */
+[vw-access-button] {
+  transition: right 0.3s ease, bottom 0.3s ease !important;
 }
 
-.hc-pop.open { display: block; }
+/* ---------- Quando carrinho / customização abrem ---------- */
 
-.hc-item {
-  padding: 10px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  outline: none;
-}
-.hc-item:hover, .hc-item:focus { background: #111; }
-.hc-sep { height: 1px; background: #FFD400; opacity: .4; margin: 6px 0; }
-
-/* Deslocar acessibilidade quando carrinho abrir (todos os tamanhos) */
-body.cart-open .hc-toggle {
-  inset-inline-end: 370px; /* desloca para o lado esquerdo quando carrinho abre */
-}
-
-/* Deslocar acessibilidade quando modal de customização abrir */
-body.customize-open .hc-toggle {
-  inset-inline-end: 370px; /* desloca para o lado esquerdo quando customização abre */
-}
-
-/* VLibras: botão de acesso (widget padrão usa esse atributo) */
-body.cart-open [vw-access-button] {
-  right: 370px !important; /* mesmo deslocamento do toggle de contraste */
-}
-
-/* VLibras: botão de acesso quando customização abrir */
+/* Move o botão para a esquerda do carrinho */
+body.cart-open [vw-access-button],
 body.customize-open [vw-access-button] {
-  right: 370px !important; /* mesmo deslocamento do toggle de contraste */
+  right: 460px !important;
 }
 
+/* Container VLibras: garante z-index acima do carrinho (z-999) */
+body.cart-open div[vw],
+body.customize-open div[vw] {
+  z-index: 9999 !important;
+}
+
+/* Desktop (≥ 1024px): botão mais afastado */
 @media (min-width: 1024px) {
-  body.cart-open .hc-toggle {
-    inset-inline-end: 460px; /* ajusta mais para desktop */
-  }
-
-  body.customize-open .hc-toggle {
-    inset-inline-end: 460px; /* ajusta mais para desktop na customização */
-  }
-
-  /* VLibras: botão de acesso (widget padrão usa esse atributo) */
-  body.cart-open [vw-access-button] {
-    right: 460px !important; /* mesmo deslocamento do carrinho em desktop */
-  }
-
-  /* VLibras: botão de acesso quando customização abrir */
+  body.cart-open [vw-access-button],
   body.customize-open [vw-access-button] {
-    right: 460px !important; /* mesmo deslocamento em desktop */
+    right: 470px !important;
+  }
+}
+
+/* Mobile pequeno (≤ 480px): carrinho é fullwidth, esconde VLibras */
+@media (max-width: 480px) {
+  body.cart-open [vw-access-button],
+  body.customize-open [vw-access-button] {
+    right: 6px !important;
+    bottom: 70px !important;
+  }
+  body.cart-open [vw-plugin-wrapper],
+  body.customize-open [vw-plugin-wrapper] {
+    display: none !important;
   }
 }

@@ -1,5 +1,6 @@
 /** Sider bar para login/cadastrp*/
 import { Home, ShoppingBag, Settings, LogOut, Package, Hamburger } from "lucide-react";
+import ThemeSwitcher from "./ThemeSwitcher";
 import "../styles/side-bar.css";
 
 export default function SidebarUser({ open, onClose }) {
@@ -53,6 +54,7 @@ export default function SidebarUser({ open, onClose }) {
 
         {/* Rodapé */}
         <div className="sidebar-user__footer">
+          <ThemeSwitcher />
           <p style={{ margin: "0.5rem 0" }}>Versão 1.0.0</p>
           <p style={{ margin: "0.5rem 0" }}>© 2025 - Basilios</p>
         </div>

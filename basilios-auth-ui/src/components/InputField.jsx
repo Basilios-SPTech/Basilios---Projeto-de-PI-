@@ -15,7 +15,7 @@ export default function InputField({
   const base = 'input input-focus'
   const state = error ? 'input-error' : (showSuccess ? 'input-success' : 'border-gray-300')
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       <label htmlFor={id} className="text-sm font-semibold text-black/90">{label}</label>
       <input
         id={id}
@@ -27,11 +27,13 @@ export default function InputField({
         autoComplete={autoComplete}
         maxLength={maxLength}
       />
-      {error ? (
-        <p className="helper-error">{error}</p>
-      ) : showSuccess ? (
-        <p className="helper-success">Tudo certo ✔</p>
-      ) : null}
+      <div className="h-5">
+        {error ? (
+          <p className="helper-error text-xs leading-5">{error}</p>
+        ) : showSuccess ? (
+          <p className="helper-success text-xs leading-5">Tudo certo ✔</p>
+        ) : null}
+      </div>
     </div>
   )
 }
