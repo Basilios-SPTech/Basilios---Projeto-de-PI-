@@ -8,7 +8,7 @@ export default function RequireAuth({ roles }) {
     return <Navigate to="/login" replace />
   }
   // 2) precisa ter as roles (se pedidas)
-  if (roles && roles.length > 0 && !authStorage.hasRole(...roles)) {
+  if (roles && roles.length > 0 && !authStorage.hasAnyRole(...roles)) {
     return <Navigate to="/home" replace />
   }
   return <Outlet />

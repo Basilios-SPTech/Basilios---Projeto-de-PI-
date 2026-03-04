@@ -64,8 +64,16 @@ export default function Register({ onGoLogin }) {
         birthDate: form.birth || null,
       }
       const data = await AuthAPI.register(payload)
-      console.log('register ok:', data)
       toast.success('Cadastro concluído! Faça login para continuar.');
+
+      // Se havia redirect pendente (ex: veio do carrinho) e o register já retornou token
+      const redirect = sessionStorage.getItem("redirectAfterLogin");
+      if (redirect && data?.token) {
+        sessionStorage.removeItem("redirectAfterLogin");
+        window.location.href = redirect;
+        return;
+      }
+
       onGoLogin()
     } catch (err) {
       setServerError(err.message || 'Falha no cadastro.')

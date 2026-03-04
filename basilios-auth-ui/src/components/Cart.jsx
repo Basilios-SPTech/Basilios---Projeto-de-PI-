@@ -2,7 +2,9 @@ import CartItem from "./CartItem";
 import React, { useState, useEffect } from "react";
 import { ShoppingCart, X } from "lucide-react";
 import CustomizeBurger from "./CustomizeBurger";
+import AuthRequiredModal from "./AuthRequiredModal";
 import { useNavigate } from "react-router-dom";
+import { authStorage } from "../services/storageAuth";
 
 const CHAVE_CART = "carrinho-basilios";
 
@@ -11,6 +13,7 @@ export default function Cart() {
   const [cartItems, setCartItems] = useState([]);
   const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const navigate = useNavigate();
 
@@ -74,6 +77,10 @@ export default function Cart() {
   };
 
   function goToCheckout() {
+    if (!authStorage.isAuthenticated()) {
+      setShowAuthModal(true);
+      return;
+    }
     navigate("/checkout");
   }
 
@@ -95,8 +102,12 @@ export default function Cart() {
       {/* Overlay */}
       {isOpen && (
         <div
+          role="button"
+          tabIndex={0}
           onClick={() => setIsOpen(false)}
+          onKeyDown={(e) => e.key === "Enter" && setIsOpen(false)}
           className="fixed inset-0 bg-black/50 z-[998] transition-opacity"
+          aria-label="Fechar carrinho"
         />
       )}
 
@@ -303,6 +314,12 @@ export default function Cart() {
           )}
         </div>
       </div>
+
+      {/* Modal de login/cadastro necessário */}
+      <AuthRequiredModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+      />
 
       {/* Tela de Personalização (abre ao clicar no lápis) */}
       {isCustomizeOpen && (
