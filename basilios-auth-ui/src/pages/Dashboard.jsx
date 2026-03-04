@@ -136,25 +136,6 @@ export default function Dashboard() {
             }}
             />
 
-            <KpiCard
-              label="Média entrega"
-              endpoint="/dashboard/average-delivery-time"
-              range={appliedRange}
-              rangeVersion={appliedVersion}
-              format="minutes"
-              mapResponse={(data) => {
-                // API may return an object like:
-                // { averageSeconds: 0, averageText: "string", seconds: 0, text: "string" }
-                if (!data) return null;
-                if (typeof data === "object") {
-                  const n = Number(data.averageSeconds ?? data.seconds ?? data.average ?? null);
-                  return Number.isFinite(n) ? n : null;
-                }
-                const n = Number(data);
-                return Number.isFinite(n) ? n : null;
-              }}
-            />
-
           </div>
         </div>
       </section>

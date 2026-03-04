@@ -94,17 +94,17 @@ export default function Login({ onGoRegister, onGoHome }) {
 
       {serverError && <p className="helper-error">{serverError}</p>}
 
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between pt-2">
         <button
           disabled={!canSubmit || submitting}
-          className="btn-primary disabled:opacity-60"
+          className="btn-primary disabled:opacity-60 shrink-0"
         >
           {submitting ? "Entrando..." : "Entrar"}
         </button>
 
         <button
           type="button"
-          className="btn-ghost"
+          className="btn-ghost shrink-0"
           onClick={() => {
             setForgotOpen((prev) => {
               const next = !prev;
@@ -141,7 +141,7 @@ export default function Login({ onGoRegister, onGoHome }) {
         </div>
       )}
 
-      <div className="text-sm">
+      <div className="text-sm pt-4">
         Não tem conta?{" "}
         <button
           type="button"

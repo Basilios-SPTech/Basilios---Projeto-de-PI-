@@ -1,29 +1,47 @@
-/* Ativa tokens alternativos só quando hc = 1 (sem tocar no theme.css) */
-:root[data-hc="1"]{
-  --color-brand: #000000;     /* botões que usam bg-brand ficam p&b */
-  --color-terracotta: #FFD400;/* destaque amarelo forte */
-  --color-success: #FFD400;   /* tudo no mesmo espectro pra não confundir matiz */
-  --color-danger:  #FFD400;
-  --color-gray-light: #EDEDED;
+/* ================================================================
+   ALTO CONTRASTE — Preto & Amarelo (#FFD400)
+   Ativado por body.hc  /  :root[data-theme="high-contrast"]
+   ================================================================ */
+
+/* ---------- Variáveis de tema ---------- */
+:root[data-theme="high-contrast"],
+:root[data-hc="1"] {
+  --color-brand: #000000;
+  --color-terracotta: #FFD400;
+  --color-success: #FFD400;
+  --color-danger: #FFD400;
+  --color-gray-light: #111;
   --color-blackx: #000000;
-  --color-whitex: #FFFFFF;
+  --color-whitex: #000000;
+  --heatmap-label: #FFD400;
 }
 
-/* Modo alto contraste (daltônico): preto & amarelo */
+/* ---------- Body ---------- */
 body.hc {
   background: #000 !important;
   color: #FFD400 !important;
-  /* ajuda leitores de tela a pegarem contraste no foco */
   -webkit-text-size-adjust: 100%;
 }
 
-/* texto padrão em amarelo */
-body.hc * { color: #FFD400 !important; }
+/* ---------- Texto global ---------- */
+body.hc * {
+  color: #FFD400 !important;
+}
 
-/* superfícies típicas do teu layout */
+/* ---------- Seleção de texto ---------- */
+body.hc ::selection {
+  background: #FFD400;
+  color: #000;
+}
+
+/* ================================================================
+   SUPERFÍCIES — tudo preto
+   ================================================================ */
 body.hc .bg-white,
 body.hc .bg-gray-50,
 body.hc .bg-gray-100,
+body.hc .bg-gray-200,
+body.hc .bg-gray-800,
 body.hc .bg-brand,
 body.hc .bg-black,
 body.hc .bg-neutral-50,
@@ -31,28 +49,42 @@ body.hc [class*="bg-"] {
   background: #000 !important;
 }
 
-/* bordas e divisórias ficam amarelas */
+/* ================================================================
+   BORDAS — tudo amarelo
+   ================================================================ */
 body.hc .border,
 body.hc [class*="border-"],
 body.hc hr {
   border-color: #FFD400 !important;
-  color: #FFD400 !important;
 }
 
-/* inputs / selects / textareas */
+/* ================================================================
+   INPUTS
+   ================================================================ */
 body.hc input,
 body.hc select,
 body.hc textarea {
   background: #000 !important;
   color: #FFD400 !important;
   border: 2px solid #FFD400 !important;
+  caret-color: #FFD400 !important;
 }
 body.hc input::placeholder,
 body.hc textarea::placeholder {
-  color: #E6C200 !important; /* amarelo um pouco mais escuro pro placeholder */
+  color: #C8A800 !important;
+}
+body.hc input:disabled,
+body.hc select:disabled,
+body.hc textarea:disabled {
+  background: #111 !important;
+  color: #C8A800 !important;
+  border-color: #FFD400 !important;
+  opacity: 1 !important;
 }
 
-/* botões: deixar claros e óbvios */
+/* ================================================================
+   BOTÕES
+   ================================================================ */
 body.hc .btn,
 body.hc button,
 body.hc [role="button"] {
@@ -62,55 +94,645 @@ body.hc [role="button"] {
   box-shadow: none !important;
 }
 body.hc .btn-primary {
-  /* garante legibilidade mesmo se tema tentar pintar */
   background: #000 !important;
   color: #FFD400 !important;
 }
 
-/* links sublinhados e evidentes */
-body.hc a, body.hc .link, body.hc [role="link"] {
+/* ================================================================
+   LINKS
+   ================================================================ */
+body.hc a,
+body.hc .link,
+body.hc [role="link"] {
   color: #FFD400 !important;
   text-decoration: underline !important;
 }
+body.hc a:visited {
+  color: #FFD400 !important;
+}
 
-/* foco MUITO visível */
+/* ================================================================
+   FOCO VISÍVEL
+   ================================================================ */
 body.hc *:focus-visible {
   outline: 3px solid #FFD400 !important;
   outline-offset: 2px !important;
   border-radius: 4px;
 }
 
-/* ícones/imagens: reduzir ruído de cor (opcional) */
-body.hc img:not([aria-hidden="true"]) {
+/* ================================================================
+   IMAGENS — grayscale (exceto .no-hc-filter)
+   ================================================================ */
+body.hc img:not([aria-hidden="true"]):not(.no-hc-filter) {
   filter: grayscale(100%) contrast(1.15) brightness(0.9);
 }
+body.hc .no-hc-filter {
+  filter: none !important;
+}
 
-/* tabelas/listas: linhas divisórias claras */
-body.hc table, body.hc th, body.hc td {
+/* ================================================================
+   TABELAS
+   ================================================================ */
+body.hc table,
+body.hc th,
+body.hc td {
+  border: 2px solid #FFD400 !important;
+  background: #000 !important;
+  color: #FFD400 !important;
+}
+
+/* ================================================================
+   SOMBRAS — removidas
+   ================================================================ */
+body.hc .shadow-md,
+body.hc .shadow-lg,
+body.hc .shadow-xl,
+body.hc .shadow-2xl {
+  box-shadow: none !important;
+}
+
+/* ================================================================
+   SCROLLBAR (Webkit)
+   ================================================================ */
+body.hc ::-webkit-scrollbar { width: 8px; }
+body.hc ::-webkit-scrollbar-track { background: #000; }
+body.hc ::-webkit-scrollbar-thumb { background: #FFD400; border-radius: 4px; }
+
+/* ================================================================
+   HOME — Cards de produto
+   ================================================================ */
+body.hc .hp-card {
+  background: #000 !important;
+  border: 2px solid #FFD400 !important;
+  box-shadow: none !important;
+}
+body.hc .hp-card__media {
+  background: #111 !important;
+}
+body.hc .hp-card__title {
+  color: #FFD400 !important;
+}
+body.hc .hp-card__desc {
+  color: #C8A800 !important;
+}
+body.hc .hp-card__footer {
+  border-top-color: #FFD400 !important;
+}
+body.hc .hp-price {
+  background: #000 !important;
+  border: 2px solid #FFD400 !important;
+  color: #FFD400 !important;
+}
+body.hc .hp-price span,
+body.hc .hp-price strong {
+  color: #FFD400 !important;
+}
+body.hc .hp-chip {
+  background: #000 !important;
+  border: 2px solid #FFD400 !important;
+  color: #FFD400 !important;
+}
+body.hc .hp-chip.is-active {
+  background: #FFD400 !important;
+  color: #000 !important;
+}
+body.hc .hp-section {
+  background: #000 !important;
+}
+body.hc .hp-section__title {
+  color: #FFD400 !important;
+}
+body.hc .hp-empty {
+  color: #C8A800 !important;
+}
+
+/* ================================================================
+   ABOUT PAGE
+   ================================================================ */
+body.hc .about-root {
+  background: #000 !important;
+  color: #FFD400 !important;
+}
+body.hc .about-root .section {
+  background: #000 !important;
+}
+body.hc .section__head h2 {
+  color: #FFD400 !important;
+}
+body.hc .section__head p {
+  color: #C8A800 !important;
+}
+
+/* Feature cards */
+body.hc .feature-card {
+  background: #000 !important;
+  border: 2px solid #FFD400 !important;
+  color: #FFD400 !important;
+}
+body.hc .feature-card h3 {
+  color: #FFD400 !important;
+}
+body.hc .feature-card p {
+  color: #C8A800 !important;
+}
+body.hc .feature-card__icon {
+  background: #111 !important;
+  border: 2px solid #FFD400 !important;
+  color: #FFD400 !important;
+}
+
+/* Timeline */
+body.hc .timeline::before {
+  background: #FFD400 !important;
+}
+body.hc .timeline__content {
+  background: #000 !important;
+  border: 2px solid #FFD400 !important;
+  color: #FFD400 !important;
+}
+body.hc .timeline__content h3 {
+  color: #FFD400 !important;
+}
+body.hc .timeline__content p {
+  color: #C8A800 !important;
+}
+body.hc .timeline__year {
+  background: #111 !important;
+  color: #FFD400 !important;
+  border: 1px solid #FFD400 !important;
+}
+body.hc .timeline__media img {
   border: 2px solid #FFD400 !important;
 }
 
-/* utilitários que você usou no card/login */
-body.hc .border-gray-300 { border-color: #FFD400 !important; }
-body.hc .placeholder\:text-gray-400::placeholder { color: #E6C200 !important; }
+/* Split sections */
+body.hc .split__content h2 {
+  color: #FFD400 !important;
+}
+body.hc .split__content p {
+  color: #C8A800 !important;
+}
+body.hc .split__media img {
+  border: 2px solid #FFD400 !important;
+}
 
-/* 1) Alvo maior já está ok se usar .hc-btn 48-52px, mas aqui vai o caret e seleção */
-body.hc input, body.hc textarea { caret-color: #FFD400 !important; }
-body.hc ::selection { background: #FFD400; color: #000; }
+/* Ticker */
+body.hc .ticker {
+  background: #000 !important;
+  color: #FFD400 !important;
+}
+body.hc .ticker__track {
+  color: #FFD400 !important;
+}
 
-/* 2) Links visitados continuam amarelos */
-body.hc a:visited { color: #FFD400 !important; }
+/* Posters */
+body.hc .posters {
+  background: #000 !important;
+}
 
-/* 3) Logo sem filtro (adicione class="no-hc-filter" no <img> do logo) */
-body.hc .no-hc-filter { filter: none !important; }
+/* ================================================================
+   DASHBOARD
+   ================================================================ */
+body.hc .dashboard-root {
+  background: #000 !important;
+  color: #FFD400 !important;
+}
 
-/* 4) Inputs disabled ainda com borda visível */
-body.hc input:disabled,
-body.hc select:disabled,
-body.hc textarea:disabled {
+/* Filter bar */
+body.hc .dashboard-bar {
+  background: #000 !important;
+  border: 2px solid #FFD400 !important;
+}
+body.hc .dashboard-bar__inner {
+  background: #000 !important;
+}
+body.hc .dashboard-bar__field {
+  color: #FFD400 !important;
+}
+body.hc .dashboard-bar__field input[type="date"] {
+  background: #000 !important;
+  color: #FFD400 !important;
+  border: 1px solid #FFD400 !important;
+}
+body.hc .dashboard-bar__apply {
+  background: #000 !important;
+  color: #FFD400 !important;
+  border: 2px solid #FFD400 !important;
+}
+
+/* Dash cards */
+body.hc .dash-card {
+  background: #000 !important;
+  border: 2px solid #FFD400 !important;
+  box-shadow: none !important;
+}
+body.hc .dash-card__header {
+  color: #FFD400 !important;
+}
+body.hc .dash-card__header h3 {
+  color: #FFD400 !important;
+}
+body.hc .dash-card__range {
+  color: #FFD400 !important;
+}
+body.hc .dash-card__error {
+  color: #FFD400 !important;
+}
+body.hc .dash-card__empty {
+  color: #C8A800 !important;
+}
+
+/* KPI cards */
+body.hc .kpi-card {
+  background: #000 !important;
+  border: 2px solid #FFD400 !important;
+  box-shadow: none !important;
+}
+body.hc .kpi-card__header {
+  color: #C8A800 !important;
+}
+body.hc .kpi-card__value {
+  color: #FFD400 !important;
+}
+body.hc .kpi-card__value--error {
+  color: #FFD400 !important;
+}
+body.hc .kpi-card__hint {
+  color: #C8A800 !important;
+}
+
+/* Champion */
+body.hc .champion__name {
+  color: #FFD400 !important;
+}
+body.hc .champion__metric-label {
+  color: #C8A800 !important;
+}
+body.hc .champion__metric-value {
+  color: #FFD400 !important;
+}
+body.hc .champion__image-wrap {
+  background: #111 !important;
+  border: 2px solid #FFD400 !important;
+}
+body.hc .champion__info--row + .champion__info--row {
+  border-top-color: #FFD400 !important;
+}
+
+/* Top products */
+body.hc .top-products__rank {
+  background: #111 !important;
+  color: #FFD400 !important;
+  border: 1px solid #FFD400 !important;
+}
+body.hc .top-products__name {
+  color: #FFD400 !important;
+}
+body.hc .top-products__qty {
+  color: #C8A800 !important;
+}
+
+/* Heatmap */
+body.hc .order-heatmap-wrapper {
+  background: #000 !important;
+}
+
+/* Skeletons */
+body.hc .chart-skeleton,
+body.hc .card-skeleton,
+body.hc .list-skeleton {
+  background: #111 !important;
+  border: 1px solid #FFD400 !important;
+}
+
+/* ================================================================
+   CADASTRAR PRODUTO
+   ================================================================ */
+body.hc .cp-page {
+  background: #000 !important;
+  color: #FFD400 !important;
+}
+body.hc .cp-card {
+  background: #000 !important;
+  border: 2px solid #FFD400 !important;
+}
+body.hc .cp-card h2,
+body.hc .cp-card h3 {
+  color: #FFD400 !important;
+}
+body.hc .cp-form label {
+  color: #FFD400 !important;
+}
+body.hc .cp-preview__card {
+  background: #000 !important;
+  border: 2px solid #FFD400 !important;
+}
+body.hc .cp-preview__media {
+  background: #111 !important;
+  border: 1px solid #FFD400 !important;
+}
+body.hc .cp-preview__placeholder {
+  color: #C8A800 !important;
+}
+body.hc .cp-chip {
+  background: #000 !important;
+  border: 1px solid #FFD400 !important;
+  color: #FFD400 !important;
+}
+
+/* Product card (lista de produtos cadastrados) */
+body.hc .product-card {
+  background: #000 !important;
+  border: 2px solid #FFD400 !important;
+}
+body.hc .product-card__media {
+  background: #111 !important;
+}
+body.hc .product-card__title,
+body.hc .product-card__desc,
+body.hc .product-card__price {
+  color: #FFD400 !important;
+}
+body.hc .cp-cat-title {
+  color: #FFD400 !important;
+}
+body.hc .cp-list-head h2 {
+  color: #FFD400 !important;
+}
+body.hc .cp-list-head p {
+  color: #C8A800 !important;
+}
+body.hc .cp-empty {
+  color: #C8A800 !important;
+}
+body.hc .cp-modal {
+  background: #000 !important;
+  border: 2px solid #FFD400 !important;
+}
+
+/* ================================================================
+   CHECKOUT
+   ================================================================ */
+body.hc .min-h-screen {
+  background: #000 !important;
+}
+
+/* ================================================================
+   CARRINHO (Cart drawer)
+   ================================================================ */
+body.hc .cart-drawer {
+  background: #000 !important;
+  border-left: 2px solid #FFD400 !important;
+}
+body.hc .cart-drawer * {
+  color: #FFD400 !important;
+}
+body.hc .cart-drawer .bg-gray-50,
+body.hc .cart-drawer .bg-gray-200 {
+  background: #111 !important;
+}
+
+/* ================================================================
+   FOOTER
+   ================================================================ */
+body.hc footer {
+  background: #000 !important;
+  border-color: #FFD400 !important;
+}
+body.hc footer * {
+  color: #FFD400 !important;
+}
+body.hc footer .bg-\[#BB3530\] {
+  background: #000 !important;
+  border-top: 2px solid #FFD400 !important;
+}
+
+/* ================================================================
+   HEADER
+   ================================================================ */
+body.hc header,
+body.hc nav {
+  background: #000 !important;
+}
+
+/* ================================================================
+   PROFILE PAGE
+   ================================================================ */
+body.hc .perfil-container {
+  background: #000 !important;
+  color: #FFD400 !important;
+}
+body.hc .titulo {
+  color: #FFD400 !important;
+}
+
+/* Back button */
+body.hc .back-btn {
+  color: #FFD400 !important;
+  border-color: #FFD400 !important;
+}
+body.hc .back-btn:hover {
+  background: #111 !important;
+}
+
+/* Welcome card */
+body.hc .welcome-card {
+  background: #000 !important;
+  border: 2px solid #FFD400 !important;
+  box-shadow: none !important;
+}
+body.hc .welcome-inner h3,
+body.hc .welcome-text {
+  color: #FFD400 !important;
+}
+body.hc .welcome-sub {
+  color: #C8A800 !important;
+}
+
+/* Info card */
+body.hc .info-card {
+  background: #000 !important;
+  border: 2px solid #FFD400 !important;
+  box-shadow: none !important;
+}
+body.hc .info-card:hover {
+  box-shadow: none !important;
+}
+body.hc .info-header h3 {
+  color: #FFD400 !important;
+}
+body.hc .info-grid span {
+  color: #C8A800 !important;
+}
+body.hc .info-grid p {
+  color: #FFD400 !important;
+}
+
+/* Edit button */
+body.hc .edit-btn {
+  background: #000 !important;
+  color: #FFD400 !important;
+  border: 2px solid #FFD400 !important;
+}
+body.hc .edit-btn:hover {
+  background: #111 !important;
+}
+
+/* Perfil card (generic) */
+body.hc .perfil-card {
+  background: #000 !important;
+  border: 2px solid #FFD400 !important;
+  box-shadow: none !important;
+}
+body.hc .perfil-info h3 {
+  color: #FFD400 !important;
+}
+body.hc .perfil-info .cargo,
+body.hc .perfil-info .local {
+  color: #C8A800 !important;
+}
+
+/* EditForm modal */
+body.hc .modal {
+  background: rgba(0,0,0,0.85) !important;
+}
+body.hc .modal-content {
+  background: #000 !important;
+  color: #FFD400 !important;
+  border: 2px solid #FFD400 !important;
+  box-shadow: none !important;
+}
+body.hc .modal-title {
+  color: #FFD400 !important;
+}
+body.hc .form-label {
+  color: #FFD400 !important;
+}
+body.hc .field-title {
+  color: #FFD400 !important;
+}
+body.hc .form-input {
+  background: #000 !important;
+  color: #FFD400 !important;
+  border: 2px solid #FFD400 !important;
+}
+body.hc .form-input::placeholder {
+  color: #C8A800 !important;
+}
+body.hc .form-input:focus {
+  border-color: #FFD400 !important;
+  box-shadow: 0 0 0 2px rgba(255,212,0,0.3) !important;
+}
+body.hc .form-input:disabled {
   background: #111 !important;
   color: #C8A800 !important;
   border-color: #FFD400 !important;
-  opacity: 1 !important;
+}
+body.hc .lock-icon {
+  background: #111 !important;
+  border-color: #FFD400 !important;
+  color: #FFD400 !important;
+}
+body.hc .save-btn {
+  background: #000 !important;
+  color: #FFD400 !important;
+  border: 2px solid #FFD400 !important;
+}
+body.hc .save-btn:hover {
+  background: #111 !important;
+}
+body.hc .cancel-btn {
+  background: #000 !important;
+  color: #FFD400 !important;
+  border: 2px solid #FFD400 !important;
+}
+body.hc .cancel-btn:hover {
+  background: #111 !important;
+}
+
+/* ================================================================
+   AUTH PAGES (Login / Register)
+   ================================================================ */
+body.hc .auth-card,
+body.hc [class*="auth-"] {
+  background: #000 !important;
+  border: 2px solid #FFD400 !important;
+}
+
+/* AuthLayout — outer card wrapper */
+body.hc .rounded-xl.bg-white.shadow-xl {
+  background: #000 !important;
+  border: 2px solid #FFD400 !important;
+}
+
+/* Título h1 "Login" / "Cadastro" */
+body.hc form h1.text-black,
+body.hc h1.text-black {
+  color: #FFD400 !important;
+}
+
+/* Labels dos campos */
+body.hc label.text-sm.font-semibold,
+body.hc label[class*="text-black"] {
+  color: #FFD400 !important;
+}
+
+/* Links e botões ghost */
+body.hc .btn-ghost {
+  color: #FFD400 !important;
+  border-color: #FFD400 !important;
+}
+
+/* Texto auxiliar */
+body.hc form .text-sm {
+  color: #C8A800 !important;
+}
+
+/* PasswordField eye toggle */
+body.hc .text-gray-400 {
+  color: #FFD400 !important;
+}
+
+/* ================================================================
+   MODAIS
+   ================================================================ */
+body.hc .modal-content,
+body.hc .cp-modal {
+  background: #000 !important;
+  border: 2px solid #FFD400 !important;
+  color: #FFD400 !important;
+}
+
+/* ================================================================
+   SIDEBAR
+   ================================================================ */
+body.hc .sidebar-user {
+  background: #000 !important;
+  border-right: 2px solid #FFD400 !important;
+}
+body.hc .sidebar-user * {
+  color: #FFD400 !important;
+}
+body.hc .sidebar-user__header {
+  border-bottom-color: #FFD400 !important;
+}
+body.hc .sidebar-user__footer {
+  border-top-color: #FFD400 !important;
+}
+body.hc .menu-item:hover {
+  background: #111 !important;
+}
+
+/* Theme switcher no HC */
+body.hc .theme-switcher__btn {
+  border-color: #FFD400 !important;
+  color: #FFD400 !important;
+}
+body.hc .theme-switcher__btn--active {
+  background: #FFD400 !important;
+  color: #000 !important;
+}
+body.hc .theme-switcher__label {
+  color: #C8A800 !important;
 }
 

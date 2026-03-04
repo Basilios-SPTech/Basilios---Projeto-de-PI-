@@ -14,6 +14,7 @@ import {
 
 import axios from "axios";
 import AddAddress from "./AddAddress";
+import ProgressBar from "./loading/ProgressBar";
 
 const CHAVE_CART = "carrinho-basilios";
 
@@ -22,6 +23,7 @@ export default function Checkout() {
   const [enderecoSelecionado, setEnderecoSelecionado] = useState("1");
   const [endUser, setEndUser] = useState([]);
   const [itens, setItens] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
   const calcularSubtotal = () => {
@@ -68,13 +70,15 @@ export default function Checkout() {
   };
 
   const endOrder = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+
+    try {
     let itensPedido = itens.map((i) => ({
       productId: i.originalProductId,
       quantity: i.qtd,
       observations: i.observation,
     }));
-
-    console.log(`Itens pedido: ${itensPedido}`);
 
     let body = {
       addressId: Number(enderecoSelecionado),
@@ -143,6 +147,11 @@ export default function Checkout() {
 
     // tem que remover isso em outro lugar
     // localStorage.removeItem(CHAVE_CART);
+    } catch (err) {
+      console.error("Erro ao finalizar pedido:", err);
+      toast.error("Erro ao finalizar pedido. Tente novamente.");
+      setSubmitting(false);
+    }
   };
 
   useEffect(() => {
@@ -392,6 +401,8 @@ export default function Checkout() {
           </div>
         </div>
       </div>
+
+      <ProgressBar visible={submitting} message="Processando seu pedido..." />
     </div>
   );
 }

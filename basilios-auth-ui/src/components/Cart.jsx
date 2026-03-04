@@ -43,8 +43,54 @@ export default function Cart() {
       body.classList.remove("cart-open");
     }
 
-    // limpeza: se o componente desmontar, garante que a classe sai
-    return () => body.classList.remove("cart-open");
+    // ── VLibras: forçar popup a abrir à esquerda quando carrinho aberto ──
+    // O plugin VLibras injeta estilos inline (position:fixed; right:0) no
+    // [vw-plugin-wrapper] toda vez que o popup abre. Usamos MutationObserver
+    // para sobrescrever esses estilos continuamente.
+    const wrapper = document.querySelector("[vw-plugin-wrapper]");
+    let observer;
+
+    function pushWrapperLeft() {
+      if (!wrapper) return;
+      // Largura do carrinho drawer (~448px no max-w-md)
+      const cartWidth = 448;
+      // Pega a largura real do painel do VLibras
+      const wrapperWidth = wrapper.offsetWidth || 520;
+      // Posiciona o wrapper de modo que sua borda direita fique à esquerda do carrinho
+      const rightPos = cartWidth + 8; // 8px de gap
+      wrapper.style.setProperty("right", rightPos + "px", "important");
+      wrapper.style.setProperty("left", "auto", "important");
+      wrapper.style.setProperty("z-index", "9999", "important");
+    }
+
+    function resetWrapper() {
+      if (!wrapper) return;
+      wrapper.style.removeProperty("right");
+      wrapper.style.removeProperty("left");
+      wrapper.style.removeProperty("z-index");
+    }
+
+    if (wrapper && isOpen) {
+      pushWrapperLeft();
+      // Observa QUALQUER mudança de atributo/estilo no wrapper e filhos
+      observer = new MutationObserver(() => {
+        pushWrapperLeft();
+      });
+      observer.observe(wrapper, {
+        attributes: true,
+        attributeFilter: ["style"],
+        subtree: true,
+      });
+    } else if (wrapper) {
+      resetWrapper();
+    }
+
+    // limpeza
+    return () => {
+      body.classList.remove("cart-open");
+      if (wrapper) resetWrapper();
+      if (observer) observer.disconnect();
+    };
   }, [isOpen]);
 
   const totalItems = cartItems.reduce((sum, item) => sum + item.qtd, 0);
@@ -113,7 +159,7 @@ export default function Cart() {
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-[999] transform transition-transform duration-300 ease-in-out ${
+        className={`cart-drawer fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-[999] transform transition-transform duration-300 ease-in-out ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >

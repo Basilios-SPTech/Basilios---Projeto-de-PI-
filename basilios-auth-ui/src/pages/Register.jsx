@@ -86,7 +86,7 @@ export default function Register({ onGoLogin }) {
     <form className="space-y-6" onSubmit={handleRegister} noValidate>
       <h1 className="text-3xl font-bold text-black">Cadastro</h1>
 
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-2 gap-6">
         <SidebarLogin />
         <InputField
           id="fullName"
@@ -174,12 +174,12 @@ export default function Register({ onGoLogin }) {
 
       {serverError && <p className="helper-error">{serverError}</p>}
 
-      <div className="flex items-center justify-between gap-3">
-        <button disabled={!canSubmit || submitting} className="btn-primary disabled:opacity-60">
-          {submitting ? 'Cadastrando...' : 'Cadastrar'}
-        </button>
-        <button type="button" className="btn-ghost" onClick={onGoLogin}>
+      <div className="flex items-center justify-between pt-4">
+        <button type="button" className="btn-ghost shrink-0" onClick={onGoLogin}>
           Já tem conta? Entre
+        </button>
+        <button disabled={!canSubmit || submitting} className="btn-primary disabled:opacity-60 shrink-0">
+          {submitting ? 'Cadastrando...' : 'Cadastrar'}
         </button>
       </div>
     </form>

@@ -129,14 +129,14 @@ export default function OrderPeaksChart({ endpoint, range, rangeVersion }) {
               cellHeight="2.6rem"   // aumentado para preencher mais horizontalmente
               square
               xLabelsStyle={(index) => ({
-                color: "rgba(17, 17, 17, 0.7)",
+                color: "var(--heatmap-label, rgba(17, 17, 17, 0.7))",
                 fontSize: ".7rem",
                 transform: "translateY(2px)",
               })}
               yLabelsStyle={() => ({
                 fontSize: ".7rem",
                 textTransform: "uppercase",
-                color: "rgba(17, 17, 17, 0.7)",
+                color: "var(--heatmap-label, rgba(17, 17, 17, 0.7))",
               })}
               cellStyle={(_x, _y, ratio) => ({
                 background: `rgba(187, 53, 48, ${0.12 + ratio * 0.8})`,
@@ -145,7 +145,7 @@ export default function OrderPeaksChart({ endpoint, range, rangeVersion }) {
                 color:
                   ratio > 0.55
                     ? "rgba(255,255,255,0.94)"
-                    : "rgba(17,17,17,0.85)",
+                    : "var(--heatmap-label, rgba(17,17,17,0.85))",
                 transition: "background 0.2s ease, transform 0.2s ease",
               })}
               cellRender={(_x, _y, value) =>
