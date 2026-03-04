@@ -7,13 +7,13 @@ export default function BoardPedidos() {
     PENDENTE: {
       id: "PENDENTE",
       title: "Recebidos",
-      color: "blue",
+      color: "orange",
       tasks: [],
     },
     PREPARANDO: {
       id: "PREPARANDO",
       title: "Em preparação",
-      color: "yellow",
+      color: "indigo",
       tasks: [],
     },
     ENTREGUE: {
@@ -99,17 +99,17 @@ export default function BoardPedidos() {
         badge: "bg-green-500",
         hover: "hover:border-green-600",
       },
-      blue: {
-        border: "border-blue-500",
-        bg: "bg-blue-50",
-        badge: "bg-blue-500",
-        hover: "hover:border-blue-600",
+      orange: {
+        border: "border-orange-500",
+        bg: "bg-orange-50",
+        badge: "bg-orange-500",
+        hover: "hover:border-orange-600",
       },
-      yellow: {
-        border: "border-yellow-500",
-        bg: "bg-yellow-50",
-        badge: "bg-yellow-500",
-        hover: "hover:border-yellow-600",
+      indigo: {
+        border: "border-indigo-500",
+        bg: "bg-indigo-50",
+        badge: "bg-indigo-500",
+        hover: "hover:border-indigo-600",
       },
     };
     return colors[color];
@@ -137,7 +137,6 @@ export default function BoardPedidos() {
       return;
     }
 
-    // Pegar o ID do pedido
     const orderId = draggedTask.id;
     console.log(
       "Atualizando pedido ID:",
@@ -164,7 +163,6 @@ export default function BoardPedidos() {
 
       console.log(response);
 
-      // Atualizar o estado local após sucesso na API
       setColumns((prev) => {
         const newColumns = { ...prev };
 
@@ -197,7 +195,7 @@ export default function BoardPedidos() {
     return (
       <div className="min-h-screen w-full bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-orange-600 mx-auto mb-4"></div>
           <p className="text-gray-600 text-lg">Carregando pedidos...</p>
         </div>
       </div>
@@ -211,7 +209,7 @@ export default function BoardPedidos() {
           <p className="text-red-600 text-lg mb-4">{error}</p>
           <button
             onClick={fetchOrders}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+            className="bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700"
           >
             Tentar Novamente
           </button>
@@ -239,7 +237,7 @@ export default function BoardPedidos() {
           </div>
           <button
             onClick={fetchOrders}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
             Atualizar
@@ -252,7 +250,7 @@ export default function BoardPedidos() {
             return (
               <div
                 key={column.id}
-                className={`flex-shrink-0 w-96 ${colorClasses.bg} rounded-xl p-4 border-2 ${colorClasses.border}`}
+                className={`shrink-0 w-96 ${colorClasses.bg} rounded-xl p-4 border-2 ${colorClasses.border}`}
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, column.id)}
               >
@@ -346,7 +344,7 @@ export default function BoardPedidos() {
                         {/* Endereço de Entrega */}
                         <div className="p-4 border-b border-gray-100">
                           <div className="flex items-start gap-2">
-                            <MapPin className="w-4 h-4 text-gray-600 mt-0.5 flex-shrink-0" />
+                            <MapPin className="w-4 h-4 text-gray-600 mt-0.5 shrink-0" />
                             <div className="flex-1">
                               <h4 className="text-sm font-semibold text-gray-700 mb-1">
                                 Endereço de Entrega
