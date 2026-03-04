@@ -6,8 +6,54 @@ import {
   MapPin,
   XCircle,
   Loader,
+  CreditCard,
+  ClipboardCheck,
+  ChefHat,
+  Bike,
+  CheckCircle2,
 } from "lucide-react";
 import axios from "axios";
+
+const STATUS_STEPS = [
+  {
+    key: "PAGAMENTO",
+    label: "Pagamento Recebido",
+    icon: CreditCard,
+    description: "Pagamento confirmado",
+  },
+  {
+    key: "PENDENTE",
+    label: "Pedido Recebido",
+    icon: ClipboardCheck,
+    description: "Seu pedido foi recebido",
+  },
+  {
+    key: "PREPARANDO",
+    label: "Em Preparo",
+    icon: ChefHat,
+    description: "Estamos preparando tudo",
+  },
+  {
+    key: "ENTREGUE",
+    label: "Saiu para Entrega",
+    icon: Bike,
+    description: "A caminho de você",
+  },
+  {
+    key: "FINALIZADO",
+    label: "Entregue",
+    icon: CheckCircle2,
+    description: "Bom apetite!",
+  },
+];
+
+const STATUS_INDEX_MAP = {
+  PAGAMENTO: 0,
+  PENDENTE: 1,
+  PREPARANDO: 2,
+  ENTREGUE: 3,
+  FINALIZADO: 4,
+};
 
 export default function OrderStatus() {
   const [pedidoCancelado, setPedidoCancelado] = useState(false);
@@ -143,6 +189,8 @@ export default function OrderStatus() {
 
   if (!order) return null;
 
+  const currentIndex = STATUS_INDEX_MAP[order.status] ?? 1;
+
   return (
     <div className="min-h-screen bg-gray-100 p-4 sm:p-6 md:p-8">
       <div className="max-w-4xl mx-auto">
@@ -167,6 +215,122 @@ export default function OrderStatus() {
                 })}
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* Status do Pedido */}
+        <div className="bg-white rounded-lg p-4 sm:p-6 shadow-md mb-4 sm:mb-6">
+          <h2 className="text-lg sm:text-xl font-semibold mb-6 text-gray-800">
+            Status do Pedido
+          </h2>
+
+          {/* Desktop: horizontal */}
+          <div className="hidden sm:flex items-start justify-between relative">
+            <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-200 z-0" />
+            <div
+              className="absolute top-5 left-0 h-0.5 bg-orange-500 z-0 transition-all duration-700 ease-in-out"
+              style={{
+                width:
+                  currentIndex === 0
+                    ? "0%"
+                    : `${(currentIndex / (STATUS_STEPS.length - 1)) * 100}%`,
+              }}
+            />
+            {STATUS_STEPS.map((step, index) => {
+              const Icon = step.icon;
+              const isDone = index < currentIndex;
+              const isActive = index === currentIndex;
+              const isPending = index > currentIndex;
+              return (
+                <div
+                  key={step.key}
+                  className="flex flex-col items-center z-10 flex-1"
+                >
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-500
+                      ${isDone ? "bg-orange-500 border-orange-500" : ""}
+                      ${isActive ? "bg-white border-orange-500 shadow-[0_0_0_4px_rgba(249,115,22,0.15)]" : ""}
+                      ${isPending ? "bg-white border-gray-200" : ""}
+                    `}
+                  >
+                    <Icon
+                      size={18}
+                      className={`
+                        ${isDone ? "text-white" : ""}
+                        ${isActive ? "text-orange-500" : ""}
+                        ${isPending ? "text-gray-300" : ""}
+                      `}
+                    />
+                  </div>
+                  <div className="mt-3 text-center px-1">
+                    <p
+                      className={`text-xs font-semibold leading-tight
+                        ${isDone || isActive ? "text-gray-800" : "text-gray-400"}
+                      `}
+                    >
+                      {step.label}
+                    </p>
+                    {isActive && (
+                      <p className="text-xs text-orange-500 mt-0.5 font-medium">
+                        {step.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Mobile: vertical */}
+          <div className="flex flex-col sm:hidden gap-0">
+            {STATUS_STEPS.map((step, index) => {
+              const Icon = step.icon;
+              const isDone = index < currentIndex;
+              const isActive = index === currentIndex;
+              const isPending = index > currentIndex;
+              const isLast = index === STATUS_STEPS.length - 1;
+              return (
+                <div key={step.key} className="flex items-stretch gap-3">
+                  <div className="flex flex-col items-center w-10 flex-shrink-0">
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center border-2 flex-shrink-0 transition-all duration-500
+                        ${isDone ? "bg-orange-500 border-orange-500" : ""}
+                        ${isActive ? "bg-white border-orange-500 shadow-[0_0_0_4px_rgba(249,115,22,0.15)]" : ""}
+                        ${isPending ? "bg-white border-gray-200" : ""}
+                      `}
+                    >
+                      <Icon
+                        size={18}
+                        className={`
+                          ${isDone ? "text-white" : ""}
+                          ${isActive ? "text-orange-500" : ""}
+                          ${isPending ? "text-gray-300" : ""}
+                        `}
+                      />
+                    </div>
+                    {!isLast && (
+                      <div
+                        className={`w-0.5 flex-1 my-1 ${isDone ? "bg-orange-500" : "bg-gray-200"}`}
+                      />
+                    )}
+                  </div>
+                  <div className="pb-4 flex flex-col justify-center">
+                    <p
+                      className={`text-sm font-semibold leading-tight
+                        ${isDone || isActive ? "text-gray-800" : "text-gray-400"}
+                      `}
+                    >
+                      {step.label}
+                    </p>
+                    {isActive && (
+                      <p className="text-xs text-orange-500 mt-0.5 font-medium">
+                        {step.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
