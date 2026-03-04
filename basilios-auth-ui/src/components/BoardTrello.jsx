@@ -250,7 +250,7 @@ export default function BoardPedidos() {
             return (
               <div
                 key={column.id}
-                className={`flex-shrink-0 w-96 ${colorClasses.bg} rounded-xl p-4 border-2 ${colorClasses.border}`}
+                className={`shrink-0 w-96 ${colorClasses.bg} rounded-xl p-4 border-2 ${colorClasses.border}`}
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, column.id)}
               >
@@ -344,7 +344,7 @@ export default function BoardPedidos() {
                         {/* Endereço de Entrega */}
                         <div className="p-4 border-b border-gray-100">
                           <div className="flex items-start gap-2">
-                            <MapPin className="w-4 h-4 text-gray-600 mt-0.5 flex-shrink-0" />
+                            <MapPin className="w-4 h-4 text-gray-600 mt-0.5 shrink-0" />
                             <div className="flex-1">
                               <h4 className="text-sm font-semibold text-gray-700 mb-1">
                                 Endereço de Entrega
