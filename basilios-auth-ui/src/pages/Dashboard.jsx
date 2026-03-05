@@ -65,6 +65,7 @@ export default function Dashboard() {
                   type="date"
                   name="end"
                   value={filters.end}
+                  min={filters.start || undefined}
                   onChange={handleChange}
                 />
               </label>

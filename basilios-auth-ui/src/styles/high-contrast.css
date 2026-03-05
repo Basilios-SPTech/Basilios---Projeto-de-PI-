@@ -199,6 +199,10 @@ body.hc .hp-chip.is-active {
 body.hc .hp-section {
   background: #000 !important;
 }
+body.hc .hp-section::after {
+  color: #FFD400 !important;
+  opacity: 1 !important;
+}
 body.hc .hp-section__title {
   color: #FFD400 !important;
 }

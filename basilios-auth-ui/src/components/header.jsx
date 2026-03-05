@@ -1,5 +1,5 @@
 /** Header  */
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Menu, User } from "lucide-react";
 import SearchBar from "./SearchBar.jsx";
@@ -31,7 +31,6 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState(null);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
 
   const toggleMenu = useCallback(() => setIsMenuOpen((s) => !s), []);
 
@@ -60,9 +59,16 @@ export default function Header() {
     []
   );
 
+  const prevScrollY = useRef(window.scrollY);
+
   useEffect(() => {
     const onScroll = () => {
-      setIsScrolled(window.scrollY > 50);
+      const y = window.scrollY;
+      const goingDown = y > prevScrollY.current;
+      prevScrollY.current = y;
+
+      // No topo: sempre mostra. Scroll down: esconde. Scroll up: mostra.
+      setIsScrolled(y > 50 && goingDown);
 
       const nodes = document.querySelectorAll("section[data-section]");
       let current = null;
@@ -111,22 +117,14 @@ export default function Header() {
     } catch (e) {}
   };
 
-  // 🔎 quando o usuário busca (Enter / clique na lupa)
-  const handleSearchSubmit = () => {
-    const term = searchQuery.trim().toLowerCase();
-    if (!term) return;
-
-    const match = sections.find((label) =>
-      label.toLowerCase().includes(term)
-    );
-
-    if (match) {
-      goToSection(match);
-    } else {
-      console.log("Nenhuma seção encontrada para:", term);
-      // aqui depois você pode trocar por um toast bonitinho
-    }
-  };
+  // Escuta evento de navegação disparado pela SearchBar
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.detail) navigate(e.detail);
+    };
+    window.addEventListener("searchNavigate", handler);
+    return () => window.removeEventListener("searchNavigate", handler);
+  }, [navigate]);
 
   const handleUserClick = () => {
     // Direciona para a página de perfil (pública)
@@ -169,12 +167,7 @@ export default function Header() {
               zIndex: 1,
             }}
           >
-            <SearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              onSubmit={handleSearchSubmit} // 👈 agora a busca funciona
-              width={250}
-            />
+            <SearchBar width={250} />
             <button
               className="icon-button"
               onClick={handleUserClick}
