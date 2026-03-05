@@ -1,4 +1,4 @@
-// src/pages/Home.jsx
+// src/pages/Home.jsx - Página principal com listagem de produtos, integração com o carrinho e personalização de lanches
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import Header from "../components/header.jsx";
 import Cart from "../components/Cart.jsx";
