@@ -402,7 +402,7 @@ export default function BoardPedidos() {
 
   if (loading) {
     return (
-      <div className="min-h-screen w-full bg-neutral-100 flex items-center justify-center">
+      <div className="board-root min-h-screen w-full bg-neutral-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-14 w-14 border-[3px] border-neutral-300 border-t-red-700 mx-auto mb-4"></div>
           <p className="text-neutral-600 text-base font-medium">Carregando pedidos...</p>
@@ -413,7 +413,7 @@ export default function BoardPedidos() {
 
   if (error) {
     return (
-      <div className="min-h-screen w-full bg-neutral-100 flex items-center justify-center">
+      <div className="board-root min-h-screen w-full bg-neutral-100 flex items-center justify-center">
         <div className="text-center bg-white rounded-xl shadow-md p-8 max-w-sm mx-4">
           <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
             <Package className="w-6 h-6 text-red-700" />
@@ -433,7 +433,7 @@ export default function BoardPedidos() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-neutral-100 px-4 md:px-6 lg:px-8 pb-8 pt-6">
+    <div className="board-root min-h-screen w-full bg-neutral-100 px-4 md:px-6 lg:px-8 pb-8 pt-6">
       <div className="max-w-[1400px] mx-auto">
         {/* Header */}
         <div className="mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
