@@ -679,6 +679,10 @@
   font-weight: 800;
 }
 
+.hp-card__desc-wrap {
+  position: relative;
+}
+
 .hp-card__desc {
   margin: 0;
   color: #475569;
@@ -688,6 +692,42 @@
   /* controla 2 linhas */
   -webkit-box-orient: vertical;
   overflow: hidden;
+  transition: max-height .3s ease;
+}
+
+.hp-card__desc--expanded {
+  display: block;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: unset;
+  overflow: visible;
+}
+
+.hp-card__desc-toggle {
+  background: none;
+  border: none;
+  padding: 2px 0 0;
+  font-size: .82rem;
+  font-weight: 600;
+  color: #ef4444;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: color .2s;
+}
+
+.hp-card__desc-chevron {
+  transition: transform .3s ease;
+  flex-shrink: 0;
+}
+
+.hp-card__desc-wrap.expanded .hp-card__desc-chevron {
+  transform: rotate(180deg);
+}
+
+.hp-card__desc-toggle:hover {
+  color: #dc2626;
+  text-decoration: underline;
 }
 
 .hp-card__footer {
@@ -857,4 +897,42 @@ section[data-section] {
   display: grid;
   gap: clamp(14px, 2vw, 22px);
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+/* ===== MOBILE: catálogo horizontal com scroll ===== */
+@media (max-width: 640px) {
+  .hp-grid {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    gap: 14px;
+    padding-bottom: 8px;
+    /* esconde scrollbar mas mantém funcional */
+    scrollbar-width: none;        /* Firefox */
+  }
+  .hp-grid::-webkit-scrollbar {
+    display: none;                /* Chrome/Safari */
+  }
+
+  .hp-grid > .hp-card {
+    flex: 0 0 75vw;
+    max-width: 280px;
+    scroll-snap-align: start;
+  }
+
+  /* indicador visual sutil de que é scrollável */
+  .hp-section {
+    position: relative;
+  }
+  .hp-section::after {
+    content: "← deslize →";
+    display: block;
+    text-align: center;
+    font-size: 0.7rem;
+    color: #94a3b8;
+    letter-spacing: 0.5px;
+    margin-top: 6px;
+    opacity: 0.7;
+  }
 }

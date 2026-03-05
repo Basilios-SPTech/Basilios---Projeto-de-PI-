@@ -1,5 +1,5 @@
 // src/pages/Home.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import Header from "../components/header.jsx";
 import Cart from "../components/Cart.jsx";
 import CustomizeBurger from "../components/CustomizeBurger.jsx";
@@ -9,6 +9,38 @@ import FooterBasilios from "../components/FooterBasilios.jsx";
 const CHAVE_STORAGE = "produtos-basilios";
 const CHAVE_CART = "carrinho-basilios";
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
+
+// Mini componente para descrição expansível
+function ExpandableDesc({ text }) {
+  const [expanded, setExpanded] = useState(false);
+  const [clamped, setClamped] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (el) setClamped(el.scrollHeight > el.clientHeight + 1);
+  }, [text]);
+
+  return (
+    <div className={`hp-card__desc-wrap${expanded ? " expanded" : ""}`}>
+      <p ref={ref} className={`hp-card__desc ${expanded ? "hp-card__desc--expanded" : ""}`}>
+        {text}
+      </p>
+      {clamped && (
+        <button
+          type="button"
+          className="hp-card__desc-toggle"
+          onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
+        >
+          {expanded ? "ver menos" : "ver mais"}
+          <svg className="hp-card__desc-chevron" viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+            <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06z" clipRule="evenodd"/>
+          </svg>
+        </button>
+      )}
+    </div>
+  );
+}
 
 export default function Home() {
   const [produtos, setProdutos] = useState([]);
@@ -25,20 +57,30 @@ export default function Home() {
 
         console.log("✅ Produtos carregados da API:", data);
 
-        const adaptados = (data || []).map((p, index) => ({
-          index: p.id ?? index,
-          nome: p.name ?? p.nome ?? "",
-          descricao: p.description ?? p.descricao ?? "",
-          preco: p.finalPrice ?? p.price ?? p.preco ?? 0,
-          categoria: p.category ?? p.categoria ?? "",
-          subcategoria: p.subcategory ?? p.subcategoria ?? "",
-          pausado: p.isPaused ?? p.paused ?? false,
-          imagem: p.imageUrl ? `${API_BASE}${p.imageUrl}` : p.imagem || "",
-        }));
+        const adaptados = (data || []).map((p, index) => {
+          const rawPrice = p.finalPrice ?? p.price ?? p.preco ?? 0;
+          const parsedPrice = parseFloat(
+            String(rawPrice).replace(/[^\d.,-]/g, "").replace(",", ".")
+          );
+
+          return {
+            index: p.id ?? index,
+            nome: p.name ?? p.nome ?? "",
+            descricao: p.description ?? p.descricao ?? "",
+            preco: Number.isFinite(parsedPrice) ? parsedPrice : 0,
+            categoria: p.category ?? p.categoria ?? "",
+            subcategoria: p.subcategory ?? p.subcategoria ?? "",
+            pausado: p.isPaused ?? p.paused ?? false,
+            imagem: p.imageUrl ? `${API_BASE}${p.imageUrl}` : p.imagem || "",
+          };
+        });
 
         const ativos = adaptados.filter((p) => !p.pausado);
 
         setProdutos(ativos);
+
+        // Notifica a SearchBar sobre os produtos disponíveis
+        window.dispatchEvent(new CustomEvent("productsLoaded", { detail: ativos }));
 
         localStorage.setItem(CHAVE_STORAGE, JSON.stringify(adaptados));
       } catch (err) {
@@ -62,6 +104,25 @@ export default function Home() {
   useEffect(() => {
     const c = JSON.parse(localStorage.getItem(CHAVE_CART) || "[]");
     setCartCount(Array.isArray(c) ? c.length : 0);
+  }, []);
+
+  // Destaca um card quando selecionado pela busca
+  useEffect(() => {
+    const handler = (e) => {
+      const productId = e.detail;
+      if (!productId) return;
+      // Encontra o card pelo data-product-id
+      const card = document.querySelector(`[data-product-id="${productId}"]`);
+      if (card) {
+        const headerOffset = 130;
+        const y = card.getBoundingClientRect().top + window.scrollY - headerOffset;
+        window.scrollTo({ top: y, behavior: "smooth" });
+        card.classList.add("hp-card--highlight");
+        setTimeout(() => card.classList.remove("hp-card--highlight"), 2000);
+      }
+    };
+    window.addEventListener("highlightProduct", handler);
+    return () => window.removeEventListener("highlightProduct", handler);
   }, []);
 
   const sanitizeImageUrl = (url) => {
@@ -209,6 +270,12 @@ export default function Home() {
 
   // Escuta eventos de scroll disparados pelo Header para rolar até a seção
   useEffect(() => {
+    const scrollToEl = (el) => {
+      const headerOffset = 120;
+      const y = el.getBoundingClientRect().top + window.scrollY - headerOffset;
+      window.scrollTo({ top: y, behavior: "smooth" });
+    };
+
     const handler = (e) => {
       const target = e?.detail;
       if (!target) return;
@@ -216,25 +283,22 @@ export default function Home() {
       const tryScroll = () => {
         const el = document.querySelector(`[data-section="${target}"]`);
         if (el) {
-          el.scrollIntoView({ behavior: "smooth", block: "start" });
+          scrollToEl(el);
           return true;
         }
         return false;
       };
 
       if (!tryScroll()) {
-        // retry shortly in case Home is still rendering
         setTimeout(() => tryScroll(), 350);
       }
     };
 
     window.addEventListener("scrollToSection", handler);
 
-    // also try to read sessionStorage on mount (in case header navigated to / and set it)
     try {
       const pending = sessionStorage.getItem("scrollToSection");
       if (pending) {
-        // Polling attempts for up to ~2 seconds (10 attempts)
         let attempts = 0;
         const maxAttempts = 10;
         const interval = setInterval(() => {
@@ -242,7 +306,7 @@ export default function Home() {
           const el = document.querySelector(`[data-section="${pending}"]`);
 
           if (el) {
-            el.scrollIntoView({ behavior: "smooth", block: "start" });
+            scrollToEl(el);
             clearInterval(interval);
             try {
               sessionStorage.removeItem("scrollToSection");
@@ -364,7 +428,7 @@ export default function Home() {
                   ) : (
                     <div className="hp-grid">
                       {items.map((p) => (
-                        <article key={p.index} className="hp-card">
+                        <article key={p.index} data-product-id={p.index} className="hp-card">
                           <div className="hp-card__media">
                             {p.imagem ? (
                               <img
@@ -380,17 +444,13 @@ export default function Home() {
 
                           <div className="hp-card__body">
                             <h3 className="hp-card__title">{p.nome}</h3>
-                            <p className="hp-card__desc">{p.descricao}</p>
+                            <ExpandableDesc text={p.descricao} />
                           </div>
 
                           <div className="hp-card__footer">
                             <div className="hp-price">
                               <span>R$</span>
-                              <strong>
-                                {Number(p.preco || "0")
-                                  .toFixed(2)
-                                  .replace(".", ",")}
-                              </strong>
+                              <strong>{sanitizePrice(p.preco)}</strong>
                             </div>
                             <button
                               className="btn btn-primary hp-add"
@@ -429,7 +489,7 @@ export default function Home() {
                     <h2 className="hp-section__title">{categoria}</h2>
                     <div className="hp-grid">
                       {itens.map((p) => (
-                        <article key={p.index} className="hp-card">
+                        <article key={p.index} data-product-id={p.index} className="hp-card">
                           <div className="hp-card__media">
                             {p.imagem ? (
                               <img src={p.imagem} alt={p.nome || "Produto"} />
@@ -442,17 +502,13 @@ export default function Home() {
 
                           <div className="hp-card__body">
                             <h3 className="hp-card__title">{p.nome}</h3>
-                            <p className="hp-card__desc">{p.descricao}</p>
+                            <ExpandableDesc text={p.descricao} />
                           </div>
 
                           <div className="hp-card__footer">
                             <div className="hp-price">
                               <span>R$</span>
-                              <strong>
-                                {Number(sanitizePrice(p.preco) || "0")
-                                  .toFixed(2)
-                                  .replace(".", ",")}
-                              </strong>
+                              <strong>{sanitizePrice(p.preco)}</strong>
                             </div>
                             <button
                               className="btn btn-primary hp-add"
@@ -487,7 +543,7 @@ export default function Home() {
         ) : (
           <div className="hp-grid">
             {produtosOrdenados.map((p) => (
-              <article key={p.index} className="hp-card">
+              <article key={p.index} data-product-id={p.index} className="hp-card">
                 <div className="hp-card__media">
                   {p.imagem ? (
                     <img src={p.imagem} alt={p.nome || "Produto"} />
@@ -498,17 +554,13 @@ export default function Home() {
 
                 <div className="hp-card__body">
                   <h3 className="hp-card__title">{p.nome}</h3>
-                  <p className="hp-card__desc">{p.descricao}</p>
+                  <ExpandableDesc text={p.descricao} />
                 </div>
 
                 <div className="hp-card__footer">
                   <div className="hp-price">
                     <span>R$</span>
-                    <strong>
-                      {Number(p.preco || "0")
-                        .toFixed(2)
-                        .replace(".", ",")}
-                    </strong>
+                    <strong>{sanitizePrice(p.preco)}</strong>
                   </div>
                   <button
                     className="btn btn-primary hp-add"

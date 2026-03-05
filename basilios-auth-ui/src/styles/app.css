@@ -66,4 +66,13 @@ html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
 	max-height: calc(100vh - 6rem);
 }
 
+/* Esconde scrollbar mas mantém scroll funcional */
+.scrollbar-hide {
+	scrollbar-width: none;          /* Firefox */
+	-ms-overflow-style: none;       /* IE/Edge */
+}
+.scrollbar-hide::-webkit-scrollbar {
+	display: none;                  /* Chrome/Safari */
+}
+
 

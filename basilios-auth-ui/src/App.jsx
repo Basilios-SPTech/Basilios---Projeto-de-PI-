@@ -27,6 +27,7 @@ import RequireAuth from "./routes/RequireAuth.jsx";
 
 // Auth storage
 import { authStorage } from "./services/storageAuth.js";
+import ScrollToTop from "./components/ScrollToTop.jsx";
 
 /* ============================
    Guards/Routes helpers
@@ -130,6 +131,7 @@ export default function App() {
     <div className="min-h-dvh flex flex-col">
       <main className="flex-1">
         <Router>
+          <ScrollToTop />
           <Toaster position="top-center" />
 
           <Routes>

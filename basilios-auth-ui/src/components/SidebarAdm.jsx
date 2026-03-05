@@ -1,5 +1,5 @@
 /** SidebarAdm */
-import { Home, ListOrdered, LogOut, Package, Hamburger, LayoutDashboard, LogIn } from "lucide-react";
+import { Home, ListOrdered, LogOut, Package, Hamburger, LayoutDashboard, LogIn, UserRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { AuthAPI } from "../services/api";
@@ -24,6 +24,7 @@ export default function SidebarAdm({ open, onClose }) {
           { icon: ListOrdered, label: "Pedidos (Board)",  href: "/board" },
           { icon: LayoutDashboard, label: "Dashboard",    href: "/dashboard" },
         ] : []),
+        { icon: UserRound, label: "Meu Perfil",          href: "/profile" },
         { icon: Hamburger,label: "Sobre Nós",           href: "/about" },
         { icon: LogOut,   label: "Sair",                href: "#logout" },
       ]

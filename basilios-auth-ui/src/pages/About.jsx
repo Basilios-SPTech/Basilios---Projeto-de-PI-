@@ -18,6 +18,7 @@ import BackButton from "../components/BackButton.jsx";
 import FeatureCard from "../components/FeatureCard.jsx";
 import TimelineItem from "../components/TimelineItem.jsx";
 import Ticker from "../components/Ticker.jsx";
+import MenuButtonAuto from "../components/MenuButtonAuto.jsx";
 
 import "../styles/about.css";
 
@@ -66,6 +67,8 @@ export default function About() {
 
   return (
     <main id="topo" className="about-root" ref={containerRef}>
+      <MenuButtonAuto />
+
       {/* HERO: preto com glow vermelho + sombra inferior */}
       <header className="about-hero about-hero-/logo.png-dark">
         <div className="about-hero__bg" aria-hidden="true" />
