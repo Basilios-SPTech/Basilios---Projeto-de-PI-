@@ -66,8 +66,12 @@ export default function SidebarToggle({
         <div className="fixed inset-0 z-[900]">
           {/* fundo escuro (atrás) */}
           <div
+            role="button"
+            tabIndex={0}
             className="absolute inset-0 bg-black/40"
             onClick={close}
+            onKeyDown={(e) => e.key === "Enter" && close()}
+            aria-label="Fechar menu"
           />
           {/* container da sidebar (frente) */}
           <div className="absolute inset-0 z-[950] pointer-events-none">

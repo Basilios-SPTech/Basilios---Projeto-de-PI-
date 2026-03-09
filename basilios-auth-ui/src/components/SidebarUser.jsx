@@ -1,9 +1,10 @@
 /** SidebarUser — mostra "Entrar" quando sem token e "Sair" quando com token */
-import { Home, ShoppingBag, LogOut, Package, Hamburger, LogIn } from "lucide-react";
+import { Home, ShoppingBag, LogOut, Package, Hamburger, LogIn, UserRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { AuthAPI } from "../services/api";             // <-- você tem /services/api.js
 import { authStorage } from "../services/storageAuth"; // <-- você tem /services/storageAuth.js
+import ThemeSwitcher from "./ThemeSwitcher";
 import "../styles/side-bar.css";
 
 export default function SidebarUser({ open, onClose }) {
@@ -18,6 +19,7 @@ export default function SidebarUser({ open, onClose }) {
         { icon: Home,       label: "Início",         href: "/home" },
         { icon: ShoppingBag,label: "Meus Pedidos",   href: "#pedidos" },
         { icon: Package,    label: "Meus Endereços", href: "#enderecos" },
+        { icon: UserRound,  label: "Meu Perfil",     href: "/profile" },
         { icon: Hamburger,  label: "Sobre Nós",      href: "/about" },
         { icon: LogOut,     label: "Sair",           href: "#logout" },
       ]
@@ -73,12 +75,13 @@ export default function SidebarUser({ open, onClose }) {
         </nav>
 
         <div className="sidebar-user__footer">
+          <ThemeSwitcher />
           <p style={{ margin: "0.5rem 0" }}>Versão 1.0.0</p>
           <p style={{ margin: "0.5rem 0" }}>© 2025 - Basilios</p>
         </div>
       </div>
 
-      <div className="sidebar-overlay" onClick={onClose} />
+      <div className="sidebar-overlay" role="button" tabIndex={0} onClick={onClose} onKeyDown={(e) => e.key === "Enter" && onClose()} aria-label="Fechar menu" />
     </>
   );
 }

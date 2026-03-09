@@ -5,6 +5,7 @@ import "../styles/ProfilePage.css";
 import EditForm from "../components/EditForm.jsx";
 import { http } from "../services/http.js";
 import BackButton from "../components/BackButton.jsx";
+import MenuButtonAuto from "../components/MenuButtonAuto.jsx";
 import toast from "react-hot-toast";
 
 export function ProfilePage() {
@@ -75,6 +76,7 @@ export function ProfilePage() {
 
   return (
     <>
+      <MenuButtonAuto />
       <div className="perfil-container">
         <BackButton onClick={() => nav(-1)} className="btn--ghost back-btn">
           <ArrowLeft size={18} />

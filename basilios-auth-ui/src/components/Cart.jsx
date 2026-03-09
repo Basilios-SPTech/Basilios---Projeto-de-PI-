@@ -2,7 +2,9 @@ import CartItem from "./CartItem";
 import React, { useState, useEffect } from "react";
 import { ShoppingCart, X } from "lucide-react";
 import CustomizeBurger from "./CustomizeBurger";
+import AuthRequiredModal from "./AuthRequiredModal";
 import { useNavigate } from "react-router-dom";
+import { authStorage } from "../services/storageAuth";
 
 const CHAVE_CART = "carrinho-basilios";
 
@@ -11,6 +13,7 @@ export default function Cart() {
   const [cartItems, setCartItems] = useState([]);
   const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const navigate = useNavigate();
 
@@ -40,10 +43,55 @@ export default function Cart() {
       body.classList.remove("cart-open");
     }
 
-    // limpeza: se o componente desmontar, garante que a classe sai
-    return () => body.classList.remove("cart-open");
-  }, [isOpen]);
+    // ── VLibras: forçar popup a abrir à esquerda quando carrinho aberto ──
+    // O plugin VLibras injeta estilos inline (position:fixed; right:0) no
+    // [vw-plugin-wrapper] toda vez que o popup abre. Usamos MutationObserver
+    // para sobrescrever esses estilos continuamente.
+    const wrapper = document.querySelector("[vw-plugin-wrapper]");
+    let observer;
 
+    function pushWrapperLeft() {
+      if (!wrapper) return;
+      // Largura do carrinho drawer (~448px no max-w-md)
+      const cartWidth = 448;
+      // Pega a largura real do painel do VLibras
+      const wrapperWidth = wrapper.offsetWidth || 520;
+      // Posiciona o wrapper de modo que sua borda direita fique à esquerda do carrinho
+      const rightPos = cartWidth + 8; // 8px de gap
+      wrapper.style.setProperty("right", rightPos + "px", "important");
+      wrapper.style.setProperty("left", "auto", "important");
+      wrapper.style.setProperty("z-index", "9999", "important");
+    }
+
+    function resetWrapper() {
+      if (!wrapper) return;
+      wrapper.style.removeProperty("right");
+      wrapper.style.removeProperty("left");
+      wrapper.style.removeProperty("z-index");
+    }
+
+    if (wrapper && isOpen) {
+      pushWrapperLeft();
+      // Observa QUALQUER mudança de atributo/estilo no wrapper e filhos
+      observer = new MutationObserver(() => {
+        pushWrapperLeft();
+      });
+      observer.observe(wrapper, {
+        attributes: true,
+        attributeFilter: ["style"],
+        subtree: true,
+      });
+    } else if (wrapper) {
+      resetWrapper();
+    }
+
+    // limpeza
+    return () => {
+      body.classList.remove("cart-open");
+      if (wrapper) resetWrapper();
+      if (observer) observer.disconnect();
+    };
+  }, [isOpen]);
 
   const totalItems = cartItems.reduce((sum, item) => sum + item.qtd, 0);
   const totalPrice = cartItems.reduce(
@@ -75,6 +123,10 @@ export default function Cart() {
   };
 
   function goToCheckout() {
+    if (!authStorage.isAuthenticated()) {
+      setShowAuthModal(true);
+      return;
+    }
     navigate("/checkout");
   }
 
@@ -96,15 +148,20 @@ export default function Cart() {
       {/* Overlay */}
       {isOpen && (
         <div
+          role="button"
+          tabIndex={0}
           onClick={() => setIsOpen(false)}
+          onKeyDown={(e) => e.key === "Enter" && setIsOpen(false)}
           className="fixed inset-0 bg-black/50 z-[998] transition-opacity"
+          aria-label="Fechar carrinho"
         />
       )}
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-[999] transform transition-transform duration-300 ease-in-out ${isOpen ? "translate-x-0" : "translate-x-full"
-          }`}
+        className={`cart-drawer fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-[999] transform transition-transform duration-300 ease-in-out ${
+          isOpen ? "translate-x-0" : "translate-x-full"
+        }`}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
@@ -148,7 +205,8 @@ export default function Cart() {
                       image: item.imagem,
                       // custom fields (if exist)
                       selectedIngredientIds: item.selectedIngredientIds || [],
-                      selectedIngredientNames: item.selectedIngredientNames || [],
+                      selectedIngredientNames:
+                        item.selectedIngredientNames || [],
                       selectedSauceIds: item.selectedSauceIds || [],
                       selectedSauceNames: item.selectedSauceNames || [],
                       isCustom: !!item.isCustom,
@@ -176,7 +234,10 @@ export default function Cart() {
                         return { ...c, selectedIngredientIds: ids };
                       });
                       setCartItems(atualizados);
-                      localStorage.setItem(CHAVE_CART, JSON.stringify(atualizados));
+                      localStorage.setItem(
+                        CHAVE_CART,
+                        JSON.stringify(atualizados),
+                      );
                       window.dispatchEvent(new Event("cartUpdated"));
                     }}
                     onRemoveSauce={(itemId) => {
@@ -190,7 +251,10 @@ export default function Cart() {
                         return { ...c, selectedSauceIds: ids };
                       });
                       setCartItems(atualizados);
-                      localStorage.setItem(CHAVE_CART, JSON.stringify(atualizados));
+                      localStorage.setItem(
+                        CHAVE_CART,
+                        JSON.stringify(atualizados),
+                      );
                       window.dispatchEvent(new Event("cartUpdated"));
                     }}
                     onRemoveAdicionalAt={(itemId, idx) => {
@@ -205,10 +269,17 @@ export default function Cart() {
                         if (idx < 0 || idx >= names.length) return c;
                         names.splice(idx, 1);
                         ids.splice(idx, 1);
-                        return { ...c, selectedIngredientNames: names, selectedIngredientIds: ids };
+                        return {
+                          ...c,
+                          selectedIngredientNames: names,
+                          selectedIngredientIds: ids,
+                        };
                       });
                       setCartItems(atualizados);
-                      localStorage.setItem(CHAVE_CART, JSON.stringify(atualizados));
+                      localStorage.setItem(
+                        CHAVE_CART,
+                        JSON.stringify(atualizados),
+                      );
                       window.dispatchEvent(new Event("cartUpdated"));
                     }}
                     onRemoveSauceAt={(itemId, idx) => {
@@ -223,10 +294,17 @@ export default function Cart() {
                         if (idx < 0 || idx >= names.length) return c;
                         names.splice(idx, 1);
                         ids.splice(idx, 1);
-                        return { ...c, selectedSauceNames: names, selectedSauceIds: ids };
+                        return {
+                          ...c,
+                          selectedSauceNames: names,
+                          selectedSauceIds: ids,
+                        };
                       });
                       setCartItems(atualizados);
-                      localStorage.setItem(CHAVE_CART, JSON.stringify(atualizados));
+                      localStorage.setItem(
+                        CHAVE_CART,
+                        JSON.stringify(atualizados),
+                      );
                       window.dispatchEvent(new Event("cartUpdated"));
                     }}
                     onAddAdicional={(it) => {
@@ -266,10 +344,6 @@ export default function Cart() {
                   <span>Subtotal</span>
                   <span>R$ {totalPrice.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>Frete</span>
-                  <span className="text-green-600 font-medium">Grátis</span>
-                </div>
                 <div className="border-t border-gray-300 pt-3 flex justify-between text-lg font-bold">
                   <span>Total</span>
                   <span>R$ {totalPrice.toFixed(2)}</span>
@@ -286,6 +360,12 @@ export default function Cart() {
           )}
         </div>
       </div>
+
+      {/* Modal de login/cadastro necessário */}
+      <AuthRequiredModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+      />
 
       {/* Tela de Personalização (abre ao clicar no lápis) */}
       {isCustomizeOpen && (

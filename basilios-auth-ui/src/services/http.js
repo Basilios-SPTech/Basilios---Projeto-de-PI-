@@ -17,15 +17,24 @@ http.interceptors.response.use(
   (res) => res,
   (error) => {
     const status = error?.response?.status
-    if (status === 401 || status === 403) {
-      authStorage.clear() 
+
+    // 401 = token inválido/expirado → desloga
+    if (status === 401) {
+      authStorage.clear()
     }
+    // 403 = sem permissão → NÃO desloga, apenas repassa o erro
+    // (o guard de rota já cuida do redirecionamento)
+
     const msg =
       error?.response?.data?.message ||
       error?.response?.data?.error ||
       error?.message ||
       'Erro de rede'
-    return Promise.reject(new Error(msg))
+
+    // Preserva o status original para handlers conseguirem diferenciar
+    const err = new Error(msg)
+    err.status = status
+    return Promise.reject(err)
   }
 )
 

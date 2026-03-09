@@ -1,9 +1,10 @@
 /** SidebarAdm */
-import { Home, ListOrdered, LogOut, Package, Hamburger, LayoutDashboard, LogIn } from "lucide-react";
+import { Home, ListOrdered, LogOut, Package, Hamburger, LayoutDashboard, LogIn, UserRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { AuthAPI } from "../services/api";
 import { authStorage } from "../services/storageAuth";
+import ThemeSwitcher from "./ThemeSwitcher";
 import "../styles/side-bar.css";
 
 export default function SidebarAdm({ open, onClose }) {
@@ -13,12 +14,17 @@ export default function SidebarAdm({ open, onClose }) {
   let isLogged = false;
   try { isLogged = !!authStorage.getToken(); } catch { isLogged = false; }
 
+  const isFuncionario = authStorage.hasAnyRole('ROLE_FUNCIONARIO');
+
   const items = isLogged
     ? [
         { icon: Home,     label: "Início",              href: "/home" },
-        { icon: Package,  label: "Cadastrar Produto",   href: "/cadastro" },
-        { icon: ListOrdered, label: "Pedidos (Board)",     href: "/board" },
-        { icon: LayoutDashboard, label: "Dashboard",     href: "/dashboard" },
+        ...(isFuncionario ? [
+          { icon: Package,  label: "Cadastrar Produto",   href: "/cadastro" },
+          { icon: ListOrdered, label: "Pedidos (Board)",  href: "/board" },
+          { icon: LayoutDashboard, label: "Dashboard",    href: "/dashboard" },
+        ] : []),
+        { icon: UserRound, label: "Meu Perfil",          href: "/profile" },
         { icon: Hamburger,label: "Sobre Nós",           href: "/about" },
         { icon: LogOut,   label: "Sair",                href: "#logout" },
       ]
@@ -56,7 +62,7 @@ export default function SidebarAdm({ open, onClose }) {
     <>
       <div className="sidebar-user">
         <div className="sidebar-user__header">
-          <span className="sidebar-user__title">ADMIN</span>
+          <span className="sidebar-user__title">{isFuncionario ? 'ADMIN' : 'MENU'}</span>
           <button className="sidebar-user__close" onClick={onClose}>✕</button>
         </div>
 
@@ -73,12 +79,13 @@ export default function SidebarAdm({ open, onClose }) {
         </nav>
 
         <div className="sidebar-user__footer">
+          <ThemeSwitcher />
           <p style={{ margin: "0.5rem 0" }}>Versão 1.0.0</p>
           <p style={{ margin: "0.5rem 0" }}>© 2025 - Basilios</p>
         </div>
       </div>
 
-      <div className="sidebar-overlay" onClick={onClose} />
+      <div className="sidebar-overlay" role="button" tabIndex={0} onClick={onClose} onKeyDown={(e) => e.key === "Enter" && onClose()} aria-label="Fechar menu" />
     </>
   );
 }

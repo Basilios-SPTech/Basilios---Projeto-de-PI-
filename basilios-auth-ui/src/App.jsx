@@ -23,9 +23,11 @@ import Dashboard from "./pages/Dashboard.jsx";
 import { ProfilePage } from "./pages/ProfilePage.jsx";
 // Layouts
 import AuthLayout from "./layouts/AuthLayout.jsx";
+import RequireAuth from "./routes/RequireAuth.jsx";
 
 // Auth storage
 import { authStorage } from "./services/storageAuth.js";
+import ScrollToTop from "./components/ScrollToTop.jsx";
 
 /* ============================
    Guards/Routes helpers
@@ -38,14 +40,6 @@ function PublicRoute() {
   ) : (
     <Outlet />
   );
-}
-
-// 🔻 SEM ROLES: exige apenas estar logado
-function RequireAuth() {
-  if (!authStorage.isAuthenticated()) {
-    return <Navigate to="/login" replace />;
-  }
-  return <Outlet />;
 }
 
 /* ============================
@@ -123,7 +117,6 @@ function CadastrarProdutoRoute() {
 function ProdutoLayout({ children }) {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      
       <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
     </div>
   );
@@ -138,36 +131,30 @@ export default function App() {
     <div className="min-h-dvh flex flex-col">
       <main className="flex-1">
         <Router>
+          <ScrollToTop />
           <Toaster position="top-center" />
 
           <Routes>
             <Route path="/" element={<Navigate to="/home" replace />} />
 
             {/* Públicas */}
-            <Route path="/about" element={<><About /><FooterBasilios /></>} />
-            {/* Rotas privadas - exige login */}
-            <Route element={<RequireAuth />}>
-              <Route
-                path="/profile"
-                element={
-                  <>
-                    <ProdutoLayout>
-                      <ProfilePage />
-                    </ProdutoLayout>
-                    <FooterBasilios />
-                  </>
-                }
-              />
-              <Route
-                path="/cadastro"
-                element={
-                  <ProdutoLayout>
-                    <CadastrarProdutoRoute />
-                  </ProdutoLayout>
-                }
-              />
-              <Route path="/board" element={<BoardRoute />} />
+            <Route
+              path="/about"
+              element={
+                <>
+                  <About />
+                  <FooterBasilios />
+                </>
+              }
+            />
+
+            {/* Login/Register públicas, mas se já logado, manda pra /home */}
+            <Route element={<PublicRoute />}>
+              <Route path="/login" element={<LoginRoute />} />
+              <Route path="/register" element={<RegisterRoute />} />
             </Route>
+
+            {/* Home é pública (carrinho funciona sem login) */}
             <Route
               path="/home"
               element={
@@ -180,14 +167,31 @@ export default function App() {
               }
             />
 
-            {/* Login/Register públicas, mas se já logado, manda pra /home */}
-            <Route element={<PublicRoute />}>
-              <Route path="/login" element={<LoginRoute />} />
-              <Route path="/register" element={<RegisterRoute />} />
+            {/* Rotas autenticadas para CLIENTE e FUNCIONARIO */}
+            <Route
+              element={
+                <RequireAuth roles={["ROLE_CLIENTE", "ROLE_FUNCIONARIO"]} />
+              }
+            >
+              <Route
+                path="/profile"
+                element={
+                  <>
+                    <ProdutoLayout>
+                      <ProfilePage />
+                    </ProdutoLayout>
+                    <FooterBasilios />
+                  </>
+                }
+              />
+
+              <Route path="/checkout" element={<CheckoutRoute />} />
+              <Route path="/pix-checkout" element={<PixRoute />} />
+              <Route path="/order-status" element={<StatusOrderPage />} />
             </Route>
 
-            {/* 🔻 SEM ROLES: áreas internas exigem apenas login */}
-            <Route element={<RequireAuth />}>
+            {/* Rotas exclusivas de FUNCIONARIO */}
+            <Route element={<RequireAuth roles={["ROLE_FUNCIONARIO"]} />}>
               <Route
                 path="/cadastro"
                 element={
@@ -196,24 +200,24 @@ export default function App() {
                   </ProdutoLayout>
                 }
               />
-              
-            <Route path="/board" element={<BoardRoute />} /></Route>
 
-            <Route path="/dashboard" element={<ProdutoLayout><Dashboard /></ProdutoLayout>} />
+              <Route path="/board" element={<BoardRoute />} />
 
-            <Route path="/checkout" element={<CheckoutRoute />} />
-
-            <Route path="/pix-checkout" element={<PixRoute />} />
-
-            <Route path="/order-status" element={<StatusOrderPage />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProdutoLayout>
+                    <Dashboard />
+                  </ProdutoLayout>
+                }
+              />
+            </Route>
 
             {/* 404 -> home */}
             <Route path="*" element={<Navigate to="/home" replace />} />
           </Routes>
         </Router>
       </main>
-
-      
     </div>
   );
 }

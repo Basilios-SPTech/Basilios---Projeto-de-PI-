@@ -65,6 +65,7 @@ export default function Dashboard() {
                   type="date"
                   name="end"
                   value={filters.end}
+                  min={filters.start || undefined}
                   onChange={handleChange}
                 />
               </label>
@@ -134,25 +135,6 @@ export default function Dashboard() {
             // data = { cancellationRate: 10.0 }
             return Number(data.cancellationRate ?? 0);
             }}
-            />
-
-            <KpiCard
-              label="Média entrega"
-              endpoint="/dashboard/average-delivery-time"
-              range={appliedRange}
-              rangeVersion={appliedVersion}
-              format="minutes"
-              mapResponse={(data) => {
-                // API may return an object like:
-                // { averageSeconds: 0, averageText: "string", seconds: 0, text: "string" }
-                if (!data) return null;
-                if (typeof data === "object") {
-                  const n = Number(data.averageSeconds ?? data.seconds ?? data.average ?? null);
-                  return Number.isFinite(n) ? n : null;
-                }
-                const n = Number(data);
-                return Number.isFinite(n) ? n : null;
-              }}
             />
 
           </div>

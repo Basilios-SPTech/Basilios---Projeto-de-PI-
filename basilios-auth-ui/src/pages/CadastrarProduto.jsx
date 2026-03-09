@@ -613,8 +613,10 @@ export default function CadastrarProduto() {
       </section>
 
       {modalOpen && (
-        <div className="cp-modal-overlay" onClick={handleCloseModal}>
+        <div className="cp-modal-overlay" role="button" tabIndex={0} onClick={handleCloseModal} onKeyDown={(e) => e.key === "Enter" && handleCloseModal()} aria-label="Fechar modal">
           <div
+            role="dialog"
+            aria-modal="true"
             className="cp-modal"
             onClick={(e) => e.stopPropagation()}
           >

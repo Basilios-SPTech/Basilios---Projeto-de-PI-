@@ -5,7 +5,7 @@ import '../styles/high-contrast.css';
 // Config pública opcional (defina em window.HC_TOGGLE_CONFIG no index.html se quiser)
 const cfg = window.HC_TOGGLE_CONFIG || {};
 const side = (cfg.side === 'left') ? 'left' : 'right';
-const baseOffset = Number(cfg.baseOffset || 120);
+// baseOffset não é mais usado — posição bottom vem do CSS (hc-toggle.css) com media queries
 
 function getInitialEnabled() {
   const stored = localStorage.getItem('hc-enabled');
@@ -34,7 +34,7 @@ function mountToggle() {
   const host = document.createElement('div');
   host.id = 'hc-toggle';
   host.className = 'hc-toggle';
-  host.style.bottom = baseOffset + 'px';
+  // bottom é gerenciado pelo CSS (hc-toggle.css) com media queries — não forçar inline
   if (side === 'left') {
     host.style.insetInlineStart = '24px';
     host.style.insetInlineEnd = 'auto';
