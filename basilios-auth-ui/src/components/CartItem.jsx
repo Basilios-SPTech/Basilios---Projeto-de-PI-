@@ -1,5 +1,5 @@
 import React from "react";
-import { Plus, Minus, Trash2, Pencil } from "lucide-react"; // 👈 importa o Pencil também
+import { Plus, Minus, Trash2, Pencil, X, Droplets, UtensilsCrossed } from "lucide-react";
 
 export default function CartItem({
   item,
@@ -44,19 +44,27 @@ export default function CartItem({
 
         {/* Exibir contadores de adicionais e molhos (sem nomes) */}
         {Array.isArray(item.selectedIngredientNames) && item.selectedIngredientNames.length > 0 && (
-          <div className="mt-2">
-            <p className="text-xs text-gray-700 mb-2">Adicionais selecionados:</p>
-            <div className="flex flex-wrap gap-2">
+          <div className="mt-3 p-3 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200">
+            <div className="flex items-center gap-2 mb-2">
+              <UtensilsCrossed className="w-4 h-4 text-orange-600" />
+              <p className="text-xs font-semibold text-orange-900">Adicionais</p>
+              <span className="ml-auto bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                {item.selectedIngredientNames.length}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
               {item.selectedIngredientNames.map((name, idx) => (
-                <div key={idx} className="bg-orange-500 text-white text-xs px-3 py-1 rounded-full flex items-center gap-2">
-                  <span>{name}</span>
+                <div 
+                  key={idx} 
+                  className="bg-white border border-orange-300 hover:border-orange-500 transition-all text-orange-700 text-xs px-2.5 py-1 rounded-full flex items-center gap-1.5 group shadow-sm hover:shadow-md"
+                >
+                  <span className="font-medium">{name}</span>
                   <button
                     onClick={() => onRemoveAdicionalAt?.(item.id, idx)}
-                    className="ml-1 hover:bg-orange-600 rounded-full w-5 h-5 flex items-center justify-center cursor-pointer"
+                    className="opacity-0 group-hover:opacity-100 hover:bg-orange-100 rounded-full w-4 h-4 flex items-center justify-center cursor-pointer transition-all transform group-hover:scale-110"
                     aria-label={`Remover adicional ${name}`}
                   >
-
-                    ×
+                    <X className="w-3 h-3" />
                   </button>
                 </div>
               ))}
@@ -65,18 +73,27 @@ export default function CartItem({
         )}
 
         {Array.isArray(item.selectedSauceNames) && item.selectedSauceNames.length > 0 && (
-          <div className="mt-2">
-            <p className="text-xs text-gray-700 mb-2">Molhos selecionados:</p>
-            <div className="flex flex-wrap gap-2">
+          <div className="mt-2 p-3 bg-gradient-to-r from-red-50 to-pink-50 rounded-lg border border-red-200">
+            <div className="flex items-center gap-2 mb-2">
+              <Droplets className="w-4 h-4 text-red-600" />
+              <p className="text-xs font-semibold text-red-900">Molhos</p>
+              <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                {item.selectedSauceNames.length}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
               {item.selectedSauceNames.map((name, idx) => (
-                <div key={idx} className="bg-orange-500 text-white text-xs px-3 py-1 rounded-full flex items-center gap-2">
-                  <span>{name}</span>
+                <div 
+                  key={idx} 
+                  className="bg-white border border-red-300 hover:border-red-500 transition-all text-red-700 text-xs px-2.5 py-1 rounded-full flex items-center gap-1.5 group shadow-sm hover:shadow-md"
+                >
+                  <span className="font-medium">{name}</span>
                   <button
                     onClick={() => onRemoveSauceAt?.(item.id, idx)}
-                    className="ml-1 hover:bg-orange-600 rounded-full w-5 h-5 flex items-center justify-center"
+                    className="opacity-0 group-hover:opacity-100 hover:bg-red-100 rounded-full w-4 h-4 flex items-center justify-center cursor-pointer transition-all transform group-hover:scale-110"
                     aria-label={`Remover molho ${name}`}
                   >
-                    ×
+                    <X className="w-3 h-3" />
                   </button>
                 </div>
               ))}

@@ -47,11 +47,11 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
   const maxExtras = 5;
   const maxSauces = 2;
 
-  // Arrays para armazenar IDs selecionados (permite duplicatas)
-  const [selectedIngredientIds, setSelectedIngredientIds] = useState([]);
-  const [selectedDrinkIds, setSelectedDrinkIds] = useState([]);
+  // Objetos para armazenar quantidades de cada item
+  const [ingredientQuantities, setIngredientQuantities] = useState({});
+  const [drinkQuantities, setDrinkQuantities] = useState({});
   const [selectedBreadId, setSelectedBreadId] = useState(null);
-  const [selectedSauceIds, setSelectedSauceIds] = useState([]);
+  const [sauceQuantities, setSauceQuantities] = useState({});
 
   const [quantity, setQuantity] = useState(1);
   const [observation, setObservation] = useState("");
@@ -60,10 +60,10 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
     if (item) {
       setQuantity(item.qtd || item.quantity || 1);
       setMeatPoint(item.meatPoint || "médio");
-      setSelectedIngredientIds(item.selectedIngredientIds || []);
-      setSelectedDrinkIds(item.selectedDrinkIds || []);
+      setIngredientQuantities(item.ingredientQuantities || {});
+      setDrinkQuantities(item.drinkQuantities || {});
       setSelectedBreadId(item.selectedBreadId || null);
-      setSelectedSauceIds(item.selectedSauceIds || []);
+      setSauceQuantities(item.sauceQuantities || {});
       setObservation(item.observation || "");
     }
   }, [item]);
@@ -82,23 +82,41 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
     return () => body.classList.remove("customize-open");
   }, [isOpen]);
 
-  // Funções para adicionar/remover ingredientes (permite duplicatas)
+  // Funções para adicionar/remover ingredientes com contador
   const addIngredient = (id) => {
-    if (selectedIngredientIds.length < maxExtras) {
-      setSelectedIngredientIds([...selectedIngredientIds, id]);
-    }
+    setIngredientQuantities((prev) => {
+      const current = prev[id] || 0;
+      if (current < maxExtras) {
+        return { ...prev, [id]: current + 1 };
+      }
+      return prev;
+    });
   };
 
-  const removeIngredient = (index) => {
-    setSelectedIngredientIds(selectedIngredientIds.filter((_, i) => i !== index));
+  const removeIngredient = (id) => {
+    setIngredientQuantities((prev) => {
+      const current = prev[id] || 0;
+      if (current > 1) {
+        return { ...prev, [id]: current - 1 };
+      }
+      const newState = { ...prev };
+      delete newState[id];
+      return newState;
+    });
   };
 
   const addDrink = (id) => {
-    setSelectedDrinkIds([...selectedDrinkIds, id]);
+    setDrinkQuantities((prev) => {
+      return { ...prev, [id]: (prev[id] || 0) + 1 };
+    });
   };
 
-  const removeDrink = (index) => {
-    setSelectedDrinkIds(selectedDrinkIds.filter((_, i) => i !== index));
+  const removeDrink = (id) => {
+    setDrinkQuantities((prev) => {
+      const newState = { ...prev };
+      delete newState[id];
+      return newState;
+    });
   };
 
   const selectBread = (id) => {
@@ -106,13 +124,25 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
   };
 
   const addSauce = (id) => {
-    if (selectedSauceIds.length < maxSauces) {
-      setSelectedSauceIds([...selectedSauceIds, id]);
-    }
+    setSauceQuantities((prev) => {
+      const current = prev[id] || 0;
+      if (current < maxSauces) {
+        return { ...prev, [id]: current + 1 };
+      }
+      return prev;
+    });
   };
 
-  const removeSauce = (index) => {
-    setSelectedSauceIds(selectedSauceIds.filter((_, i) => i !== index));
+  const removeSauce = (id) => {
+    setSauceQuantities((prev) => {
+      const current = prev[id] || 0;
+      if (current > 1) {
+        return { ...prev, [id]: current - 1 };
+      }
+      const newState = { ...prev };
+      delete newState[id];
+      return newState;
+    });
   };
 
   return (
@@ -180,43 +210,9 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
 
             {/* Adicionais */}
             <div>
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="text-lg font-semibold text-gray-800">
-                  Deseja adicional? (máx. 5)
-                </h3>
-                <span className="text-xs bg-gray-800 text-white px-2 py-0.5 rounded-full">
-                  {selectedIngredientIds.length}/{maxExtras}
-                </span>
-              </div>
-
-              {/* Lista de adicionais selecionados (pills) */}
-              {selectedIngredientIds.length > 0 && (
-                <div className="mb-4 p-3 bg-orange-50 rounded-lg">
-                  <p className="text-xs font-semibold text-gray-700 mb-2">
-                    Selecionados:
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedIngredientIds.map((id, idx) => {
-                      const ing = ingredients.find((i) => i.id === id);
-                      return (
-                        <div
-                          key={idx}
-                          className="bg-orange-500 text-white text-xs px-3 py-1 rounded-full flex items-center gap-1"
-                        >
-                          {ing?.name}
-                          <button
-                            onClick={() => removeIngredient(idx)}
-                            className="ml-1 hover:bg-orange-600 rounded-full w-4 h-4 flex items-center justify-center"
-                            aria-label={`Remover ${ing?.name}`}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                Deseja adicional? (máx. 5 por item)
+              </h3>
 
               <div className="divide-y divide-gray-200">
                 {ingredients.map((ing) => (
@@ -231,17 +227,37 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
                         + R$ {ing.price.toFixed(2).replace(".", ",")}
                       </p>
                     </div>
-                    <button
-                      onClick={() => addIngredient(ing.id)}
-                      disabled={selectedIngredientIds.length >= maxExtras}
-                      className={`w-8 h-8 flex items-center justify-center rounded-full border text-orange-500 text-lg font-bold transition-all ${
-                        selectedIngredientIds.length >= maxExtras
-                          ? "opacity-50 cursor-not-allowed border-gray-300"
-                          : "border-orange-500 hover:bg-orange-50"
-                      }`}
-                    >
-                      +
-                    </button>
+                    {ingredientQuantities[ing.id] ? (
+                      <div className="flex items-center gap-2 bg-orange-50 border border-orange-500 rounded-lg px-2 py-1">
+                        <button
+                          onClick={() => removeIngredient(ing.id)}
+                          className="w-6 h-6 flex items-center justify-center text-orange-500 hover:bg-orange-100 rounded transition-colors"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <span className="w-6 text-center font-semibold text-gray-900">
+                          {ingredientQuantities[ing.id]}
+                        </span>
+                        <button
+                          onClick={() => addIngredient(ing.id)}
+                          disabled={ingredientQuantities[ing.id] >= maxExtras}
+                          className={`w-6 h-6 flex items-center justify-center rounded transition-colors ${
+                            ingredientQuantities[ing.id] >= maxExtras
+                              ? "opacity-50 cursor-not-allowed text-gray-400"
+                              : "text-orange-500 hover:bg-orange-100"
+                          }`}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => addIngredient(ing.id)}
+                        className="w-8 h-8 flex items-center justify-center rounded-full border border-orange-500 text-orange-500 text-lg font-bold transition-all hover:bg-orange-50"
+                      >
+                        +
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -252,33 +268,6 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
               <h3 className="text-lg font-semibold text-gray-800 mb-3">
                 Deseja um refrigerante?
               </h3>
-
-              {selectedDrinkIds.length > 0 && (
-                <div className="mb-4 p-3 bg-orange-50 rounded-lg">
-                  <p className="text-xs font-semibold text-gray-700 mb-2">
-                    Selecionados:
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedDrinkIds.map((id, idx) => {
-                      const drink = drinks.find((d) => d.id === id);
-                      return (
-                        <div
-                          key={idx}
-                          className="bg-orange-500 text-white text-xs px-3 py-1 rounded-full flex items-center gap-1"
-                        >
-                          {drink?.name}
-                          <button
-                            onClick={() => removeDrink(idx)}
-                            className="ml-1 hover:bg-orange-600 rounded-full w-4 h-4 flex items-center justify-center"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
 
               <div className="divide-y divide-gray-200">
                 {drinks.map((drink) => (
@@ -292,12 +281,32 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
                         + R$ {drink.price.toFixed(2).replace(".", ",")}
                       </span>
                     </h4>
-                    <button
-                      onClick={() => addDrink(drink.id)}
-                      className={`w-8 h-8 flex items-center justify-center rounded-full border text-orange-500 text-lg font-bold transition-all border-orange-500 hover:bg-orange-50`}
-                    >
-                      +
-                    </button>
+                    {drinkQuantities[drink.id] ? (
+                      <div className="flex items-center gap-2 bg-orange-50 border border-orange-500 rounded-lg px-2 py-1">
+                        <button
+                          onClick={() => removeDrink(drink.id)}
+                          className="w-6 h-6 flex items-center justify-center text-orange-500 hover:bg-orange-100 rounded transition-colors"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <span className="w-6 text-center font-semibold text-gray-900">
+                          {drinkQuantities[drink.id]}
+                        </span>
+                        <button
+                          onClick={() => addDrink(drink.id)}
+                          className="w-6 h-6 flex items-center justify-center text-orange-500 hover:bg-orange-100 rounded transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => addDrink(drink.id)}
+                        className="w-8 h-8 flex items-center justify-center rounded-full border border-orange-500 text-orange-500 text-lg font-bold transition-all hover:bg-orange-50"
+                      >
+                        +
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -338,41 +347,9 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
 
             {/* Molhos Extras */}
             <div>
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="text-lg font-semibold text-gray-800">
-                  Deseja molho extra? (máx. 2)
-                </h3>
-                <span className="text-xs bg-gray-800 text-white px-2 py-0.5 rounded-full">
-                  {selectedSauceIds.length}/{maxSauces}
-                </span>
-              </div>
-
-              {selectedSauceIds.length > 0 && (
-                <div className="mb-4 p-3 bg-orange-50 rounded-lg">
-                  <p className="text-xs font-semibold text-gray-700 mb-2">
-                    Selecionados:
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedSauceIds.map((id, idx) => {
-                      const sauce = saucesAvailable.find((s) => s.id === id);
-                      return (
-                        <div
-                          key={idx}
-                          className="bg-orange-500 text-white text-xs px-3 py-1 rounded-full flex items-center gap-1"
-                        >
-                          {sauce?.name}
-                          <button
-                            onClick={() => removeSauce(idx)}
-                            className="ml-1 hover:bg-orange-600 rounded-full w-4 h-4 flex items-center justify-center"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                Deseja molho extra? (máx. 2 por item)
+              </h3>
 
               <div className="divide-y divide-gray-200">
                 {saucesAvailable.map((s) => (
@@ -387,17 +364,37 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
                         + R$ {s.price.toFixed(2).replace(".", ",")}
                       </p>
                     </div>
-                    <button
-                      onClick={() => addSauce(s.id)}
-                      disabled={selectedSauceIds.length >= maxSauces}
-                      className={`w-8 h-8 flex items-center justify-center rounded-full border text-orange-500 text-lg font-bold transition-all ${
-                        selectedSauceIds.length >= maxSauces
-                          ? "opacity-50 cursor-not-allowed border-gray-300"
-                          : "border-orange-500 hover:bg-orange-50"
-                      }`}
-                    >
-                      +
-                    </button>
+                    {sauceQuantities[s.id] ? (
+                      <div className="flex items-center gap-2 bg-orange-50 border border-orange-500 rounded-lg px-2 py-1">
+                        <button
+                          onClick={() => removeSauce(s.id)}
+                          className="w-6 h-6 flex items-center justify-center text-orange-500 hover:bg-orange-100 rounded transition-colors"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <span className="w-6 text-center font-semibold text-gray-900">
+                          {sauceQuantities[s.id]}
+                        </span>
+                        <button
+                          onClick={() => addSauce(s.id)}
+                          disabled={sauceQuantities[s.id] >= maxSauces}
+                          className={`w-6 h-6 flex items-center justify-center rounded transition-colors ${
+                            sauceQuantities[s.id] >= maxSauces
+                              ? "opacity-50 cursor-not-allowed text-gray-400"
+                              : "text-orange-500 hover:bg-orange-100"
+                          }`}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => addSauce(s.id)}
+                        className="w-8 h-8 flex items-center justify-center rounded-full border border-orange-500 text-orange-500 text-lg font-bold transition-all hover:bg-orange-50"
+                      >
+                        +
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -421,26 +418,37 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
           <div className="border-t border-gray-200 p-6 bg-gray-50">
             <button
               onClick={() => {
-                const selectedIngredientNames = selectedIngredientIds.map((id) => {
-                  return ingredients.find((i) => i.id === id)?.name || "";
-                });
+                // Converter quantidades para arrays de nomes (para exibição)
+                const selectedIngredientNames = Object.entries(ingredientQuantities)
+                  .flatMap(([id, qty]) => {
+                    const ingredient = ingredients.find((i) => i.id === parseInt(id));
+                    return Array(qty).fill(ingredient?.name || "");
+                  });
 
-                const selectedSauceNames = selectedSauceIds.map((id) => {
-                  return saucesAvailable.find((s) => s.id === id)?.name || "";
-                });
+                const selectedSauceNames = Object.entries(sauceQuantities)
+                  .flatMap(([id, qty]) => {
+                    const sauce = saucesAvailable.find((s) => s.id === parseInt(id));
+                    return Array(qty).fill(sauce?.name || "");
+                  });
 
                 // Soma dos adicionais selecionados
-                const extraIngredientsPrice = selectedIngredientIds
-                  .map((id) => ingredients.find((i) => i.id === id)?.price || 0)
-                  .reduce((acc, v) => acc + v, 0);
+                const extraIngredientsPrice = Object.entries(ingredientQuantities)
+                  .reduce((acc, [id, qty]) => {
+                    const ingredient = ingredients.find((i) => i.id === parseInt(id));
+                    return acc + ((ingredient?.price || 0) * qty);
+                  }, 0);
 
-                const extraSaucesPrice = selectedSauceIds
-                  .map((id) => saucesAvailable.find((s) => s.id === id)?.price || 0)
-                  .reduce((acc, v) => acc + v, 0);
+                const extraSaucesPrice = Object.entries(sauceQuantities)
+                  .reduce((acc, [id, qty]) => {
+                    const sauce = saucesAvailable.find((s) => s.id === parseInt(id));
+                    return acc + ((sauce?.price || 0) * qty);
+                  }, 0);
 
-                const extraDrinksPrice = selectedDrinkIds
-                  .map((id) => drinks.find((d) => d.id === id)?.price || 0)
-                  .reduce((acc, v) => acc + v, 0);
+                const extraDrinksPrice = Object.entries(drinkQuantities)
+                  .reduce((acc, [id, qty]) => {
+                    const drink = drinks.find((d) => d.id === parseInt(id));
+                    return acc + ((drink?.price || 0) * qty);
+                  }, 0);
 
                 const breadPrice =
                   selectedBreadId != null
@@ -458,6 +466,31 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
                   extraDrinksPrice +
                   breadPrice;
 
+                // Criar objeto com preços dos ingredientes para referência futura
+                const ingredientPrices = {};
+                Object.keys(ingredientQuantities).forEach((id) => {
+                  const ingredient = ingredients.find((i) => i.id === parseInt(id));
+                  if (ingredient) {
+                    ingredientPrices[id] = ingredient.price;
+                  }
+                });
+
+                const drinkPrices = {};
+                Object.keys(drinkQuantities).forEach((id) => {
+                  const drink = drinks.find((d) => d.id === parseInt(id));
+                  if (drink) {
+                    drinkPrices[id] = drink.price;
+                  }
+                });
+
+                const saucePrices = {};
+                Object.keys(sauceQuantities).forEach((id) => {
+                  const sauce = saucesAvailable.find((s) => s.id === parseInt(id));
+                  if (sauce) {
+                    saucePrices[id] = sauce.price;
+                  }
+                });
+
                 const customItem = {
                   ...item,
                   precoBase: basePrice,
@@ -465,11 +498,15 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
                   price: finalPrice,
                   qtd: quantity,
                   meatPoint,
-                  selectedIngredientIds,
+                  ingredientQuantities,
+                  ingredientPrices,
                   selectedIngredientNames,
-                  selectedDrinkIds,
+                  drinkQuantities,
+                  drinkPrices,
                   selectedBreadId,
-                  selectedSauceIds,
+                  breadPrice,
+                  sauceQuantities,
+                  saucePrices,
                   selectedSauceNames,
                   observation,
                 };

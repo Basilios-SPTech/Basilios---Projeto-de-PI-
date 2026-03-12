@@ -6,7 +6,9 @@ export function validatePassword(v) {
   if (!v || v.length < 8) return false
   const hasLetter = /[A-Za-z]/.test(v)
   const hasNumber = /\d/.test(v)
-  return hasLetter && hasNumber
+  const hasUppercase = /[A-Z]/.test(v)
+  const hasSpecialChar = /[@$!%*?&]/.test(v)
+  return hasLetter && hasNumber && hasUppercase && hasSpecialChar
 }
 
 export function validateCPF(cpf) {
