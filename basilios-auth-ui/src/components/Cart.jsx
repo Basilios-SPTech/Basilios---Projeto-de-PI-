@@ -122,6 +122,41 @@ export default function Cart() {
     window.dispatchEvent(new Event("cartUpdated"));
   };
 
+  // Função para recalcular o preço de um item customizado
+  const recalculateItemPrice = (item) => {
+    if (!item.isCustom) return item.preco;
+    
+    const basePrice = item.precoBase || 0;
+    
+    let ingredientsTotal = 0;
+    if (item.ingredientQuantities && item.ingredientPrices) {
+      Object.entries(item.ingredientQuantities).forEach(([id, qty]) => {
+        const price = item.ingredientPrices[id] || 0;
+        ingredientsTotal += price * qty;
+      });
+    }
+    
+    let drinksTotal = 0;
+    if (item.drinkQuantities && item.drinkPrices) {
+      Object.entries(item.drinkQuantities).forEach(([id, qty]) => {
+        const price = item.drinkPrices[id] || 0;
+        drinksTotal += price * qty;
+      });
+    }
+    
+    let saucesTotal = 0;
+    if (item.sauceQuantities && item.saucePrices) {
+      Object.entries(item.sauceQuantities).forEach(([id, qty]) => {
+        const price = item.saucePrices[id] || 0;
+        saucesTotal += price * qty;
+      });
+    }
+    
+    const breadPrice = item.selectedBreadId && item.breadPrice ? item.breadPrice : 0;
+    
+    return basePrice + ingredientsTotal + drinksTotal + saucesTotal + breadPrice;
+  };
+
   function goToCheckout() {
     if (!authStorage.isAuthenticated()) {
       setShowAuthModal(true);
@@ -260,20 +295,43 @@ export default function Cart() {
                     onRemoveAdicionalAt={(itemId, idx) => {
                       const atualizados = cartItems.map((c) => {
                         if (c.id !== itemId) return c;
+                        
+                        // Remover do array de nomes
                         const names = Array.isArray(c.selectedIngredientNames)
                           ? [...c.selectedIngredientNames]
                           : [];
-                        const ids = Array.isArray(c.selectedIngredientIds)
-                          ? [...c.selectedIngredientIds]
-                          : [];
                         if (idx < 0 || idx >= names.length) return c;
-                        names.splice(idx, 1);
-                        ids.splice(idx, 1);
-                        return {
+                        const removedName = names.splice(idx, 1)[0];
+                        
+                        // Remover do objeto de quantidades
+                        const quantities = { ...c.ingredientQuantities };
+                        // Encontrar qual ID corresponde a esse índice
+                        let currentIdx = 0;
+                        for (const [id, qty] of Object.entries(quantities)) {
+                          for (let i = 0; i < qty; i++) {
+                            if (currentIdx === idx) {
+                              const newQty = qty - 1;
+                              if (newQty > 0) {
+                                quantities[id] = newQty;
+                              } else {
+                                delete quantities[id];
+                              }
+                              break;
+                            }
+                            currentIdx++;
+                          }
+                        }
+                        
+                        const updatedItem = {
                           ...c,
                           selectedIngredientNames: names,
-                          selectedIngredientIds: ids,
+                          ingredientQuantities: quantities,
                         };
+                        
+                        // Recalcular preço
+                        updatedItem.preco = recalculateItemPrice(updatedItem);
+                        
+                        return updatedItem;
                       });
                       setCartItems(atualizados);
                       localStorage.setItem(
@@ -285,20 +343,43 @@ export default function Cart() {
                     onRemoveSauceAt={(itemId, idx) => {
                       const atualizados = cartItems.map((c) => {
                         if (c.id !== itemId) return c;
+                        
+                        // Remover do array de nomes
                         const names = Array.isArray(c.selectedSauceNames)
                           ? [...c.selectedSauceNames]
                           : [];
-                        const ids = Array.isArray(c.selectedSauceIds)
-                          ? [...c.selectedSauceIds]
-                          : [];
                         if (idx < 0 || idx >= names.length) return c;
-                        names.splice(idx, 1);
-                        ids.splice(idx, 1);
-                        return {
+                        const removedName = names.splice(idx, 1)[0];
+                        
+                        // Remover do objeto de quantidades
+                        const quantities = { ...c.sauceQuantities };
+                        // Encontrar qual ID corresponde a esse índice
+                        let currentIdx = 0;
+                        for (const [id, qty] of Object.entries(quantities)) {
+                          for (let i = 0; i < qty; i++) {
+                            if (currentIdx === idx) {
+                              const newQty = qty - 1;
+                              if (newQty > 0) {
+                                quantities[id] = newQty;
+                              } else {
+                                delete quantities[id];
+                              }
+                              break;
+                            }
+                            currentIdx++;
+                          }
+                        }
+                        
+                        const updatedItem = {
                           ...c,
                           selectedSauceNames: names,
-                          selectedSauceIds: ids,
+                          sauceQuantities: quantities,
                         };
+                        
+                        // Recalcular preço
+                        updatedItem.preco = recalculateItemPrice(updatedItem);
+                        
+                        return updatedItem;
                       });
                       setCartItems(atualizados);
                       localStorage.setItem(
