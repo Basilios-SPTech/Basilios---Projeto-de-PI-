@@ -8,11 +8,9 @@ import toast from "react-hot-toast";
 
 import ProgressBar from "../components/loading/ProgressBar.jsx";
 
-export default function Login({ onGoRegister, onGoHome }) {
+export default function Login({ onGoRegister, onGoHome, onGoForgot }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [forgotOpen, setForgotOpen] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState("");
 
@@ -44,21 +42,6 @@ export default function Login({ onGoRegister, onGoHome }) {
       if (typeof onGoHome === "function") onGoHome();
     } catch (err) {
       setServerError(err.message || "Falha no login.");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  async function handleForgot(e) {
-    e.preventDefault();
-    if (!validateEmail(forgotEmail)) return;
-    setSubmitting(true);
-    setServerError("");
-    try {
-      await AuthAPI.forgot(forgotEmail);
-      toast.success("Se o e-mail existir, enviaremos instruções.");
-    } catch (err) {
-      setServerError(err.message || "Falha ao solicitar redefinição.");
     } finally {
       setSubmitting(false);
     }
@@ -105,41 +88,11 @@ export default function Login({ onGoRegister, onGoHome }) {
         <button
           type="button"
           className="btn-ghost shrink-0"
-          onClick={() => {
-            setForgotOpen((prev) => {
-              const next = !prev;
-              if (next && email && !forgotEmail) setForgotEmail(email);
-              return next;
-            });
-          }}
+          onClick={() => onGoForgot?.(email)}
         >
           Esqueceu a senha?
         </button>
       </div>
-
-      {forgotOpen && (
-        <div className="rounded-lg bg-gray-light p-4">
-          <p className="text-sm mb-2">
-            Informe seu e-mail para receber o link.
-          </p>
-          <div className="flex items-center gap-2">
-            <input
-              type="email"
-              className="input input-focus flex-1"
-              placeholder="voce@exemplo.com"
-              value={forgotEmail}
-              onChange={(e) => setForgotEmail(e.target.value)}
-            />
-            <button
-              onClick={handleForgot}
-              disabled={!validateEmail(forgotEmail) || submitting}
-              className="btn-primary"
-            >
-              Enviar
-            </button>
-          </div>
-        </div>
-      )}
 
       <div className="text-sm pt-4">
         Não tem conta?{" "}

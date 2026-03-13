@@ -11,6 +11,8 @@ import { Toaster } from "react-hot-toast";
 // Pages
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
+import ForgotPassword from "./pages/ForgotPassword.jsx";
+import ResetPassword from "./pages/ResetPassword.jsx";
 import FooterBasilios from "./components/FooterBasilios.jsx";
 import About from "./pages/About.jsx";
 import Home from "./pages/Home.jsx";
@@ -48,12 +50,22 @@ function PublicRoute() {
 
 function LoginRoute() {
   const navigate = useNavigate();
+
+  const goForgotWithEmail = (typedEmail = "") => {
+    const params = new URLSearchParams();
+    const cleaned = String(typedEmail || "").trim();
+    if (cleaned) params.set("email", cleaned);
+    const query = params.toString();
+    navigate(query ? `/forgot-password?${query}` : "/forgot-password");
+  };
+
   return (
     <>
       <AuthLayout>
         <Login
           onGoRegister={() => navigate("/register")}
           onGoHome={() => navigate("/home")}
+          onGoForgot={goForgotWithEmail}
         />
       </AuthLayout>
       <FooterBasilios />
@@ -67,6 +79,28 @@ function RegisterRoute() {
     <>
       <AuthLayout>
         <Register onGoLogin={() => navigate("/login")} />
+      </AuthLayout>
+      <FooterBasilios />
+    </>
+  );
+}
+
+function ForgotPasswordRoute() {
+  return (
+    <>
+      <AuthLayout>
+        <ForgotPassword />
+      </AuthLayout>
+      <FooterBasilios />
+    </>
+  );
+}
+
+function ResetPasswordRoute() {
+  return (
+    <>
+      <AuthLayout>
+        <ResetPassword />
       </AuthLayout>
       <FooterBasilios />
     </>
@@ -153,6 +187,16 @@ export default function App() {
               <Route path="/login" element={<LoginRoute />} />
               <Route path="/register" element={<RegisterRoute />} />
             </Route>
+
+            {/* Recuperação de senha deve abrir sempre, mesmo com sessão ativa */}
+            <Route
+              path="/forgot-password"
+              element={<ForgotPasswordRoute />}
+            />
+            <Route
+              path="/reset-password"
+              element={<ResetPasswordRoute />}
+            />
 
             {/* Home é pública (carrinho funciona sem login) */}
             <Route
