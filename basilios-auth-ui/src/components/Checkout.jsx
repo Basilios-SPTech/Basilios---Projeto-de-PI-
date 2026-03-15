@@ -10,11 +10,13 @@ import {
   ShoppingCart,
   Trash2,
   Banknote,
+  Edit,
 } from "lucide-react";
 
 import axios from "axios";
 import AddAddress from "./AddAddress";
 import ProgressBar from "./loading/ProgressBar";
+import CustomizeBurger from "./CustomizeBurger";
 
 const CHAVE_CART = "carrinho-basilios";
 
@@ -24,6 +26,8 @@ export default function Checkout() {
   const [endUser, setEndUser] = useState([]);
   const [itens, setItens] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
   const navigate = useNavigate();
 
   const calcularSubtotal = () => {
@@ -47,6 +51,11 @@ export default function Checkout() {
         item.id === id ? { ...item, qtd: novaQuantidade } : item,
       ),
     );
+  };
+
+  const editarItem = (item) => {
+    setSelectedItem(item);
+    setIsCustomizeOpen(true);
   };
 
   const sanitizeImageUrl = (url) => {
@@ -242,13 +251,76 @@ export default function Checkout() {
                         R$ {(item.preco * item.qtd).toFixed(2)}
                       </p>
                     </div>
-                    <button
-                      onClick={() => removerItem(item.id)}
-                      className="text-gray-500 hover:text-gray-700"
-                    >
-                      <Trash2 size={20} />
-                    </button>
+                    <div className="flex flex-col gap-1">
+                      <button
+                        onClick={() => editarItem(item)}
+                        className="text-gray-500 hover:text-blue-600"
+                        title="Editar item"
+                      >
+                        <Edit size={20} />
+                      </button>
+                      <button
+                        onClick={() => removerItem(item.id)}
+                        className="text-gray-500 hover:text-gray-700"
+                        title="Remover item"
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                    </div>
+
+                    {/* Adicionais */}
+                    {(item.ingredientQuantities && Object.keys(item.ingredientQuantities).length > 0) ||
+                    (item.drinkQuantities && Object.keys(item.drinkQuantities).length > 0) ||
+                    (item.sauceQuantities && Object.keys(item.sauceQuantities).length > 0) ||
+                    item.selectedBreadId ? (
+                      <div className="mt-3 pl-4 border-l-2 border-gray-300">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Adicionais:</h4>
+                        <div className="space-y-1 text-xs text-gray-600">
+                          {item.selectedBreadId && (
+                            <p>• Pão: {item.selectedBreadId === 1 ? "Pão de Gergelim" : item.selectedBreadId === 2 ? "Pão Australiano" : "Pão de Brioche"}</p>
+                          )}
+                          {item.ingredientQuantities && Object.entries(item.ingredientQuantities).map(([id, qty]) => {
+                            const ingredient = [
+                              { id: 1, name: "Presunto" },
+                              { id: 2, name: "Bacon" },
+                              { id: 3, name: "Egg" },
+                              { id: 4, name: "Picles" },
+                              { id: 5, name: "Cheddar" },
+                              { id: 6, name: "Catupiry" },
+                              { id: 7, name: "Acebolado" },
+                              { id: 8, name: "Vinagrete" },
+                              { id: 9, name: "Queijo" },
+                            ].find(i => i.id === parseInt(id));
+                            return ingredient ? <p key={id}>• {ingredient.name}: {qty}x</p> : null;
+                          })}
+                          {item.drinkQuantities && Object.entries(item.drinkQuantities).map(([id, qty]) => {
+                            const drink = [
+                              { id: 1, name: "Coca Cola" },
+                              { id: 2, name: "Coca Cola Zero" },
+                              { id: 3, name: "Guaraná" },
+                              { id: 4, name: "Guaraná Zero" },
+                              { id: 5, name: "Pepsi" },
+                              { id: 6, name: "Pepsi Twist" },
+                              { id: 7, name: "Soda Limonada" },
+                              { id: 8, name: "Citrus Schweppes" },
+                            ].find(d => d.id === parseInt(id));
+                            return drink ? <p key={id}>• {drink.name}: {qty}x</p> : null;
+                          })}
+                          {item.sauceQuantities && Object.entries(item.sauceQuantities).map(([id, qty]) => {
+                            const sauce = [
+                              { id: 1, name: "Maionese" },
+                              { id: 2, name: "Tártaro" },
+                              { id: 3, name: "Maionese de Alho" },
+                            ].find(s => s.id === parseInt(id));
+                            return sauce ? <p key={id}>• {sauce.name}: {qty}x</p> : null;
+                          })}
+                          {item.meatPoint && <p>• Ponto da carne: {item.meatPoint}</p>}
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
+
+  
                 ))}
               </div>
             </div>
@@ -403,6 +475,22 @@ export default function Checkout() {
       </div>
 
       <ProgressBar visible={submitting} message="Processando seu pedido..." />
+
+      {/* Tela de Personalização */}
+      {isCustomizeOpen && (
+        <CustomizeBurger
+          item={selectedItem}
+          onClose={() => setIsCustomizeOpen(false)}
+          onSave={(customizedItem) => {
+            const atualizado = itens.map((p) =>
+              p.id === customizedItem.id ? { ...p, ...customizedItem } : p,
+            );
+            setItens(atualizado);
+            localStorage.setItem(CHAVE_CART, JSON.stringify(atualizado));
+            setIsCustomizeOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }
