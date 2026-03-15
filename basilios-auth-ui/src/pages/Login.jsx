@@ -1,7 +1,6 @@
 import { useState } from "react";
 import InputField from "../components/InputField.jsx";
 import PasswordField from "../components/PasswordField.jsx";
-import { validateEmail, validatePassword } from "../utils/validators.js";
 import { AuthAPI } from "../services/api.js";
 import SidebarLogin from "../components/MenuButtonLogin.jsx";
 import toast from "react-hot-toast";
@@ -14,16 +13,11 @@ export default function Login({ onGoRegister, onGoHome, onGoForgot }) {
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState("");
 
-  const emailError = email && !validateEmail(email) ? "E-mail inválido." : "";
-  const passError =
-    password && !validatePassword(password)
-      ? "Senha deve ter 8+ caracteres e conter letras e números."
-      : "";
-  const canSubmit = validateEmail(email) && validatePassword(password);
+  const canSubmit = email && password;
 
   async function handleLogin(e) {
     e.preventDefault();
-    if (!canSubmit || submitting) return;
+    if (submitting) return;
     setSubmitting(true);
     setServerError("");
     try {
@@ -59,8 +53,6 @@ export default function Login({ onGoRegister, onGoHome, onGoForgot }) {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="voce@exemplo.com"
-        error={emailError}
-        showSuccess={email && !emailError}
         autoComplete="email"
       />
 
@@ -70,8 +62,6 @@ export default function Login({ onGoRegister, onGoHome, onGoForgot }) {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         placeholder="********"
-        error={passError}
-        showSuccess={password && !passError}
         autoComplete="current-password"
       />
 
