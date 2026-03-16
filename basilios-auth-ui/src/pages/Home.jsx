@@ -4,6 +4,7 @@ import Header from "../components/header.jsx";
 import Cart from "../components/Cart.jsx";
 import CustomizeBurger from "../components/CustomizeBurger.jsx";
 import { listarProdutos } from "../services/produtosApi.js";
+import { http } from "../services/http.js";
 import FooterBasilios from "../components/FooterBasilios.jsx";
 
 const CHAVE_STORAGE = "produtos-basilios";
@@ -44,11 +45,45 @@ function ExpandableDesc({ text }) {
 
 export default function Home() {
   const [produtos, setProdutos] = useState([]);
+  const [promocoes, setPromocoes] = useState([]);
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("Todas");
   const [cartCount, setCartCount] = useState(0);
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [productToCustomize, setProductToCustomize] = useState(null);
+
+  // 🔥 Buscar promoções ativas
+  useEffect(() => {
+    async function carregarPromocoes() {
+      try {
+        console.log("🔍 Buscando promoções do endpoint /promotions/current...");
+        const response = await http.get("/promotions/current");
+        const data = response.data || response;
+        
+        console.log("✅ Resposta bruta do servidor:", response);
+        console.log("✅ Dados extraídos:", data);
+        console.log("✅ Tipo de dados:", typeof data);
+        console.log("✅ É array?:", Array.isArray(data));
+        console.log("✅ Quantidade de items:", (data || []).length);
+
+        // Usar os dados como estão (sem filtrar)
+        const promoList = Array.isArray(data) ? data : (data?.data || []);
+        console.log("✅ Lista final de promoções:", promoList);
+        
+        setPromocoes(promoList);
+      } catch (err) {
+        console.error("❌ Erro ao carregar promoções:");
+        console.error("   - Mensagem:", err.message);
+        console.error("   - Status:", err.response?.status);
+        console.error("   - Dados da resposta:", err.response?.data);
+        console.error("   - Config da request:", err.config);
+        console.error("   - Erro completo:", err);
+        setPromocoes([]);
+      }
+    }
+
+    carregarPromocoes();
+  }, []);
 
   useEffect(() => {
     async function carregarProdutos() {
@@ -169,6 +204,35 @@ export default function Home() {
     return Array.from(set);
   }, [produtos]);
 
+  // 🎯 Identifica produtos que estão em promoção ativa hoje
+  const produtosEmPromocaoAtiva = useMemo(() => {
+    const hoje = new Date();
+    const idsEmPromo = new Set();
+    
+    console.log("📅 Data/hora atual:", hoje);
+    
+    for (const promo of promocoes) {
+      console.log("🔎 Checando promoção:", promo.title, "isActive:", promo.isActive, "productId:", promo.productId);
+      
+      // Verifica se promoção está ativa e dentro do período
+      if (promo.isActive) {
+        const startDate = new Date(promo.startDate);
+        const endDate = new Date(promo.endDate);
+        endDate.setHours(23, 59, 59, 999); // Inclui todo o dia final
+        
+        console.log("   startDate:", startDate, "endDate:", endDate);
+        console.log("   hoje >= startDate?", hoje >= startDate, "| hoje <= endDate?", hoje <= endDate);
+        
+        if (hoje >= startDate && hoje <= endDate && promo.productId) {
+          idsEmPromo.add(promo.productId);
+          console.log("   ✅ ADICIONADO À PROMOÇÃO:", promo.productId);
+        }
+      }
+    }
+    console.log("📍 IDs em promoção final:", Array.from(idsEmPromo));
+    return idsEmPromo;
+  }, [promocoes]);
+
   const filtrados = useMemo(() => {
     const termo = q.trim().toLowerCase();
     return produtos.filter((p) => {
@@ -177,9 +241,11 @@ export default function Home() {
         !termo ||
         (p.nome || "").toLowerCase().includes(termo) ||
         (p.descricao || "").toLowerCase().includes(termo);
-      return okCat && okTermo;
+      // ❌ Exclui produtos que estão em promoção ativa
+      const naoEmPromo = !produtosEmPromocaoAtiva.has(p.index);
+      return okCat && okTermo && naoEmPromo;
     });
-  }, [produtos, q, cat]);
+  }, [produtos, q, cat, produtosEmPromocaoAtiva]);
 
   const produtosOrdenados = useMemo(
     () => [...filtrados].sort((a, b) => Number(b.index) - Number(a.index)),
@@ -255,7 +321,15 @@ export default function Home() {
       const names = nameMap[label] || [];
       const items = produtos.filter((p) => {
         const pn = (p.nome || "").toLowerCase().trim();
-        if (names.includes(pn)) {
+        // ❌ Exclui produtos que estão em promoção ativa
+        const naoEmPromo = !produtosEmPromocaoAtiva.has(p.index);
+        const matches = names.includes(pn) && naoEmPromo;
+        
+        if (pn.includes("combo x-salada")) {
+          console.log(`🔍 Combo X-Salada: index=${p.index}, naoEmPromo=${naoEmPromo}, produtosEmPromocaoAtiva=${Array.from(produtosEmPromocaoAtiva)}, matches=${matches}`);
+        }
+        
+        if (matches) {
           included.add(p.index);
           return true;
         }
@@ -266,7 +340,7 @@ export default function Home() {
     });
 
     return { sections, included };
-  }, [produtos]);
+  }, [produtos, produtosEmPromocaoAtiva]);
 
   // Escuta eventos de scroll disparados pelo Header para rolar até a seção
   useEffect(() => {
@@ -406,6 +480,88 @@ export default function Home() {
         />
       )}
       <section className="hp-grid-wrap">
+        {/* 🎉 SEÇÃO DE PROMOÇÕES */}
+        {promocoes.length > 0 && (
+          <div className="hp-section" data-section="promocoes">
+            <h2 className="hp-section__title">🔥 Promoções</h2>
+            <div className="hp-grid">
+              {promocoes.map((promo) => {
+                // Encontra o produto correspondente para exibir informações
+                const produtoPromo = produtos.find(p => p.index === promo.productId);
+                
+                // Calcula o percentual de desconto dinamicamente
+                const precoOriginal = produtoPromo?.preco ? parseFloat(String(produtoPromo.preco).replace(/[^\d.,-]/g, "").replace(",", ".")) : 0;
+                const discountPercentage = precoOriginal > 0 && promo.discountAmount 
+                  ? Math.round((promo.discountAmount / precoOriginal) * 100)
+                  : promo.discountPercentage || 0;
+                
+                return (
+                  <article
+                    key={`promo-${promo.id}`}
+                    data-product-id={`promo-${promo.id}`}
+                    className="hp-card"
+                    style={{ borderColor: "#bb3530", borderWidth: "2px" }}
+                  >
+                    <div className="hp-card__media">
+                      {produtoPromo?.imagem ? (
+                        <img
+                          src={sanitizeImageUrl(produtoPromo.imagem)}
+                          alt={produtoPromo.nome || "Promoção"}
+                        />
+                      ) : (
+                        <div className="hp-card__placeholder">Sem imagem</div>
+                      )}
+                      {/* Badge de Promoção */}
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "10px",
+                          right: "10px",
+                          background: "#bb3530",
+                          color: "white",
+                          padding: "6px 12px",
+                          borderRadius: "999px",
+                          fontSize: "12px",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {discountPercentage}% OFF
+                      </div>
+                    </div>
+
+                    <div className="hp-card__body">
+                      <h3 className="hp-card__title">{promo.title}</h3>
+                      <p style={{ fontSize: "0.9rem", color: "#666", marginBottom: "8px" }}>
+                        {promo.description}
+                      </p>
+                      {produtoPromo?.descricao && (
+                        <ExpandableDesc text={produtoPromo.descricao} />
+                      )}
+                    </div>
+
+                    <div className="hp-card__footer">
+                      <div className="hp-price">
+                        <span style={{ textDecoration: "line-through", color: "#999", fontSize: "0.9rem" }}>
+                          R$ {sanitizePrice(produtoPromo?.preco || 0)}
+                        </span>
+                        <strong style={{ color: "#bb3530", fontSize: "1.3rem" }}>
+                          R$ {sanitizePrice((produtoPromo?.preco || 0) - (promo.discountAmount || 0))}
+                        </strong>
+                      </div>
+                      <button
+                        className="btn btn-primary hp-add"
+                        onClick={() => produtoPromo && handleCustomize(produtoPromo)}
+                      >
+                        Adicionar
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {cat === "Todas" ? (
           // Renderizamos primeiro as seções personalizadas mapeadas pela navbar
           (function () {
@@ -469,7 +625,7 @@ export default function Home() {
 
             // Produtos restantes (não incluídos nas seções customizadas)
             const restantes = produtos.filter(
-              (p) => !customSections.included.has(p.index),
+              (p) => !customSections.included.has(p.index) && !produtosEmPromocaoAtiva.has(p.index),
             );
             if (restantes.length > 0) {
               const map = new Map();

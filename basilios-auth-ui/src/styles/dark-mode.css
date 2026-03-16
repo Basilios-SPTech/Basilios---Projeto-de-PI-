@@ -250,6 +250,14 @@ body.dark-mode .btn-primary {
 body.dark-mode .btn-primary:hover {
   background: #d64545 !important;
 }
+body.dark-mode .btn-secondary {
+  background: #4B5563 !important;
+  color: #fff !important;
+  border-color: #4B5563 !important;
+}
+body.dark-mode .btn-secondary:hover {
+  background: #3d4553 !important;
+}
 body.dark-mode .btn-ghost {
   color: #E85D5D !important;
 }
