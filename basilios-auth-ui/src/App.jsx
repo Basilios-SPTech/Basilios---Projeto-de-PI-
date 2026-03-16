@@ -22,6 +22,7 @@ import CheckoutPage from "./pages/CheckoutPage.jsx";
 import PixCheckout from "./pages/PixCheckout.jsx";
 import StatusOrderPage from "./pages/StatusOrderPage.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
+import PromocoesPage from "./pages/PromocoesPage.jsx";
 import { ProfilePage } from "./pages/ProfilePage.jsx";
 // Layouts
 import AuthLayout from "./layouts/AuthLayout.jsx";
@@ -252,6 +253,15 @@ export default function App() {
                 element={
                   <ProdutoLayout>
                     <Dashboard />
+                  </ProdutoLayout>
+                }
+              />
+
+              <Route
+                path="/promocoes"
+                element={
+                  <ProdutoLayout>
+                    <PromocoesPage />
                   </ProdutoLayout>
                 }
               />
