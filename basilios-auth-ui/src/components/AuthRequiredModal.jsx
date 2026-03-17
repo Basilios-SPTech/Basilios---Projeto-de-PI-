@@ -5,7 +5,11 @@ import { useNavigate } from "react-router-dom";
  * Modal exibido quando um usuário não autenticado tenta finalizar compra.
  * Oferece opções de Login ou Cadastro e salva redirect para voltar ao checkout.
  */
-export default function AuthRequiredModal({ isOpen, onClose }) {
+export default function AuthRequiredModal({
+  isOpen,
+  onClose,
+  redirectPath = "/checkout",
+}) {
   const navigate = useNavigate();
 
   if (!isOpen) return null;
@@ -13,7 +17,7 @@ export default function AuthRequiredModal({ isOpen, onClose }) {
   const handleGo = (path) => {
     // Salva destino para redirecionar após login/cadastro
     try {
-      sessionStorage.setItem("redirectAfterLogin", "/checkout");
+      sessionStorage.setItem("redirectAfterLogin", redirectPath);
     } catch {}
     onClose();
     navigate(path);

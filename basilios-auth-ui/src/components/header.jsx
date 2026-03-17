@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Menu, User } from "lucide-react";
 import SearchBar from "./SearchBar.jsx";
 import SidebarAdm from "./SidebarAdm.jsx";
+import AuthRequiredModal from "./AuthRequiredModal.jsx";
 import { authStorage } from "../services/storageAuth.js";
 import "../styles/header.css";
 
@@ -31,6 +32,7 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState(null);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const toggleMenu = useCallback(() => setIsMenuOpen((s) => !s), []);
 
@@ -127,7 +129,11 @@ export default function Header() {
   }, [navigate]);
 
   const handleUserClick = () => {
-    // Direciona para a página de perfil (pública)
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
+
     navigate("/profile");
   };
 
@@ -210,6 +216,12 @@ export default function Header() {
 
       {/* Sidebar por role: funcionário vê menu admin, cliente vê menu padrão */}
       <SidebarAdm open={isMenuOpen} onClose={toggleMenu} />
+
+      <AuthRequiredModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        redirectPath="/profile"
+      />
     </>
   );
 }
