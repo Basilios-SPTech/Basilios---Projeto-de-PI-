@@ -93,7 +93,7 @@ export default function Home() {
         console.log("✅ Produtos carregados da API:", data);
 
         const adaptados = (data || []).map((p, index) => {
-          const rawPrice = p.finalPrice ?? p.price ?? p.preco ?? 0;
+          const rawPrice = p.price ?? p.preco ?? 0;
           const parsedPrice = parseFloat(
             String(rawPrice).replace(/[^\d.,-]/g, "").replace(",", ".")
           );

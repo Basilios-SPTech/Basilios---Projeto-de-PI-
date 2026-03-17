@@ -163,6 +163,15 @@ export default function PromocoesPage() {
     return produto?.name || produto?.nome || "Produto desconhecido";
   };
 
+  const getProdutoPreco = (productId) => {
+    const produto = produtos.find((p) => p.id === productId);
+    return produto?.price ?? produto?.preco ?? 0;
+  };
+
+  const calcularPrecoComDesconto = (precoOrigin, desconto) => {
+    return (parseFloat(precoOrigin) - parseFloat(desconto)).toFixed(2);
+  };
+
   return (
     <div className="promocoes-page">
       <MenuButton />
@@ -243,10 +252,34 @@ export default function PromocoesPage() {
                     <span className="label">Produto:</span>
                     <span className="value">{getProdutoNome(promo.productId)}</span>
                   </div>
-                  <div className="detail">
-                    <span className="label">Desconto:</span>
-                    <span className="value">R$ {promo.discountAmount?.toFixed(2).replace(".", ",")}</span>
-                  </div>
+                  
+                  {(() => {
+                    const precoOriginal = getProdutoPreco(promo.productId);
+                    const precoComDesconto = calcularPrecoComDesconto(precoOriginal, promo.discountAmount);
+                    return (
+                      <>
+                        <div className="detail">
+                          <span className="label">Preço Original:</span>
+                          <span className="value" style={{color: "#333", fontWeight: "500"}}>
+                            R$ {parseFloat(precoOriginal).toFixed(2).replace(".", ",")}
+                          </span>
+                        </div>
+                        <div className="detail">
+                          <span className="label">Desconto:</span>
+                          <span className="value" style={{color: "#27ae60", fontWeight: "bold"}}>
+                            − R$ {parseFloat(promo.discountAmount).toFixed(2).replace(".", ",")}
+                          </span>
+                        </div>
+                        <div className="detail">
+                          <span className="label">Preço com Desconto:</span>
+                          <span className="value" style={{color: "#bb3530", fontSize: "1.1em", fontWeight: "bold"}}>
+                            R$ {precoComDesconto.replace(".", ",")}
+                          </span>
+                        </div>
+                      </>
+                    );
+                  })()}
+                  
                   <div className="detail">
                     <span className="label">Período:</span>
                     <span className="value">
