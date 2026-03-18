@@ -7,7 +7,7 @@ import {
   XCircle,
   Loader,
 } from "lucide-react";
-import axios from "axios";
+import { http } from "../../services/http.js";
 
 export default function OrderStatus() {
   const [pedidoCancelado, setPedidoCancelado] = useState(false);
@@ -29,16 +29,7 @@ export default function OrderStatus() {
 
   const fetchOrderData = async () => {
     try {
-      const token = localStorage.getItem("auth_token");
-      const response = await axios.get(
-        `http://localhost:8080/orders/${orderId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        },
-      );
+      const response = await http.get(`/orders/${orderId}`);
 
       setOrder(response.data);
       setLoading(false);
@@ -55,17 +46,7 @@ export default function OrderStatus() {
 
   const confirmarCancelamento = async () => {
     try {
-      const token = localStorage.getItem("token");
-      await axios.patch(
-        `http://localhost:8080/orders/${orderId}/cancel`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        },
-      );
+      await http.patch(`/orders/${orderId}/cancel`, {});
 
       setPedidoCancelado(true);
       setMostrarConfirmacao(false);

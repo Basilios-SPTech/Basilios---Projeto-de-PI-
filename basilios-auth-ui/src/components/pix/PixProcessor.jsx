@@ -4,7 +4,6 @@ import PixQRCode from "./PixQRCode";
 import PixCode from "./PixCode";
 import PixInstructions from "./PixInstructions";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 
 export default function PixProcessor({ pixData }) {
   // pixData -> tem que vir do response do POST que vamos fazer, e ai passamos alguns atributos como props pra outros componetes
@@ -14,24 +13,43 @@ export default function PixProcessor({ pixData }) {
   const navigate = useNavigate();
 
   const simulatePayment = async () => {
-    const body = {
-      metadata: {},
-    };
-    const response = await axios.post(
-      `/api/abacate/v1/pixQrCode/simulate-payment?id=${localStorage.getItem("pixId")}`,
-      body,
-      {
-        headers: {
-          Authorization: "Bearer abc_dev_J24NemeHukwqGwfe2bj63G2q",
-          "Content-Type": "application/json",
+    const body = { metadata: {} };
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        `/api/abacate/v1/pixQrCode/simulate-payment?id=${localStorage.getItem("pixId")}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: "Bearer abc_dev_J24NemeHukwqGwfe2bj63G2q",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
         },
-      },
-    );
-    console.log(response.data.data);
-    if (response.data.data.status == "PAID") {
-      console.log("pagoo");
-      localStorage.removeItem("carrinho-basilios");
-      navigate("/order-status");
+      );
+
+      if (!response.ok) {
+        throw new Error("Falha ao simular pagamento PIX");
+      }
+
+      const payload = await response.json();
+      console.log(payload?.data);
+
+      if (payload?.data?.status === "PAID") {
+        console.log("pagoo");
+        localStorage.removeItem("carrinho-basilios");
+        navigate("/order-status");
+        return;
+      }
+
+      setError("Pagamento ainda não confirmado.");
+    } catch (err) {
+      console.error("Erro ao simular pagamento PIX:", err);
+      setError(err?.message || "Erro ao simular pagamento PIX.");
+    } finally {
+      setLoading(false);
     }
   };
 
