@@ -1,10 +1,12 @@
 // src/pages/PromocoesPage.jsx
 import { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, X, Tag, FileText, DollarSign, Calendar } from "lucide-react";
+import { Plus, Edit2, Trash2, X, DollarSign, Calendar } from "lucide-react";
 import { http } from "../services/http.js";
 import toast from "react-hot-toast";
 import "../styles/promocoes.css";
 import MenuButton from "../components/MenuButtonAdm.jsx";
+
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 export default function PromocoesPage() {
   const [promocoes, setPromocoes] = useState([]);
@@ -13,11 +15,10 @@ export default function PromocoesPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [erroCarregamento, setErroCarregamento] = useState(false);
+  const [expandedCardId, setExpandedCardId] = useState(null);
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
     productId: "",
-    discountAmount: "",
+    finalPrice: "",
     startDate: "",
     endDate: "",
   });
@@ -58,20 +59,16 @@ export default function PromocoesPage() {
     if (promo) {
       setEditingId(promo.id);
       setFormData({
-        title: promo.title || "",
-        description: promo.description || "",
         productId: promo.productId || "",
-        discountAmount: promo.discountAmount || "",
+        finalPrice: promo.finalPrice || "",
         startDate: promo.startDate ? promo.startDate.substring(0, 16) : "",
         endDate: promo.endDate ? promo.endDate.substring(0, 16) : "",
       });
     } else {
       setEditingId(null);
       setFormData({
-        title: "",
-        description: "",
         productId: "",
-        discountAmount: "",
+        finalPrice: "",
         startDate: "",
         endDate: "",
       });
@@ -83,10 +80,8 @@ export default function PromocoesPage() {
     setShowModal(false);
     setEditingId(null);
     setFormData({
-      title: "",
-      description: "",
       productId: "",
-      discountAmount: "",
+      finalPrice: "",
       startDate: "",
       endDate: "",
     });
@@ -103,7 +98,7 @@ export default function PromocoesPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.title || !formData.description || !formData.productId || !formData.discountAmount || !formData.startDate || !formData.endDate) {
+    if (!formData.productId || !formData.finalPrice || !formData.startDate || !formData.endDate) {
       toast.error("Preencha todos os campos");
       return;
     }
@@ -116,11 +111,16 @@ export default function PromocoesPage() {
     setLoading(true);
 
     try {
+      const produtoSelecionado = produtos.find(p => p.id === parseInt(formData.productId));
+      const precoOriginal = produtoSelecionado?.price ?? produtoSelecionado?.preco ?? 0;
+      const desconto = parseFloat(precoOriginal) - parseFloat(formData.finalPrice);
+
       const payload = {
-        title: formData.title,
-        description: formData.description,
+        title: produtoSelecionado?.name || produtoSelecionado?.nome || "",
+        description: produtoSelecionado?.description || produtoSelecionado?.descricao || "",
         productIds: [parseInt(formData.productId)],
-        discountAmount: parseFloat(formData.discountAmount),
+        discountAmount: desconto,
+        finalPrice: parseFloat(formData.finalPrice),
         startDate: formData.startDate.split("T")[0],
         endDate: formData.endDate.split("T")[0],
         isActive: true,
@@ -161,6 +161,24 @@ export default function PromocoesPage() {
   const getProdutoNome = (productId) => {
     const produto = produtos.find((p) => p.id === productId);
     return produto?.name || produto?.nome || "Produto desconhecido";
+  };
+
+  const getProdutoDescricao = (productId) => {
+    const produto = produtos.find((p) => p.id === productId);
+    return produto?.description || produto?.descricao || "";
+  };
+
+  const getProdutoImagem = (productId) => {
+    const produto = produtos.find((p) => p.id === productId);
+    if (!produto) return "";
+    
+    // Se vem como imageUrl, concatenar com API_BASE
+    if (produto.imageUrl) {
+      return `${API_BASE}${produto.imageUrl}`;
+    }
+    
+    // Se vem como image ou imagem, retornar diretamente
+    return produto.image || produto.imagem || "";
   };
 
   const getProdutoPreco = (productId) => {
@@ -245,7 +263,47 @@ export default function PromocoesPage() {
                   </div>
                 </div>
 
-                <p className="promo-card__description">{promo.description}</p>
+                {getProdutoImagem(promo.productId) && (
+                  <div className="promo-card__image-container">
+                    <img 
+                      src={getProdutoImagem(promo.productId)} 
+                      alt={promo.title}
+                      className="promo-card__image"
+                    />
+                  </div>
+                )}
+
+                <div className="promo-card__description-container">
+                  {expandedCardId === promo.id ? (
+                    <>
+                      <p className="promo-card__description promo-card__description--expanded">
+                        {promo.description}
+                      </p>
+                      <button
+                        onClick={() => setExpandedCardId(null)}
+                        className="btn-expand-description"
+                      >
+                        Ver menos
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="promo-card__description">
+                        {promo.description.length > 120
+                          ? promo.description.substring(0, 120) + "..."
+                          : promo.description}
+                      </p>
+                      {promo.description.length > 120 && (
+                        <button
+                          onClick={() => setExpandedCardId(promo.id)}
+                          className="btn-expand-description"
+                        >
+                          Ver mais
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
 
                 <div className="promo-card__details">
                   <div className="detail">
@@ -323,38 +381,6 @@ export default function PromocoesPage() {
             <form onSubmit={handleSubmit} className="modal__form">
               <div className="form-group">
                 <label className="form-label">
-                  <Tag size={18} />
-                  Título
-                </label>
-                <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  placeholder="Ex: Promoção de Verão"
-                  disabled={loading}
-                  className="form-input"
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">
-                  <FileText size={18} />
-                  Descrição
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  placeholder="Ex: Desconto especial em lanches premium"
-                  rows={3}
-                  disabled={loading}
-                  className="form-input"
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">
                   🎁 Produto
                 </label>
                 <select
@@ -373,22 +399,45 @@ export default function PromocoesPage() {
                 </select>
               </div>
 
-              <div className="form-group">
-                <label className="form-label">
-                  <DollarSign size={18} />
-                  Desconto (R$)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  name="discountAmount"
-                  value={formData.discountAmount}
-                  onChange={handleInputChange}
-                  placeholder="Ex: 5.00"
-                  disabled={loading}
-                  className="form-input"
-                />
-              </div>
+              {formData.productId && (
+                <>
+                  <div className="form-group">
+                    <label className="form-label">
+                      <DollarSign size={18} />
+                      Preço Atual
+                    </label>
+                    <input
+                      type="text"
+                      value={`R$ ${parseFloat(getProdutoPreco(parseInt(formData.productId))).toFixed(2).replace(".", ",")}`}
+                      disabled
+                      className="form-input"
+                      style={{ backgroundColor: "#f0f0f0" }}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">
+                      <DollarSign size={18} />
+                      Preço Final (com desconto)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      name="finalPrice"
+                      value={formData.finalPrice}
+                      onChange={handleInputChange}
+                      placeholder="Ex: 20.00"
+                      disabled={loading}
+                      className="form-input"
+                    />
+                    {formData.finalPrice && (
+                      <p style={{ fontSize: "0.85rem", color: "#27ae60", marginTop: "0.5rem" }}>
+                        Desconto: R$ {(parseFloat(getProdutoPreco(parseInt(formData.productId))) - parseFloat(formData.finalPrice)).toFixed(2).replace(".", ",")}
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
 
               <div className="form-group">
                 <label className="form-label">

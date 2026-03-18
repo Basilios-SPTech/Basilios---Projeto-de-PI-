@@ -375,3 +375,38 @@
   .modal { width: 100% !important; height: 100% !important; max-height: 100vh !important; border-radius: 0 !important; }
   .modal-overlay { padding: 0 !important; }
 }
+
+/* --- Descrição Expandível --- */
+.promo-card__description-container {
+  margin-bottom: 2rem;
+  flex-grow: 1;
+}
+
+.promo-card__description {
+  color: var(--p-text-light);
+  font-size: 1rem;
+  line-height: 1.6;
+  margin: 0 0 0.8rem 0;
+}
+
+.promo-card__description--expanded {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.btn-expand-description {
+  background: none;
+  border: none;
+  color: var(--p-red);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.btn-expand-description:hover {
+  color: var(--p-red-dark);
+  text-decoration: underline;
+}
