@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import { Plus, X, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
-
-import axios from "axios";
+import { http } from "../services/http.js";
 
 export default function CadastroEndereco() {
   const [mostrarModal, setMostrarModal] = useState(false);
@@ -110,11 +109,7 @@ export default function CadastroEndereco() {
         longitude: -46.6333,
       };
 
-      const response = await axios.post("http://localhost:8080/address", body, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
-        },
-      });
+      const response = await http.post("/address", body);
 
       console.log(response);
       if (response.status == 201) {

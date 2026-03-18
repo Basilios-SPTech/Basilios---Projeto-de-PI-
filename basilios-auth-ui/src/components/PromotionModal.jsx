@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
-import axios from "axios";
 import toast from "react-hot-toast";
+import { http } from "../services/http.js";
 
 export default function PromotionModal({ product, isOpen, onClose, onSuccess }) {
   const [title, setTitle] = useState("");
@@ -61,11 +61,7 @@ export default function PromotionModal({ product, isOpen, onClose, onSuccess }) 
 
       console.log("Enviando promoção:", promotionData);
 
-      await axios.post("http://localhost:8080/promotions", promotionData, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
-        },
-      });
+      await http.post("/promotions", promotionData);
 
       toast.success("Promoção criada com sucesso!");
       onSuccess?.();

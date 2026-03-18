@@ -13,10 +13,10 @@ import {
   Edit,
 } from "lucide-react";
 
-import axios from "axios";
 import AddAddress from "./AddAddress";
 import ProgressBar from "./loading/ProgressBar";
 import CustomizeBurger from "./CustomizeBurger";
+import { http } from "../services/http.js";
 
 const CHAVE_CART = "carrinho-basilios";
 
@@ -97,19 +97,19 @@ export default function Checkout() {
       observations: "",
     };
 
-    let req = await axios.post("http://localhost:8080/orders", body, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
-      },
-    });
+    let req = await http.post("/orders", body);
 
     let lastOrderId = req.data.id;
     localStorage.setItem("lastOrderId", lastOrderId);
 
     if (formaPagamento == "pix") {
-      let abacatePayReq = await axios.post(
-        "/api/abacate/v1/pixQrCode/create",
-        {
+      const abacatePayResp = await fetch("/api/abacate/v1/pixQrCode/create", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer abc_dev_J24NemeHukwqGwfe2bj63G2q",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
           amount: 3100,
           expiresIn: 600,
           description: "Pedido teste",
@@ -122,21 +122,22 @@ export default function Checkout() {
           metadata: {
             externalId: lastOrderId,
           },
-        },
-        {
-          headers: {
-            Authorization: `Bearer abc_dev_J24NemeHukwqGwfe2bj63G2q`,
-          },
-        },
-      );
+        }),
+      });
 
-      localStorage.setItem("qrCode", abacatePayReq.data.data.brCodeBase64);
-      localStorage.setItem("brCode", abacatePayReq.data.data.brCode);
-      localStorage.setItem("pixId", abacatePayReq.data.data.id);
+      if (!abacatePayResp.ok) {
+        throw new Error("Falha ao gerar QR Code PIX");
+      }
 
-      console.log(abacatePayReq);
-      console.log(abacatePayReq.data.data.brCodeBase64);
-      console.log(abacatePayReq.data.data.brCode);
+      const abacatePayData = await abacatePayResp.json();
+
+      localStorage.setItem("qrCode", abacatePayData.data.brCodeBase64);
+      localStorage.setItem("brCode", abacatePayData.data.brCode);
+      localStorage.setItem("pixId", abacatePayData.data.id);
+
+      console.log(abacatePayData);
+      console.log(abacatePayData.data.brCodeBase64);
+      console.log(abacatePayData.data.brCode);
 
       setTimeout(() => {
         navigate("/pix-checkout");
@@ -167,11 +168,7 @@ export default function Checkout() {
     try {
       async function getEnderecos() {
         try {
-          const response = await axios.get("http://localhost:8080/address", {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
-            },
-          });
+          const response = await http.get("/address");
 
           setEndUser(response.data);
         } catch (err) {
