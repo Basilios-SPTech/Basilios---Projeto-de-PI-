@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { X, Sliders, Minus, Plus } from "lucide-react";
 
 export default function CustomizeBurger({ item, onClose, onSave }) {
@@ -144,6 +144,36 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
       return newState;
     });
   };
+
+  // Calcula o preço final atualizado em tempo real
+  const finalPrice = useMemo(() => {
+    const extraIngredientsPrice = Object.entries(ingredientQuantities)
+      .reduce((acc, [id, qty]) => {
+        const ingredient = ingredients.find((i) => i.id === parseInt(id));
+        return acc + ((ingredient?.price || 0) * qty);
+      }, 0);
+
+    const extraSaucesPrice = Object.entries(sauceQuantities)
+      .reduce((acc, [id, qty]) => {
+        const sauce = saucesAvailable.find((s) => s.id === parseInt(id));
+        return acc + ((sauce?.price || 0) * qty);
+      }, 0);
+
+    const extraDrinksPrice = Object.entries(drinkQuantities)
+      .reduce((acc, [id, qty]) => {
+        const drink = drinks.find((d) => d.id === parseInt(id));
+        return acc + ((drink?.price || 0) * qty);
+      }, 0);
+
+    const breadPrice =
+      selectedBreadId != null
+        ? breads.find((b) => b.id === selectedBreadId)?.price || 0
+        : 0;
+
+    const basePrice = item.preco ?? item.price ?? 0;
+
+    return basePrice + extraIngredientsPrice + extraSaucesPrice + extraDrinksPrice + breadPrice;
+  }, [ingredientQuantities, sauceQuantities, drinkQuantities, selectedBreadId, item]);
 
   return (
     <>
@@ -416,6 +446,16 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
 
           {/* Footer */}
           <div className="border-t border-gray-200 p-6 bg-gray-50">
+            {/* Exibição do preço total */}
+            <div className="mb-4 p-4 bg-white rounded-lg border border-gray-200">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600 font-semibold">Preço Total:</span>
+                <span className="text-2xl font-bold text-red-600">
+                  R$ {finalPrice.toFixed(2).replace(".", ",")}
+                </span>
+              </div>
+            </div>
+
             <button
               onClick={() => {
                 // Converter quantidades para arrays de nomes (para exibição)
@@ -430,41 +470,6 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
                     const sauce = saucesAvailable.find((s) => s.id === parseInt(id));
                     return Array(qty).fill(sauce?.name || "");
                   });
-
-                // Soma dos adicionais selecionados
-                const extraIngredientsPrice = Object.entries(ingredientQuantities)
-                  .reduce((acc, [id, qty]) => {
-                    const ingredient = ingredients.find((i) => i.id === parseInt(id));
-                    return acc + ((ingredient?.price || 0) * qty);
-                  }, 0);
-
-                const extraSaucesPrice = Object.entries(sauceQuantities)
-                  .reduce((acc, [id, qty]) => {
-                    const sauce = saucesAvailable.find((s) => s.id === parseInt(id));
-                    return acc + ((sauce?.price || 0) * qty);
-                  }, 0);
-
-                const extraDrinksPrice = Object.entries(drinkQuantities)
-                  .reduce((acc, [id, qty]) => {
-                    const drink = drinks.find((d) => d.id === parseInt(id));
-                    return acc + ((drink?.price || 0) * qty);
-                  }, 0);
-
-                const breadPrice =
-                  selectedBreadId != null
-                    ? breads.find((b) => b.id === selectedBreadId)?.price || 0
-                    : 0;
-
-                // Preço base do produto (tanto preco quanto price)
-                const basePrice = item.preco ?? item.price ?? 0;
-
-                // Preço final do produto personalizado
-                const finalPrice =
-                  basePrice +
-                  extraIngredientsPrice +
-                  extraSaucesPrice +
-                  extraDrinksPrice +
-                  breadPrice;
 
                 // Criar objeto com preços dos ingredientes para referência futura
                 const ingredientPrices = {};
@@ -490,6 +495,12 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
                     saucePrices[id] = sauce.price;
                   }
                 });
+
+                const basePrice = item.preco ?? item.price ?? 0;
+                const breadPrice =
+                  selectedBreadId != null
+                    ? breads.find((b) => b.id === selectedBreadId)?.price || 0
+                    : 0;
 
                 const customItem = {
                   ...item,

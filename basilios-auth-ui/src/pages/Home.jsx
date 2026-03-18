@@ -51,6 +51,7 @@ export default function Home() {
   const [cartCount, setCartCount] = useState(0);
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [productToCustomize, setProductToCustomize] = useState(null);
+  const [promoAtual, setPromoAtual] = useState(null);
 
   // 🔥 Buscar promoções ativas
   useEffect(() => {
@@ -451,21 +452,32 @@ export default function Home() {
     window.dispatchEvent(new Event("cartUpdated"));
   }
 
-  function handleCustomize(produto) {
-    setProductToCustomize(produto);
+  function handleCustomize(produto, promoAtive = null) {
+    // Se houver promoção ativa, ajusta o preço do produto antes de customizar
+    const produtoComPreco = promoAtive 
+      ? {
+          ...produto,
+          preco: Number(produto.preco || 0) - Number(promoAtive.discountAmount || 0)
+        }
+      : produto;
+    
+    setProductToCustomize(produtoComPreco);
+    setPromoAtual(promoAtive);
     setIsCustomizing(true);
   }
 
   function handleSaveCustomization(customItem) {
-    // O item customizado já contém o produto original e as opções de customização
+    // O item customizado já contém o preço correto (com ou sem desconto)
     addToCart(productToCustomize, { isCustom: true, ...customItem });
     setIsCustomizing(false);
     setProductToCustomize(null);
+    setPromoAtual(null);
   }
 
   function handleCloseCustomization() {
     setIsCustomizing(false);
     setProductToCustomize(null);
+    setPromoAtual(null);
   }
 
   return (
@@ -531,9 +543,6 @@ export default function Home() {
 
                     <div className="hp-card__body">
                       <h3 className="hp-card__title">{promo.title}</h3>
-                      <p style={{ fontSize: "0.9rem", color: "#666", marginBottom: "8px" }}>
-                        {promo.description}
-                      </p>
                       {produtoPromo?.descricao && (
                         <ExpandableDesc text={produtoPromo.descricao} />
                       )}
@@ -550,7 +559,7 @@ export default function Home() {
                       </div>
                       <button
                         className="btn btn-primary hp-add"
-                        onClick={() => produtoPromo && handleCustomize(produtoPromo)}
+                        onClick={() => produtoPromo && handleCustomize(produtoPromo, promo)}
                       >
                         Adicionar
                       </button>
