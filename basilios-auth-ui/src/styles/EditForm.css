@@ -1,168 +1,206 @@
-  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap');
 
-/* Fundo escurecido */
-.modal {
+.profile-edit-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  z-index: 1200;
   display: flex;
-  justify-content: center;
   align-items: center;
-  z-index: 50;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(11, 16, 24, 0.56);
+  backdrop-filter: blur(4px);
 }
 
-/* Caixa do modal com efeito glass */
-.modal-content {
-  width: min(560px, 94vw);
-  padding: 0.9rem 0.9rem;
-  max-height: calc(100vh - 96px);
-  /* extra top space so modal sits lower on the screen */
-  margin-top: 64px; /* increased as requested */
+.profile-edit-modal {
+  width: min(640px, 96vw);
+  max-height: min(84vh, 760px);
   overflow-y: auto;
-  background: #fff; /* white modal background */
-  backdrop-filter: blur(8px);
-  border-radius: 14px;
-  box-shadow: 0 0 25px rgba(255, 255, 255, 0.1);
-  color: #111; /* dark text */
+  border-radius: 18px;
+  background: #ffffff;
+  color: #111827;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.25);
   font-family: 'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-  animation: zoomIn 0.15s ease;
 }
 
-/* Título */
-.modal-title {
+.profile-edit-zoom-in {
+  animation: profileEditZoomIn 0.18s ease-out;
+}
+
+.profile-edit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.1rem;
+  border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 1;
+}
+
+.profile-edit-title {
+  margin: 0;
   font-size: 1.05rem;
-  text-align: center;
-  margin-bottom: 0.6rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.profile-edit-close {
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 1.15rem;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.profile-edit-close:hover {
+  background: rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+}
+
+.profile-edit-form {
+  padding: 1.1rem;
+  display: grid;
+  gap: .85rem;
+}
+
+.profile-edit-label {
+  display: grid;
+  gap: .35rem;
+}
+
+.profile-edit-field-title {
+  font-size: .82rem;
   font-weight: 700;
-  color: #111;
+  letter-spacing: .01em;
+  color: #334155;
 }
 
-/* Colunas alinhadas */
-.form-container {
+.profile-edit-input-with-lock {
   display: flex;
-  flex-direction: column;
-  gap: 0.28rem; /* even tighter vertical spacing */
+  align-items: center;
+  gap: .55rem;
 }
 
-/* Labels */
-.form-label {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 0.9rem;
-  color: #222;
-}
-
-/* field title inside label */
-.field-title{ display:block; font-weight:600; color:#111; margin-bottom:2px }
-
-/* Inputs */
-  .form-input {
+.profile-edit-input {
   width: 100%;
-  background: #fff; /* input background white */
-  padding: 0.35rem 0.45rem; /* smaller input height to reduce form height */
+  height: 44px;
+  border-radius: 10px;
+  border: 1px solid #dbe1ea;
+  background: #fff;
+  color: #111827;
+  font-size: .97rem;
+  font-weight: 600;
+  padding: 0 .8rem;
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+
+.profile-edit-input:focus {
+  outline: none;
+  border-color: #bb3530;
+  box-shadow: 0 0 0 3px rgba(187, 53, 48, .16);
+}
+
+.profile-edit-input:disabled {
+  background: #f8fafc;
+  color: #475569;
+}
+
+.profile-edit-lock-icon {
+  width: 28px;
+  height: 28px;
   border-radius: 8px;
-  color: #111; /* input text should be dark on white background */
-  caret-color: #7a1f1b;
-  border: 1px solid rgba(187,53,48,0.12); /* subtle red border */
-  transition: border 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #8b1d18;
+  background: rgba(187, 53, 48, .09);
+  border: 1px solid rgba(187, 53, 48, .15);
+  font-size: .78rem;
 }
 
-.form-input::placeholder{ color: rgba(0,0,0,0.45) }
-
-/* lock icon */
-.input-with-lock{ display:flex; align-items:center; gap:8px }
-.lock-icon{ display:inline-flex; align-items:center; justify-content:center; min-width:26px; height:26px; color:#7a1f1b; border-radius:6px; background: rgba(187,53,48,0.06); border: 1px solid rgba(187,53,48,0.08); font-size:12px }
-
-.form-input:focus {
-  border-color: rgba(187,53,48,0.9);
-  box-shadow: 0 6px 18px rgba(187,53,48,0.08);
-}
-
-/* removed photo preview styling (photo removed) */
-
-/* Botões */
-.modal-buttons {
+.profile-edit-actions {
+  margin-top: .4rem;
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
-  margin-top: 0.5rem; /* bring buttons closer to inputs */
+  gap: .65rem;
 }
 
-.save-btn {
-  background: #7a1f1b; /* dark red */
-  padding: 0.36rem 0.9rem;
+.profile-edit-cancel,
+.profile-edit-save {
   border: none;
+  border-radius: 10px;
+  height: 40px;
+  min-width: 108px;
+  padding: 0 .95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.profile-edit-cancel {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.profile-edit-cancel:hover {
+  background: #e2e8f0;
+}
+
+.profile-edit-save {
+  background: #bb3530;
   color: #fff;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: 0.2s;
 }
 
-.save-btn:hover { filter: brightness(.95) }
-
-.cancel-btn {
-  background: transparent;
-  padding: 0.38rem 0.85rem;
-  border: none;
-  color: #7a1f1b;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: 0.2s;
+.profile-edit-save:hover {
+  filter: brightness(0.97);
 }
 
-.cancel-btn:hover {
-  background: rgba(187,53,48,0.06);
-}
-
-/* Animação do modal */
-@keyframes zoomIn {
+@keyframes profileEditZoomIn {
   from {
-    transform: scale(0.88);
+    transform: translateY(8px) scale(0.97);
     opacity: 0;
   }
   to {
-    transform: scale(1);
+    transform: translateY(0) scale(1);
     opacity: 1;
   }
 }
 
-/* ------------------
-   Responsive adjustments
-   ------------------ */
 @media (max-width: 640px) {
-  .modal-content {
-    width: min(92vw, 520px);
-    padding: 0.65rem 0.6rem;
-    margin-top: 48px;
-    border-radius: 12px;
-    max-height: calc(100vh - 48px);
+  .profile-edit-overlay {
+    padding: 12px;
   }
 
-  .modal-title { font-size: 1rem; margin-bottom: 0.45rem }
-
-  .form-container { gap: 0.22rem }
-  .form-label { font-size: 0.88rem; gap: 3px }
-  .form-input { padding: 0.35rem 0.5rem; border-radius: 8px }
-
-  .modal-buttons { gap: 8px; margin-top: 0.4rem }
-  .save-btn, .cancel-btn { padding: 0.38rem 0.8rem; font-size: 13px }
-}
-
-@media (max-width: 420px) {
-  /* mobile: full width with compact layout */
-  .modal-content {
-    width: 94vw;
-    padding: 0.5rem 0.55rem;
-    margin-top: 24px;
-    border-radius: 10px;
-    max-height: calc(100vh - 24px);
+  .profile-edit-modal {
+    width: 100%;
+    max-height: 88vh;
+    border-radius: 14px;
   }
 
-  .modal-title { font-size: 0.98rem }
+  .profile-edit-header {
+    padding: .85rem .9rem;
+  }
 
-  /* stack buttons full width on small screens for easier tapping */
-  .modal-buttons { display: flex; flex-direction: column-reverse; gap: 8px; margin-top: 0.35rem }
-  .modal-buttons button { width: 100%; display: block }
-  .save-btn { margin: 0 }
+  .profile-edit-title {
+    font-size: 1rem;
+  }
+
+  .profile-edit-form {
+    padding: .9rem;
+    gap: .75rem;
+  }
+
+  .profile-edit-actions {
+    flex-direction: column-reverse;
+  }
+
+  .profile-edit-cancel,
+  .profile-edit-save {
+    width: 100%;
+  }
 }

@@ -39,7 +39,7 @@ export default function CadastroEndereco() {
       const data = await response.json();
 
       if (data.erro) {
-        alert("CEP não encontrado!");
+        toast.error("CEP não encontrado!");
         setCarregandoCep(false);
         return;
       }
@@ -53,7 +53,7 @@ export default function CadastroEndereco() {
       }));
     } catch (error) {
       console.error("Erro ao buscar CEP:", error);
-      alert("Erro ao buscar CEP. Tente novamente.");
+      toast.error("Erro ao buscar CEP. Tente novamente.");
     } finally {
       setCarregandoCep(false);
     }
@@ -112,12 +112,12 @@ export default function CadastroEndereco() {
       const response = await http.post("/address", body);
 
       console.log(response);
-      if (response.status == 201) {
+      if (response.status >= 200 && response.status < 300) {
         toast.success("Endereço cadastrado com sucesso", { duration: 3000 });
+        setMostrarModal(false);
         setTimeout(() => {
-          setMostrarModal(false);
           window.location.reload();
-        }, 3500);
+        }, 800);
       } else {
         toast.error("Erro ao cadastrar endereço");
       }
@@ -133,7 +133,12 @@ export default function CadastroEndereco() {
       });
     } catch (error) {
       console.error("Erro ao salvar endereço:", error);
-      alert("Erro ao salvar endereço. Tente novamente.");
+      const backendMessage =
+        error?.response?.data?.message ||
+        error?.data?.message ||
+        error?.message ||
+        "Erro ao salvar endereço. Tente novamente.";
+      toast.error(backendMessage);
     } finally {
       setEnviando(false);
     }

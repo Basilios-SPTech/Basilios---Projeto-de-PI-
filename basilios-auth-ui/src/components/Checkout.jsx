@@ -26,9 +26,21 @@ export default function Checkout() {
   const [endUser, setEndUser] = useState([]);
   const [itens, setItens] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [deletingAddress, setDeletingAddress] = useState(false);
+  const [addressToDelete, setAddressToDelete] = useState(null);
   const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const navigate = useNavigate();
+
+  const getAddressLabel = (endereco) => {
+    if (endereco?.enderecoCompleto) return endereco.enderecoCompleto;
+    const rua = endereco?.rua || "";
+    const numero = endereco?.numero || "S/N";
+    const bairro = endereco?.bairro || "";
+    const cidade = endereco?.cidade || "";
+    const estado = endereco?.estado || "";
+    return `${rua}, ${numero} - ${bairro} - ${cidade}/${estado}`.replace(/\s+-\s+-/g, " -");
+  };
 
   const calcularSubtotal = () => {
     return itens.reduce((total, item) => total + item.preco * item.qtd, 0);
@@ -56,6 +68,47 @@ export default function Checkout() {
   const editarItem = (item) => {
     setSelectedItem(item);
     setIsCustomizeOpen(true);
+  };
+
+  const openDeleteAddressModal = (endereco, event) => {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    setAddressToDelete(endereco);
+  };
+
+  const closeDeleteAddressModal = () => {
+    if (deletingAddress) return;
+    setAddressToDelete(null);
+  };
+
+  const confirmDeleteAddress = async () => {
+    const id = Number(addressToDelete?.id);
+    if (!id) {
+      toast.error("Endereço inválido para exclusão.");
+      setAddressToDelete(null);
+      return;
+    }
+
+    setDeletingAddress(true);
+    try {
+      await http.delete(`/address/${id}`);
+      const updated = endUser.filter((endereco) => Number(endereco.id) !== id);
+      setEndUser(updated);
+
+      if (Number(enderecoSelecionado) === id) {
+        setEnderecoSelecionado(updated.length > 0 ? String(updated[0].id) : "");
+      }
+
+      setAddressToDelete(null);
+      toast.success("Endereço excluído com sucesso.");
+    } catch (err) {
+      console.error("Erro ao excluir endereço:", err);
+      toast.error(err?.message || "Não foi possível excluir o endereço.");
+    } finally {
+      setDeletingAddress(false);
+    }
   };
 
   const sanitizeImageUrl = (url) => {
@@ -206,7 +259,9 @@ export default function Checkout() {
           <div className="lg:col-span-2 space-y-6">
             {/* Revisão dos Itens */}
             <div className="bg-white rounded-lg p-4 md:p-6 shadow-md">
-              <h2 className="text-lg md:text-xl font-semibold mb-4">Itens do Pedido</h2>
+              <div className="pb-6 md:pb-8">
+                <h2 className="text-lg md:text-xl font-semibold">Itens do Pedido</h2>
+              </div>
               <div className="space-y-4">
                 {itens.map((item) => (
                   <div
@@ -324,10 +379,12 @@ export default function Checkout() {
 
             {/* Endereço de Entrega */}
             <div className="bg-white rounded-lg p-4 md:p-6 shadow-md">
-              <h2 className="text-lg md:text-xl font-semibold mb-4 flex items-center gap-2">
-                <MapPin size={22} className="shrink-0" />
-                Endereço de Entrega
-              </h2>
+              <div className="pb-6 md:pb-8">
+                <h2 className="text-lg md:text-xl font-semibold flex items-center gap-2">
+                  <MapPin size={22} className="shrink-0" />
+                  Endereço de Entrega
+                </h2>
+              </div>
               <div className="space-y-3">
                 {endUser.map((endereco) => (
                   <label
@@ -346,26 +403,42 @@ export default function Checkout() {
                       onChange={(e) => setEnderecoSelecionado(e.target.value)}
                       className="hidden"
                     />
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-1 ${
-                          enderecoSelecionado === endereco.id
-                            ? "border-white"
-                            : "border-gray-400"
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                            Number(enderecoSelecionado) === endereco.id
+                              ? "border-white"
+                              : "border-gray-400"
+                          }`}
+                        >
+                          {Number(enderecoSelecionado) === endereco.id && (
+                            <div className="w-3 h-3 bg-white rounded-full"></div>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-sm md:text-base leading-none truncate">
+                            {getAddressLabel(endereco)}
+                          </p>
+                          <p
+                            className={`text-sm ${Number(enderecoSelecionado) === endereco.id ? "text-gray-300" : "text-gray-600"}`}
+                          ></p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={(e) => openDeleteAddressModal(endereco, e)}
+                        className={`shrink-0 p-2 rounded-md transition-colors ${
+                          Number(enderecoSelecionado) === endereco.id
+                            ? "hover:bg-gray-700 text-gray-200"
+                            : "hover:bg-red-50 text-red-600"
                         }`}
+                        title="Excluir endereço"
+                        aria-label="Excluir endereço"
                       >
-                        {enderecoSelecionado === endereco.id && (
-                          <div className="w-3 h-3 bg-white rounded-full"></div>
-                        )}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-sm md:text-base">
-                          {endereco.enderecoCompleto}
-                        </p>
-                        <p
-                          className={`text-sm ${enderecoSelecionado == endereco.id ? "text-gray-300" : "text-gray-600"}`}
-                        ></p>
-                      </div>
+                        <Trash2 size={18} />
+                      </button>
                     </div>
                   </label>
                 ))}
@@ -376,10 +449,12 @@ export default function Checkout() {
 
             {/* Forma de Pagamento */}
             <div className="bg-white rounded-lg p-4 md:p-6 shadow-md">
-              <h2 className="text-lg md:text-xl font-semibold mb-4 flex items-center gap-2">
-                <Banknote size={22} className="shrink-0" />
-                Forma de Pagamento
-              </h2>
+              <div className="pb-6 md:pb-8">
+                <h2 className="text-lg md:text-xl font-semibold flex items-center gap-2">
+                  <Banknote size={22} className="shrink-0" />
+                  Forma de Pagamento
+                </h2>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <button
                   onClick={() => setFormaPagamento("pix")}
@@ -457,10 +532,17 @@ export default function Checkout() {
 
               <button
                 onClick={endOrder}
-                className="cursor-pointer w-full bg-red-600 hover:bg-red-700 text-white py-3 md:py-4 rounded-lg font-semibold text-base md:text-lg transition-colors"
+                disabled={!Array.isArray(itens) || itens.length === 0 || submitting}
+                className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed text-white py-3 md:py-4 rounded-lg font-semibold text-base md:text-lg transition-colors"
               >
                 Finalizar Pedido
               </button>
+
+              {(!Array.isArray(itens) || itens.length === 0) && (
+                <p className="mt-2 text-xs text-amber-600 text-center font-medium">
+                  Adicione itens ao pedido para liberar a finalização.
+                </p>
+              )}
 
               <div className="mt-4 text-center text-sm text-gray-400">
                 <p>🔒 Pagamento seguro</p>
@@ -470,6 +552,39 @@ export default function Checkout() {
           </div>
         </div>
       </div>
+
+      {addressToDelete && (
+        <div className="fixed inset-0 z-[1000] bg-black/50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-lg bg-white shadow-xl p-5">
+            <h3 className="text-lg font-semibold text-gray-900">Excluir endereço</h3>
+            <p className="mt-2 text-sm text-gray-600 break-words">
+              Tem certeza que deseja excluir este endereço?
+            </p>
+            <p className="mt-2 text-sm font-medium text-gray-800 break-words">
+              {getAddressLabel(addressToDelete)}
+            </p>
+
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeDeleteAddressModal}
+                disabled={deletingAddress}
+                className="px-4 py-2 rounded-md bg-gray-200 text-gray-800 hover:bg-gray-300 disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteAddress}
+                disabled={deletingAddress}
+                className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
+              >
+                {deletingAddress ? "Excluindo..." : "Excluir"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ProgressBar visible={submitting} message="Processando seu pedido..." />
 

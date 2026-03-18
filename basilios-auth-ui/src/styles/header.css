@@ -27,6 +27,7 @@
   align-items: center;
   width: 100%;
   gap: 2rem;
+  padding-top: .15rem;
 }
 
 /* botão icon (menu / user) */
@@ -134,7 +135,7 @@
   .logo-container { display: none !important; }
   .search-wrapper { width: 200px !important; }
   .search-input { font-size: .85rem !important; }
-  .header-grid { gap: 1rem !important; }
+  .header-grid { gap: 1rem !important; min-height: 58px !important; padding-top: .2rem !important; }
   .menu-item { font-size: .9rem; padding: .9rem 1.2rem; }
 }
 @media (max-width: 480px) {
@@ -145,7 +146,7 @@
   .icon-button { padding: .3rem !important; }
   .icon-button svg { width: 24px !important; height: 24px !important; }
   .search-icon { width: 16px !important; height: 16px !important; }
-  .header-grid { gap: .5rem !important; }
+  .header-grid { gap: .5rem !important; min-height: 54px !important; padding-top: .15rem !important; }
   .center-content { gap: .5rem !important; }
   .menu-item { font-size: .85rem; padding: .8rem 1rem; }
 }
