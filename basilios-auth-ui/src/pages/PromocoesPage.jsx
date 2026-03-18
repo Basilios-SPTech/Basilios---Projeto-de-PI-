@@ -89,17 +89,80 @@ export default function PromocoesPage() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+
+    if (name === "finalPrice") {
+      const digits = String(value || "").replace(/\D/g, "");
+      const formatted = digits
+        ? (Number(digits) / 100).toLocaleString("pt-BR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })
+        : "";
+
+      setFormData((prev) => ({
+        ...prev,
+        [name]: formatted,
+      }));
+      return;
+    }
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
   };
 
+  const parseCurrencyInput = (input) => {
+    const normalized = String(input || "")
+      .replace(/\s/g, "")
+      .replace(/\./g, "")
+      .replace(",", ".")
+      .replace(/[^\d.-]/g, "");
+
+    const n = Number(normalized);
+    return Number.isFinite(n) ? n : NaN;
+  };
+
+  const parseMoneyValue = (value) => {
+    const normalized = String(value ?? "")
+      .replace(/\s/g, "")
+      .replace(/R\$/gi, "")
+      .replace(/\./g, "")
+      .replace(",", ".")
+      .replace(/[^\d.-]/g, "");
+
+    const n = Number(normalized);
+    return Number.isFinite(n) ? n : NaN;
+  };
+
+  const toSafeMoney = (value) => {
+    const n = parseMoneyValue(value);
+    return Number.isFinite(n) ? n : 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const finalPriceNum = parseCurrencyInput(formData.finalPrice);
+    const precoProdutoSelecionado = parseMoneyValue(
+      getProdutoPreco(parseInt(formData.productId))
+    );
+
     if (!formData.productId || !formData.finalPrice || !formData.startDate || !formData.endDate) {
       toast.error("Preencha todos os campos");
+      return;
+    }
+
+    if (!Number.isFinite(finalPriceNum) || finalPriceNum <= 0) {
+      toast.error("Informe um preço final válido");
+      return;
+    }
+
+    if (
+      Number.isFinite(precoProdutoSelecionado) &&
+      finalPriceNum > precoProdutoSelecionado
+    ) {
+      toast.error("O preço final não pode ser maior que o preço atual do produto");
       return;
     }
 
@@ -112,15 +175,16 @@ export default function PromocoesPage() {
 
     try {
       const produtoSelecionado = produtos.find(p => p.id === parseInt(formData.productId));
-      const precoOriginal = produtoSelecionado?.price ?? produtoSelecionado?.preco ?? 0;
-      const desconto = parseFloat(precoOriginal) - parseFloat(formData.finalPrice);
+      const precoOriginalRaw = produtoSelecionado?.price ?? produtoSelecionado?.preco ?? 0;
+      const precoOriginal = parseMoneyValue(precoOriginalRaw);
+      const desconto = precoOriginal - finalPriceNum;
 
       const payload = {
         title: produtoSelecionado?.name || produtoSelecionado?.nome || "",
         description: produtoSelecionado?.description || produtoSelecionado?.descricao || "",
         productIds: [parseInt(formData.productId)],
         discountAmount: desconto,
-        finalPrice: parseFloat(formData.finalPrice),
+        finalPrice: finalPriceNum,
         startDate: formData.startDate.split("T")[0],
         endDate: formData.endDate.split("T")[0],
         isActive: true,
@@ -187,8 +251,23 @@ export default function PromocoesPage() {
   };
 
   const calcularPrecoComDesconto = (precoOrigin, desconto) => {
-    return (parseFloat(precoOrigin) - parseFloat(desconto)).toFixed(2);
+    return (toSafeMoney(precoOrigin) - toSafeMoney(desconto)).toFixed(2);
   };
+
+  const finalPricePreview = parseCurrencyInput(formData.finalPrice);
+  const hasValidFinalPricePreview = Number.isFinite(finalPricePreview);
+  const selectedProductPrice = formData.productId
+    ? parseMoneyValue(getProdutoPreco(parseInt(formData.productId)))
+    : NaN;
+  const hasPriceAboveProduct =
+    hasValidFinalPricePreview &&
+    Number.isFinite(selectedProductPrice) &&
+    finalPricePreview > selectedProductPrice;
+
+  const hasInvalidDateRange =
+    !!formData.startDate &&
+    !!formData.endDate &&
+    new Date(formData.startDate) >= new Date(formData.endDate);
 
   return (
     <div className="promocoes-page">
@@ -198,7 +277,7 @@ export default function PromocoesPage() {
         <div className="promocoes-header">
           <div>
             <h1>Promoções</h1>
-            <p style={{ margin: "0.25rem 0 0 0", color: "#666", fontSize: "0.95rem" }}>
+            <p className="promocoes-subtitle">
               Gerencie todas as promoções do Basilios
             </p>
           </div>
@@ -215,21 +294,21 @@ export default function PromocoesPage() {
           <div className="empty-state">
             {erroCarregamento ? (
               <>
-                <p style={{ fontSize: "2rem", marginBottom: "1rem" }}>⚠️</p>
+                <p className="empty-state__icon" aria-hidden="true">!</p>
                 <p>Erro ao carregar promoções do servidor.</p>
-                <p style={{ fontSize: "0.9rem", color: "#636e72", marginBottom: "1.5rem" }}>
+                <p className="empty-state__hint">
                   O backend pode estar indisponível. Tente novamente em alguns instantes.
                 </p>
                 <button
                   onClick={() => carregarPromocoes()}
                   className="btn btn-primary"
                 >
-                  🔄 Tentar Novamente
+                  Tentar Novamente
                 </button>
               </>
             ) : (
               <>
-                <p>🎉 Nenhuma promoção cadastrada ainda.</p>
+                <p>Nenhuma promoção cadastrada ainda.</p>
                 <button
                   onClick={() => handleOpenModal()}
                   className="btn btn-primary"
@@ -314,23 +393,25 @@ export default function PromocoesPage() {
                   {(() => {
                     const precoOriginal = getProdutoPreco(promo.productId);
                     const precoComDesconto = calcularPrecoComDesconto(precoOriginal, promo.discountAmount);
+                    const precoOriginalNum = toSafeMoney(precoOriginal);
+                    const descontoNum = toSafeMoney(promo.discountAmount);
                     return (
                       <>
                         <div className="detail">
                           <span className="label">Preço Original:</span>
-                          <span className="value" style={{color: "#333", fontWeight: "500"}}>
-                            R$ {parseFloat(precoOriginal).toFixed(2).replace(".", ",")}
+                          <span className="value value--original">
+                            R$ {precoOriginalNum.toFixed(2).replace(".", ",")}
                           </span>
                         </div>
                         <div className="detail">
                           <span className="label">Desconto:</span>
-                          <span className="value" style={{color: "#27ae60", fontWeight: "bold"}}>
-                            − R$ {parseFloat(promo.discountAmount).toFixed(2).replace(".", ",")}
+                          <span className="value value--discount" style={{ color: "#bb3530" }}>
+                            − R$ {descontoNum.toFixed(2).replace(".", ",")}
                           </span>
                         </div>
                         <div className="detail">
                           <span className="label">Preço com Desconto:</span>
-                          <span className="value" style={{color: "#bb3530", fontSize: "1.1em", fontWeight: "bold"}}>
+                          <span className="value value--final" style={{ color: "#1f7a3f" }}>
                             R$ {precoComDesconto.replace(".", ",")}
                           </span>
                         </div>
@@ -365,7 +446,7 @@ export default function PromocoesPage() {
             <div className="modal__header">
               <div>
                 <h2>{editingId ? "Editar Promoção" : "Criar Nova Promoção"}</h2>
-                <p style={{ margin: "0.5rem 0 0 0", color: "rgba(255,255,255,0.8)", fontSize: "0.9rem" }}>
+                <p className="modal__subtitle">
                   {editingId ? "Atualize os detalhes da promoção" : "Preencha os dados para criar uma nova promoção"}
                 </p>
               </div>
@@ -381,7 +462,7 @@ export default function PromocoesPage() {
             <form onSubmit={handleSubmit} className="modal__form">
               <div className="form-group">
                 <label className="form-label">
-                  🎁 Produto
+                  Produto
                 </label>
                 <select
                   name="productId"
@@ -408,10 +489,9 @@ export default function PromocoesPage() {
                     </label>
                     <input
                       type="text"
-                      value={`R$ ${parseFloat(getProdutoPreco(parseInt(formData.productId))).toFixed(2).replace(".", ",")}`}
+                      value={`R$ ${toSafeMoney(getProdutoPreco(parseInt(formData.productId))).toFixed(2).replace(".", ",")}`}
                       disabled
-                      className="form-input"
-                      style={{ backgroundColor: "#f0f0f0" }}
+                      className="form-input form-input--readonly"
                     />
                   </div>
 
@@ -421,18 +501,23 @@ export default function PromocoesPage() {
                       Preço Final (com desconto)
                     </label>
                     <input
-                      type="number"
-                      step="0.01"
+                      type="text"
+                      inputMode="decimal"
                       name="finalPrice"
                       value={formData.finalPrice}
                       onChange={handleInputChange}
-                      placeholder="Ex: 20.00"
+                      placeholder="Ex: 20,00"
                       disabled={loading}
-                      className="form-input"
+                      className={`form-input ${hasPriceAboveProduct ? "form-input--invalid" : ""}`}
                     />
-                    {formData.finalPrice && (
-                      <p style={{ fontSize: "0.85rem", color: "#27ae60", marginTop: "0.5rem" }}>
-                        Desconto: R$ {(parseFloat(getProdutoPreco(parseInt(formData.productId))) - parseFloat(formData.finalPrice)).toFixed(2).replace(".", ",")}
+                    {hasPriceAboveProduct && (
+                      <p className="form-help form-help--error">
+                        O preço final não pode ser maior que o preço atual.
+                      </p>
+                    )}
+                    {formData.finalPrice && hasValidFinalPricePreview && (
+                      <p className="form-help form-help--discount">
+                        Desconto: R$ {(toSafeMoney(getProdutoPreco(parseInt(formData.productId))) - finalPricePreview).toFixed(2).replace(".", ",")}
                       </p>
                     )}
                   </div>
@@ -450,7 +535,8 @@ export default function PromocoesPage() {
                   value={formData.startDate}
                   onChange={handleInputChange}
                   disabled={loading}
-                  className="form-input"
+                  max={formData.endDate || undefined}
+                  className={`form-input ${hasInvalidDateRange ? "form-input--invalid" : ""}`}
                 />
               </div>
 
@@ -465,8 +551,14 @@ export default function PromocoesPage() {
                   value={formData.endDate}
                   onChange={handleInputChange}
                   disabled={loading}
-                  className="form-input"
+                  min={formData.startDate || undefined}
+                  className={`form-input ${hasInvalidDateRange ? "form-input--invalid" : ""}`}
                 />
+                {hasInvalidDateRange && (
+                  <p className="form-help form-help--error">
+                    A data de inicio precisa ser anterior a data de termino.
+                  </p>
+                )}
               </div>
 
               <div className="modal__footer">
@@ -480,7 +572,7 @@ export default function PromocoesPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || hasInvalidDateRange || hasPriceAboveProduct}
                   className="btn btn-primary"
                 >
                   {loading ? "Salvando..." : editingId ? "Atualizar" : "Criar Promoção"}

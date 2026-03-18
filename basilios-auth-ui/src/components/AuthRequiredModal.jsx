@@ -1,4 +1,5 @@
 import { X, LogIn, UserPlus } from "lucide-react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 /**
@@ -11,6 +12,20 @@ export default function AuthRequiredModal({
   redirectPath = "/checkout",
 }) {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const body = document.body;
+
+    if (isOpen) {
+      body.classList.add("auth-required-open");
+    } else {
+      body.classList.remove("auth-required-open");
+    }
+
+    return () => {
+      body.classList.remove("auth-required-open");
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -29,14 +44,14 @@ export default function AuthRequiredModal({
       <div
         role="button"
         tabIndex={0}
-        className="fixed inset-0 bg-black/50 z-[1100] animate-[fadeIn_.2s_ease-out]"
+        className="fixed inset-0 bg-black/50 z-1100 animate-[fadeIn_.2s_ease-out]"
         onClick={onClose}
         onKeyDown={(e) => e.key === "Enter" && onClose()}
         aria-label="Fechar modal"
       />
 
       {/* Modal */}
-      <div className="fixed inset-0 z-[1101] flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-1101 flex items-center justify-center p-4">
         <div
           role="dialog"
           aria-modal="true"

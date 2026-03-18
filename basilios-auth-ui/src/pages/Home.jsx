@@ -503,6 +503,10 @@ export default function Home() {
                 
                 // Calcula o percentual de desconto dinamicamente
                 const precoOriginal = produtoPromo?.preco ? parseFloat(String(produtoPromo.preco).replace(/[^\d.,-]/g, "").replace(",", ".")) : 0;
+                const precoComDesconto = Math.max(
+                  0,
+                  (produtoPromo?.preco || 0) - (promo.discountAmount || 0)
+                );
                 const discountPercentage = precoOriginal > 0 && promo.discountAmount 
                   ? Math.round((promo.discountAmount / precoOriginal) * 100)
                   : promo.discountPercentage || 0;
@@ -510,9 +514,8 @@ export default function Home() {
                 return (
                   <article
                     key={`promo-${promo.id}`}
-                    data-product-id={`promo-${promo.id}`}
-                    className="hp-card"
-                    style={{ borderColor: "#bb3530", borderWidth: "2px" }}
+                    data-product-id={produtoPromo?.index ?? `promo-${promo.id}`}
+                    className="hp-card hp-card--promo"
                   >
                     <div className="hp-card__media">
                       {produtoPromo?.imagem ? (
@@ -524,19 +527,7 @@ export default function Home() {
                         <div className="hp-card__placeholder">Sem imagem</div>
                       )}
                       {/* Badge de Promoção */}
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: "10px",
-                          right: "10px",
-                          background: "#bb3530",
-                          color: "white",
-                          padding: "6px 12px",
-                          borderRadius: "999px",
-                          fontSize: "12px",
-                          fontWeight: "bold",
-                        }}
-                      >
+                      <div className="hp-promo-badge">
                         {discountPercentage}% OFF
                       </div>
                     </div>
@@ -548,14 +539,20 @@ export default function Home() {
                       )}
                     </div>
 
-                    <div className="hp-card__footer">
-                      <div className="hp-price">
-                        <span style={{ textDecoration: "line-through", color: "#999", fontSize: "0.9rem" }}>
-                          R$ {sanitizePrice(produtoPromo?.preco || 0)}
-                        </span>
-                        <strong style={{ color: "#bb3530", fontSize: "1.3rem" }}>
-                          R$ {sanitizePrice((produtoPromo?.preco || 0) - (promo.discountAmount || 0))}
-                        </strong>
+                    <div className="hp-card__footer hp-card__footer--promo">
+                      <div className="hp-price hp-price--promo">
+                        <div className="hp-price__old-wrap">
+                          <span className="hp-price__label">De</span>
+                          <strong className="hp-price__old-value">
+                            R$ {sanitizePrice(produtoPromo?.preco || 0)}
+                          </strong>
+                        </div>
+                        <div className="hp-price__new-wrap">
+                          <span className="hp-price__label hp-price__label--new">Por</span>
+                          <strong className="hp-price__new-value">
+                            R$ {sanitizePrice(precoComDesconto)}
+                          </strong>
+                        </div>
                       </div>
                       <button
                         className="btn btn-primary hp-add"

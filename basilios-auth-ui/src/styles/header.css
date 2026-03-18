@@ -59,9 +59,19 @@
   inset: 0;
   top: 22px;                        /* desce um pouco a logo */
   display: flex; align-items: center; justify-content: center;
-  pointer-events: none;
-  z-index: 0;
+  pointer-events: auto;
+  z-index: 2;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
   transform: translateX(var(--logo-nudge-x, 0px)); /* ajuste pra direita/esquerda via CSS var */
+}
+
+.logo-container:focus-visible {
+  outline: 2px solid rgba(232, 93, 93, 0.8);
+  outline-offset: 6px;
+  border-radius: 8px;
 }
 .logo-img {
   height: 45px;                     /* base pequena (não cresce o header) */

@@ -27,6 +27,7 @@ function useAuthSnapshot() {
 
 export default function Header() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated } = useAuthSnapshot();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -94,8 +95,6 @@ export default function Header() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const location = useLocation();
-
   const goToSection = (label) => {
     const target = slug(label);
 
@@ -137,6 +136,15 @@ export default function Header() {
     navigate("/profile");
   };
 
+  const handleLogoClick = () => {
+    if (location.pathname !== "/home") {
+      navigate("/home");
+      return;
+    }
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
     <>
       <header className={`site-header ${isScrolled ? "is-scrolled" : ""}`}>
@@ -151,7 +159,10 @@ export default function Header() {
           </button>
 
           <div className="center-content">
-            <div
+            <button
+              type="button"
+              onClick={handleLogoClick}
+              aria-label="Ir para o topo da Home"
               className="logo-container"
               style={{ "--logo-nudge-x": "130px" }}
             >
@@ -160,7 +171,7 @@ export default function Header() {
                 alt="Basilios"
                 className="logo-img logo-white-glow"
               />
-            </div>
+            </button>
           </div>
 
           <div

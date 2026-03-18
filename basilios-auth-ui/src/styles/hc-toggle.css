@@ -45,3 +45,29 @@ body.customize-open div[vw] {
     display: none !important;
   }
 }
+
+/* ---------- Quando modal de login obrigatório abre ---------- */
+/* Mantém o botão visível, porém fora da área do modal (à esquerda). */
+body.auth-required-open [vw-access-button],
+body.cart-open.auth-required-open [vw-access-button],
+body.customize-open.auth-required-open [vw-access-button] {
+  right: 6px !important;
+  bottom: 22px !important;
+}
+
+@media (max-width: 1024px) {
+  body.auth-required-open [vw-access-button],
+  body.cart-open.auth-required-open [vw-access-button],
+  body.customize-open.auth-required-open [vw-access-button] {
+    right: 6px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  body.auth-required-open [vw-access-button],
+  body.cart-open.auth-required-open [vw-access-button],
+  body.customize-open.auth-required-open [vw-access-button] {
+    right: 10px !important;
+    bottom: 84px !important;
+  }
+}
