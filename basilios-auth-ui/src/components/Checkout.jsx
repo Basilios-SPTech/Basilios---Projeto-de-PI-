@@ -164,16 +164,34 @@ export default function Checkout() {
             },
           });
 
-          setEndUser(response.data);
+          const enderecos = Array.isArray(response.data) ? response.data : [];
+          setEndUser(enderecos);
+
+          const preferredAddressId = Number(
+            localStorage.getItem("checkout-address-id"),
+          );
+
+          if (
+            Number.isFinite(preferredAddressId) &&
+            enderecos.some((endereco) => endereco.id === preferredAddressId)
+          ) {
+            setEnderecoSelecionado(preferredAddressId);
+          } else if (enderecos.length > 0) {
+            setEnderecoSelecionado(enderecos[0].id);
+          }
+
+          localStorage.removeItem("checkout-address-id");
         } catch (err) {
           console.log(err);
         }
       }
 
       getEnderecos();
-      setItens(JSON.parse(localStorage.getItem(CHAVE_CART)));
+      const cart = JSON.parse(localStorage.getItem(CHAVE_CART) || "[]");
+      setItens(Array.isArray(cart) ? cart : []);
     } catch (err) {
       console.log(err);
+      setItens([]);
     }
   }, []);
 
@@ -261,45 +279,52 @@ export default function Checkout() {
               </h2>
               <div className="space-y-3">
                 {endUser.map((endereco) => (
-                  <label
-                    key={endereco.id}
-                    className={`block p-3 md:p-4 rounded-lg cursor-pointer transition-all ${
-                      Number(enderecoSelecionado) === endereco.id
-                        ? "bg-gray-800 text-white border-2 border-gray-700"
-                        : "bg-gray-50 border-2 border-gray-200 hover:border-gray-400"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="endereco"
-                      value={endereco.id}
-                      checked={Number(enderecoSelecionado) === endereco.id}
-                      onChange={(e) => setEnderecoSelecionado(e.target.value)}
-                      className="hidden"
-                    />
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-1 ${
-                          enderecoSelecionado === endereco.id
-                            ? "border-white"
-                            : "border-gray-400"
-                        }`}
-                      >
-                        {enderecoSelecionado === endereco.id && (
-                          <div className="w-3 h-3 bg-white rounded-full"></div>
-                        )}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-sm md:text-base">
-                          {endereco.enderecoCompleto}
-                        </p>
-                        <p
-                          className={`text-sm ${enderecoSelecionado == endereco.id ? "text-gray-300" : "text-gray-600"}`}
-                        ></p>
-                      </div>
-                    </div>
-                  </label>
-                ))}
+  <label
+    key={endereco.id}
+    className={`block p-3 md:p-4 rounded-lg cursor-pointer transition-all ${
+      Number(enderecoSelecionado) === endereco.id
+        ? "bg-gray-800 text-white border-2 border-gray-700"
+        : "bg-gray-50 border-2 border-gray-200 hover:border-gray-400"
+    }`}
+  >
+    <input
+      type="radio"
+      name="endereco"
+      value={endereco.id}
+      checked={Number(enderecoSelecionado) === endereco.id}
+      onChange={(e) => setEnderecoSelecionado(Number(e.target.value))}
+      className="hidden"
+    />
+
+    <div className="flex items-start gap-3">
+      <div
+        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-1 ${
+          Number(enderecoSelecionado) === endereco.id
+            ? "border-white"
+            : "border-gray-400"
+        }`}
+      >
+        {Number(enderecoSelecionado) === endereco.id && (
+          <div className="w-3 h-3 bg-white rounded-full"></div>
+        )}
+      </div>
+
+      <div>
+        <p className="font-semibold text-sm md:text-base">
+          {endereco.enderecoCompleto}
+        </p>
+
+        <p
+          className={`text-sm ${
+            Number(enderecoSelecionado) === endereco.id
+              ? "text-gray-300"
+              : "text-gray-600"
+          }`}
+        ></p>
+      </div>
+    </div>
+  </label>
+))}
 
                 <AddAddress />
               </div>
@@ -320,7 +345,7 @@ export default function Checkout() {
                       : "bg-gray-50 border-gray-200 hover:border-gray-400"
                   }`}
                 >
-                  <QrCode size={36} className="mx-auto mb-2 md:mb-3 md:!w-12 md:!h-12" />
+                  <QrCode size={36} className="mx-auto mb-2 md:mb-3 md:w-12! md:h-12!" />
                   <p className="font-semibold text-base md:text-lg">PIX</p>
                   <p
                     className={`text-sm mt-1 ${formaPagamento === "pix" ? "text-gray-300" : "text-gray-600"}`}
@@ -335,7 +360,7 @@ export default function Checkout() {
                       : "bg-gray-50 border-gray-200 hover:border-gray-400"
                   }`}
                 >
-                  <CreditCard size={36} className="mx-auto mb-2 md:mb-3 md:!w-12 md:!h-12" />
+                  <CreditCard size={36} className="mx-auto mb-2 md:mb-3 md:w-12! md:h-12!" />
                   <p className="font-semibold text-base md:text-lg">Cartão de Crédito</p>
                   <p
                     className={`text-sm mt-1 ${formaPagamento === "cartao" ? "text-gray-300" : "text-gray-600"}`}

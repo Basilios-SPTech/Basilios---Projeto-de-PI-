@@ -20,6 +20,7 @@ import CheckoutPage from "./pages/CheckoutPage.jsx";
 import PixCheckout from "./pages/PixCheckout.jsx";
 import StatusOrderPage from "./pages/StatusOrderPage.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
+import MyOrders from "./pages/MyOrders.jsx";
 import { ProfilePage } from "./pages/ProfilePage.jsx";
 // Layouts
 import AuthLayout from "./layouts/AuthLayout.jsx";
@@ -179,6 +180,18 @@ export default function App() {
                   <>
                     <ProdutoLayout>
                       <ProfilePage />
+                    </ProdutoLayout>
+                    <FooterBasilios />
+                  </>
+                }
+              />
+
+              <Route
+                path="/meus-pedidos"
+                element={
+                  <>
+                    <ProdutoLayout>
+                      <MyOrders />
                     </ProdutoLayout>
                     <FooterBasilios />
                   </>

@@ -24,6 +24,7 @@ export default function SidebarAdm({ open, onClose }) {
           { icon: ListOrdered, label: "Pedidos (Board)",  href: "/board" },
           { icon: LayoutDashboard, label: "Dashboard",    href: "/dashboard" },
         ] : []),
+        { icon: ListOrdered, label: "Meus Pedidos",      href: "/meus-pedidos" },
         { icon: UserRound, label: "Meu Perfil",          href: "/profile" },
         { icon: Hamburger,label: "Sobre Nós",           href: "/about" },
         { icon: LogOut,   label: "Sair",                href: "#logout" },

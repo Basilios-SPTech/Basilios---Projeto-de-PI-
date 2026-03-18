@@ -2,27 +2,79 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { GripVertical, MapPin, Package, Clock, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { http } from "../services/http.js";
 
+const BOARD_COLUMNS = {
+  PENDENTE: {
+    id: "PENDENTE",
+    title: "Recebidos",
+    color: "pending",
+  },
+  PREPARANDO: {
+    id: "PREPARANDO",
+    title: "Em preparação",
+    color: "preparing",
+  },
+  DESPACHADO: {
+    id: "DESPACHADO",
+    title: "Saiu para entrega",
+    color: "dispatch",
+  },
+  ENTREGUE: {
+    id: "ENTREGUE",
+    title: "Entregue",
+    color: "delivered",
+  },
+  CANCELADO: {
+    id: "CANCELADO",
+    title: "Cancelado",
+    color: "cancelled",
+  },
+};
+
+function createColumns() {
+  return Object.fromEntries(
+    Object.entries(BOARD_COLUMNS).map(([key, column]) => [
+      key,
+      { ...column, tasks: [] },
+    ]),
+  );
+}
+
+function normalizeBoardStatus(status) {
+  if (!status) return "PENDENTE";
+
+  const normalized = String(status)
+    .trim()
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  if (["RECEBIDO", "PENDENTE", "CONFIRMADO"].includes(normalized)) {
+    return "PENDENTE";
+  }
+
+  if (["EM_PREPARO", "PREPARANDO"].includes(normalized)) {
+    return "PREPARANDO";
+  }
+
+  if (["SAIU_PARA_ENTREGA", "DESPACHADO"].includes(normalized)) {
+    return "DESPACHADO";
+  }
+
+  if (normalized === "ENTREGUE") return "ENTREGUE";
+  if (normalized === "CANCELADO") return "CANCELADO";
+
+  return "PENDENTE";
+}
+
+function mapBoardStatusToApi(status) {
+  if (status === "PREPARANDO") return "EM_PREPARO";
+  if (status === "DESPACHADO") return "SAIU_PARA_ENTREGA";
+
+  return status;
+}
+
 export default function BoardPedidos() {
-  const [columns, setColumns] = useState({
-    PENDENTE: {
-      id: "PENDENTE",
-      title: "Recebidos",
-      color: "pending",
-      tasks: [],
-    },
-    PREPARANDO: {
-      id: "PREPARANDO",
-      title: "Em preparação",
-      color: "preparing",
-      tasks: [],
-    },
-    ENTREGUE: {
-      id: "ENTREGUE",
-      title: "Saiu para entrega",
-      color: "delivered",
-      tasks: [],
-    },
-  });
+  const [columns, setColumns] = useState(createColumns);
 
   const [draggedTask, setDraggedTask] = useState(null);
   const [draggedFrom, setDraggedFrom] = useState(null);
@@ -257,13 +309,10 @@ export default function BoardPedidos() {
 
       const orders = Array.isArray(data) ? data : (data?.content ?? []);
 
-      const newColumns = {
-        PENDENTE: { ...columns.PENDENTE, tasks: [] },
-        PREPARANDO: { ...columns.PREPARANDO, tasks: [] },
-        ENTREGUE: { ...columns.ENTREGUE, tasks: [] },
-      };
+      const newColumns = createColumns();
 
       orders.forEach((order) => {
+        const normalizedStatus = normalizeBoardStatus(order.status);
         const task = {
           id: order.id,
           orderId: order.id,
@@ -281,8 +330,8 @@ export default function BoardPedidos() {
           totalItems: order.totalItems,
         };
 
-        if (newColumns[order.status]) {
-          newColumns[order.status].tasks.push(task);
+        if (newColumns[normalizedStatus]) {
+          newColumns[normalizedStatus].tasks.push(task);
         }
       });
 
@@ -321,6 +370,22 @@ export default function BoardPedidos() {
         hover: "hover:border-green-600",
         dropzone: "bg-green-100 border-green-500",
         headerAccent: "text-green-600",
+      },
+      dispatch: {
+        border: "border-cyan-500",
+        bg: "bg-cyan-50",
+        badge: "bg-cyan-500",
+        hover: "hover:border-cyan-600",
+        dropzone: "bg-cyan-100 border-cyan-500",
+        headerAccent: "text-cyan-600",
+      },
+      cancelled: {
+        border: "border-rose-500",
+        bg: "bg-rose-50",
+        badge: "bg-rose-500",
+        hover: "hover:border-rose-600",
+        dropzone: "bg-rose-100 border-rose-500",
+        headerAccent: "text-rose-600",
       },
     };
     return colors[color];
@@ -369,7 +434,7 @@ export default function BoardPedidos() {
     );
 
     try {
-      const body = { status: targetColumnId };
+      const body = { status: mapBoardStatusToApi(targetColumnId) };
       await http.patch(`/orders/${orderId}/status`, body);
 
       setColumns((prev) => {
@@ -462,7 +527,7 @@ export default function BoardPedidos() {
         {/* Colunas */}
         <div
           ref={boardColumnsRef}
-          className="board-columns flex gap-5 overflow-x-auto snap-x snap-mandatory pb-4 md:grid md:grid-cols-3 md:overflow-visible md:snap-none md:pb-0 scrollbar-hide"
+          className="board-columns flex gap-5 overflow-x-auto snap-x snap-mandatory pb-4 2xl:grid 2xl:grid-cols-5 2xl:overflow-visible 2xl:snap-none 2xl:pb-0 scrollbar-hide"
         >
           {Object.values(columns).map((column) => {
             const colorClasses = getColorClasses(column.color);
@@ -471,7 +536,7 @@ export default function BoardPedidos() {
               <div
                 key={column.id}
                 data-column-id={column.id}
-                className={`min-w-[80vw] md:min-w-0 snap-start flex-shrink-0 md:flex-shrink rounded-xl p-4 border-2 transition-all duration-200 ${
+                className={`min-w-[80vw] 2xl:min-w-0 snap-start shrink-0 2xl:shrink rounded-xl p-4 border-2 transition-all duration-200 ${
                   isDragOver
                     ? `${colorClasses.dropzone} border-dashed scale-[1.01]`
                     : `${colorClasses.bg} ${colorClasses.border}`
