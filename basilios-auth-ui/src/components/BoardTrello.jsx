@@ -758,7 +758,7 @@ export default function BoardPedidos() {
                               >
                                 <div className="flex-1">
                                   <p className="text-neutral-800 font-medium text-sm">
-                                    {item.quantity}× {item.productName}
+                                    {item.quantity}× {item.hadPromotion ? "Promoção" : item.productName}
                                   </p>
                                   {item.observations && (
                                     <p className="text-neutral-400 text-xs mt-0.5 italic">
@@ -767,7 +767,7 @@ export default function BoardPedidos() {
                                   )}
                                   {item.hadPromotion && (
                                     <span className="inline-block mt-1 text-xs bg-red-50 text-red-700 px-1.5 py-0.5 rounded font-medium">
-                                      {item.promotionName}
+                                      Promoção
                                     </span>
                                   )}
                                 </div>
