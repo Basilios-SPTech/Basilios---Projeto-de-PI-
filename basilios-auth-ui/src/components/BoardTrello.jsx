@@ -1,6 +1,58 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { GripVertical, MapPin, Package, Clock, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  GripVertical,
+  MapPin,
+  Package,
+  Clock,
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
+  ListChecks,
+  ThumbsUp,
+  Hamburger,
+  Bike,
+  House,
+} from "lucide-react";
 import { http } from "../services/http.js";
+import toast from "react-hot-toast";
+
+const BOARD_STATUSES = ["PENDENTE", "CONFIRMADO", "PREPARANDO", "DESPACHADO"];
+
+const STATUS_LABELS = {
+  PENDENTE: "Recebidos",
+  CONFIRMADO: "Confirmados",
+  PREPARANDO: "Em preparação",
+  DESPACHADO: "Saiu para entrega",
+  ENTREGUE: "Entregue",
+  CANCELADO: "Cancelado",
+};
+
+const ALLOWED_TRANSITIONS = {
+  PENDENTE: ["CONFIRMADO", "CANCELADO"],
+  CONFIRMADO: ["PREPARANDO", "CANCELADO"],
+  PREPARANDO: ["DESPACHADO", "CANCELADO"],
+  DESPACHADO: ["ENTREGUE", "CANCELADO"],
+  ENTREGUE: [],
+  CANCELADO: [],
+};
+
+function getBoardColumnForStatus(status) {
+  return BOARD_STATUSES.includes(status) ? status : null;
+}
+
+function canDragTask(task) {
+  return ["PENDENTE", "CONFIRMADO", "PREPARANDO"].includes(task?.currentStatus);
+}
+
+function isTransitionAllowed(fromStatus, toStatus) {
+  if (!fromStatus || !toStatus) return false;
+  const allowed = ALLOWED_TRANSITIONS[fromStatus] || [];
+  return allowed.includes(toStatus);
+}
+
+function statusLabel(status) {
+  return STATUS_LABELS[status] || status;
+}
 
 const BOARD_COLUMNS = {
   PENDENTE: {
@@ -74,7 +126,32 @@ function mapBoardStatusToApi(status) {
 }
 
 export default function BoardPedidos() {
-  const [columns, setColumns] = useState(createColumns);
+  const [columns, setColumns] = useState({
+    PENDENTE: {
+      id: "PENDENTE",
+      title: "Recebidos",
+      color: "pending",
+      tasks: [],
+    },
+    CONFIRMADO: {
+      id: "CONFIRMADO",
+      title: "Confirmados",
+      color: "confirmed",
+      tasks: [],
+    },
+    PREPARANDO: {
+      id: "PREPARANDO",
+      title: "Em preparação",
+      color: "preparing",
+      tasks: [],
+    },
+    DESPACHADO: {
+      id: "DESPACHADO",
+      title: "Saiu para entrega",
+      color: "dispatched",
+      tasks: [],
+    },
+  });
 
   const [draggedTask, setDraggedTask] = useState(null);
   const [draggedFrom, setDraggedFrom] = useState(null);
@@ -309,13 +386,19 @@ export default function BoardPedidos() {
 
       const orders = Array.isArray(data) ? data : (data?.content ?? []);
 
-      const newColumns = createColumns();
+      const newColumns = {
+        PENDENTE: { ...columns.PENDENTE, tasks: [] },
+        CONFIRMADO: { ...columns.CONFIRMADO, tasks: [] },
+        PREPARANDO: { ...columns.PREPARANDO, tasks: [] },
+        DESPACHADO: { ...columns.DESPACHADO, tasks: [] },
+      };
 
       orders.forEach((order) => {
         const normalizedStatus = normalizeBoardStatus(order.status);
         const task = {
           id: order.id,
           orderId: order.id,
+          currentStatus: order.status,
           items: order.items,
           address: order.address,
           createdAt: new Date(order.createdAt).toLocaleTimeString("pt-BR", {
@@ -330,8 +413,9 @@ export default function BoardPedidos() {
           totalItems: order.totalItems,
         };
 
-        if (newColumns[normalizedStatus]) {
-          newColumns[normalizedStatus].tasks.push(task);
+        const boardColumn = getBoardColumnForStatus(order.status);
+        if (boardColumn && newColumns[boardColumn]) {
+          newColumns[boardColumn].tasks.push(task);
         }
       });
 
@@ -348,28 +432,36 @@ export default function BoardPedidos() {
   const getColorClasses = (color) => {
     const colors = {
       pending: {
-        border: "border-blue-500",
-        bg: "bg-blue-50",
-        badge: "bg-blue-500",
-        hover: "hover:border-blue-600",
-        dropzone: "bg-blue-100 border-blue-500",
-        headerAccent: "text-blue-600",
+        border: "border-emerald-500",
+        bg: "bg-emerald-100",
+        badge: "bg-emerald-600",
+        hover: "hover:border-emerald-600",
+        dropzone: "bg-emerald-200 border-emerald-600",
+        headerAccent: "text-emerald-800",
       },
       preparing: {
-        border: "border-yellow-500",
-        bg: "bg-yellow-50",
-        badge: "bg-yellow-500",
-        hover: "hover:border-yellow-600",
-        dropzone: "bg-yellow-100 border-yellow-500",
-        headerAccent: "text-yellow-600",
+        border: "border-orange-500",
+        bg: "bg-orange-100",
+        badge: "bg-orange-600",
+        hover: "hover:border-orange-600",
+        dropzone: "bg-orange-200 border-orange-600",
+        headerAccent: "text-orange-800",
       },
-      delivered: {
-        border: "border-green-500",
-        bg: "bg-green-50",
-        badge: "bg-green-500",
-        hover: "hover:border-green-600",
-        dropzone: "bg-green-100 border-green-500",
-        headerAccent: "text-green-600",
+      confirmed: {
+        border: "border-amber-500",
+        bg: "bg-amber-100",
+        badge: "bg-amber-600",
+        hover: "hover:border-amber-600",
+        dropzone: "bg-amber-200 border-amber-600",
+        headerAccent: "text-yellow-800",
+      },
+      dispatched: {
+        border: "border-rose-500",
+        bg: "bg-rose-100",
+        badge: "bg-rose-600",
+        hover: "hover:border-rose-600",
+        dropzone: "bg-rose-200 border-rose-600",
+        headerAccent: "text-rose-800",
       },
       dispatch: {
         border: "border-cyan-500",
@@ -392,6 +484,10 @@ export default function BoardPedidos() {
   };
 
   const handleDragStart = (e, task, columnId) => {
+    if (!canDragTask(task)) {
+      e.preventDefault();
+      return;
+    }
     setDraggedTask(task);
     setDraggedFrom(columnId);
     e.dataTransfer.effectAllowed = "move";
@@ -425,16 +521,30 @@ export default function BoardPedidos() {
       return;
     }
 
+    const fromStatus = task.currentStatus || from;
+    const toStatus = targetColumnId;
+
+    if (!isTransitionAllowed(fromStatus, toStatus)) {
+      toast.error(
+        `Não é possível mover de \"${statusLabel(fromStatus)}\" para \"${statusLabel(toStatus)}\".`
+      );
+      setDraggedTask(null);
+      setDraggedFrom(null);
+      return;
+    }
+
     const orderId = task.id;
     console.log(
       "Atualizando pedido ID:",
       orderId,
+      "de status:",
+      fromStatus,
       "para status:",
-      targetColumnId,
+      toStatus,
     );
 
     try {
-      const body = { status: mapBoardStatusToApi(targetColumnId) };
+      const body = { status: toStatus };
       await http.patch(`/orders/${orderId}/status`, body);
 
       setColumns((prev) => {
@@ -449,7 +559,7 @@ export default function BoardPedidos() {
 
         newColumns[targetColumnId] = {
           ...newColumns[targetColumnId],
-          tasks: [...newColumns[targetColumnId].tasks, task],
+          tasks: [...newColumns[targetColumnId].tasks, { ...task, currentStatus: toStatus }],
         };
 
         return newColumns;
@@ -459,7 +569,9 @@ export default function BoardPedidos() {
       setDraggedFrom(null);
     } catch (err) {
       console.error("Erro ao atualizar status do pedido:", err);
-      alert(`Erro ao atualizar o status do pedido #${orderId}`);
+      toast.error(
+        err?.message || `Não foi possível atualizar o pedido #${orderId}. Tente novamente.`
+      );
       setDraggedTask(null);
       setDraggedFrom(null);
     }
@@ -524,10 +636,44 @@ export default function BoardPedidos() {
           </button>
         </div>
 
+        {/* Indicador de fluxo */}
+        <div className="hidden md:block mb-6 rounded-xl border border-neutral-200 bg-white/80 px-4 py-3 shadow-sm">
+          <div className="relative h-7">
+            <div className="absolute left-2 right-4 top-1/2 -translate-y-1/2 h-1 rounded-full bg-neutral-300" />
+
+            <div className="absolute inset-0 grid grid-cols-4 items-center">
+              <div className="flex justify-center">
+                <span className="w-8 h-8 rounded-full bg-white ring-2 ring-emerald-600 flex items-center justify-center">
+                  <ListChecks className="w-4 h-4 text-emerald-700" />
+                </span>
+              </div>
+              <div className="flex justify-center">
+                <span className="w-8 h-8 rounded-full bg-white ring-2 ring-amber-600 flex items-center justify-center">
+                  <ThumbsUp className="w-4 h-4 text-amber-700" />
+                </span>
+              </div>
+              <div className="flex justify-center">
+                <span className="w-8 h-8 rounded-full bg-white ring-2 ring-orange-600 flex items-center justify-center">
+                  <Hamburger className="w-4 h-4 text-orange-700" />
+                </span>
+              </div>
+              <div className="flex justify-center">
+                <span className="w-8 h-8 rounded-full bg-white ring-2 ring-rose-600 flex items-center justify-center">
+                  <Bike className="w-4 h-4 text-rose-700" />
+                </span>
+              </div>
+            </div>
+
+            <span className="absolute right-0 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white ring-2 ring-neutral-500 flex items-center justify-center">
+              <House className="w-4 h-4 text-neutral-700" />
+            </span>
+          </div>
+        </div>
+
         {/* Colunas */}
         <div
           ref={boardColumnsRef}
-          className="board-columns flex gap-5 overflow-x-auto snap-x snap-mandatory pb-4 2xl:grid 2xl:grid-cols-5 2xl:overflow-visible 2xl:snap-none 2xl:pb-0 scrollbar-hide"
+          className="board-columns flex gap-5 overflow-x-auto snap-x snap-mandatory pb-4 md:grid md:grid-cols-4 md:overflow-visible md:snap-none md:pb-0 scrollbar-hide"
         >
           {Object.values(columns).map((column) => {
             const colorClasses = getColorClasses(column.color);
@@ -536,7 +682,7 @@ export default function BoardPedidos() {
               <div
                 key={column.id}
                 data-column-id={column.id}
-                className={`min-w-[80vw] 2xl:min-w-0 snap-start shrink-0 2xl:shrink rounded-xl p-4 border-2 transition-all duration-200 ${
+                className={`min-w-[80vw] md:min-w-0 snap-start shrink-0 md:shrink rounded-xl p-4 border-2 transition-all duration-200 ${
                   isDragOver
                     ? `${colorClasses.dropzone} border-dashed scale-[1.01]`
                     : `${colorClasses.bg} ${colorClasses.border}`
@@ -567,13 +713,16 @@ export default function BoardPedidos() {
                       <p className="text-sm text-neutral-400">Nenhum pedido</p>
                     </div>
                   ) : (
-                    column.tasks.map((task) => (
+                    column.tasks.map((task) => {
+                      const draggable = canDragTask(task);
+
+                      return (
                       <div
                         key={task.id}
-                        draggable
+                        draggable={draggable}
                         onDragStart={(e) => handleDragStart(e, task, column.id)}
-                        onTouchStart={(e) => handleTouchStart(e, task, column.id)}
-                        className={`bg-white rounded-xl border border-neutral-200 cursor-grab active:cursor-grabbing ${colorClasses.hover} hover:shadow-md transition-all duration-200 active:shadow-lg active:scale-[1.02] touch-none md:touch-auto`}
+                        onTouchStart={draggable ? (e) => handleTouchStart(e, task, column.id) : undefined}
+                        className={`bg-white rounded-xl border border-neutral-200 ${draggable ? "cursor-grab active:cursor-grabbing" : "cursor-default"} ${colorClasses.hover} hover:shadow-md transition-all duration-200 ${draggable ? "active:shadow-lg active:scale-[1.02]" : ""} touch-none md:touch-auto`}
                       >
                         {/* Header do Card */}
                         <div className="px-4 py-3 border-b border-neutral-100">
@@ -709,7 +858,7 @@ export default function BoardPedidos() {
                           </div>
                         </div>
                       </div>
-                    ))
+                    )})
                   )}
                 </div>
               </div>

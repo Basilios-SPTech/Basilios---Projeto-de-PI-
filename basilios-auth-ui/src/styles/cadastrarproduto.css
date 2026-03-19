@@ -651,6 +651,7 @@
 }
 
 .hp-card__media {
+  position: relative;
   aspect-ratio: 4/3;
   background: #f2f4f7;
 }
@@ -764,6 +765,104 @@
 /* Botão adicionar */
 .hp-add {
   padding: 10px 14px;
+}
+
+/* ===== Promo card (Home) ===== */
+.hp-card--promo {
+  border: 2px solid #bb3530;
+}
+
+.hp-promo-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: #fff;
+  background: linear-gradient(135deg, #bb3530, #8f2420);
+  box-shadow: 0 8px 20px rgba(187, 53, 48, 0.35);
+  opacity: 1;
+  visibility: visible;
+}
+
+.hp-card__footer--promo {
+  align-items: center;
+}
+
+.hp-price--promo {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  align-items: center;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.hp-price__old-wrap {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.hp-price__label {
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: #8b1f1a;
+}
+
+.hp-price__old-value {
+  font-size: 0.96rem;
+  color: #b91c1c;
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: rgba(185, 28, 28, 0.9);
+}
+
+.hp-price__new-wrap {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 10px;
+  border: 1px solid #8ad0a0;
+  background: linear-gradient(180deg, #e9f9ef, #dcf7e7);
+  text-align: center;
+}
+
+.hp-price__label--new {
+  color: #146c3f;
+}
+
+.hp-price__new-value {
+  font-size: 1.18rem;
+  line-height: 1;
+  color: #15803d;
+  letter-spacing: 0.2px;
+}
+
+@media (max-width: 640px) {
+  .hp-card__footer--promo {
+    align-items: center;
+    gap: 8px;
+  }
+
+  .hp-price--promo {
+    min-width: 0;
+  }
 }
 
 .page-with-fixed-header {

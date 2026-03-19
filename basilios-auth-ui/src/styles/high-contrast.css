@@ -97,6 +97,10 @@ body.hc .btn-primary {
   background: #000 !important;
   color: #FFD400 !important;
 }
+body.hc .btn-secondary {
+  background: #000 !important;
+  color: #FFD400 !important;
+}
 
 /* ================================================================
    LINKS

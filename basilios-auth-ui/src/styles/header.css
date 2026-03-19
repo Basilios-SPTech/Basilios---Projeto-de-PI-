@@ -27,6 +27,7 @@
   align-items: center;
   width: 100%;
   gap: 2rem;
+  padding-top: .15rem;
 }
 
 /* botão icon (menu / user) */
@@ -58,9 +59,19 @@
   inset: 0;
   top: 22px;                        /* desce um pouco a logo */
   display: flex; align-items: center; justify-content: center;
-  pointer-events: none;
-  z-index: 0;
+  pointer-events: auto;
+  z-index: 2;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
   transform: translateX(var(--logo-nudge-x, 0px)); /* ajuste pra direita/esquerda via CSS var */
+}
+
+.logo-container:focus-visible {
+  outline: 2px solid rgba(232, 93, 93, 0.8);
+  outline-offset: 6px;
+  border-radius: 8px;
 }
 .logo-img {
   height: 45px;                     /* base pequena (não cresce o header) */
@@ -134,7 +145,7 @@
   .logo-container { display: none !important; }
   .search-wrapper { width: 200px !important; }
   .search-input { font-size: .85rem !important; }
-  .header-grid { gap: 1rem !important; }
+  .header-grid { gap: 1rem !important; min-height: 58px !important; padding-top: .2rem !important; }
   .menu-item { font-size: .9rem; padding: .9rem 1.2rem; }
 }
 @media (max-width: 480px) {
@@ -145,7 +156,7 @@
   .icon-button { padding: .3rem !important; }
   .icon-button svg { width: 24px !important; height: 24px !important; }
   .search-icon { width: 16px !important; height: 16px !important; }
-  .header-grid { gap: .5rem !important; }
+  .header-grid { gap: .5rem !important; min-height: 54px !important; padding-top: .15rem !important; }
   .center-content { gap: .5rem !important; }
   .menu-item { font-size: .85rem; padding: .8rem 1rem; }
 }

@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Menu, User } from "lucide-react";
 import SearchBar from "./SearchBar.jsx";
 import SidebarAdm from "./SidebarAdm.jsx";
+import AuthRequiredModal from "./AuthRequiredModal.jsx";
 import { authStorage } from "../services/storageAuth.js";
 import "../styles/header.css";
 
@@ -26,11 +27,13 @@ function useAuthSnapshot() {
 
 export default function Header() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated } = useAuthSnapshot();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState(null);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const toggleMenu = useCallback(() => setIsMenuOpen((s) => !s), []);
 
@@ -92,8 +95,6 @@ export default function Header() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const location = useLocation();
-
   const goToSection = (label) => {
     const target = slug(label);
 
@@ -127,8 +128,21 @@ export default function Header() {
   }, [navigate]);
 
   const handleUserClick = () => {
-    // Direciona para a página de perfil (pública)
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
+
     navigate("/profile");
+  };
+
+  const handleLogoClick = () => {
+    if (location.pathname !== "/home") {
+      navigate("/home");
+      return;
+    }
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
@@ -145,7 +159,10 @@ export default function Header() {
           </button>
 
           <div className="center-content">
-            <div
+            <button
+              type="button"
+              onClick={handleLogoClick}
+              aria-label="Ir para o topo da Home"
               className="logo-container"
               style={{ "--logo-nudge-x": "130px" }}
             >
@@ -154,7 +171,7 @@ export default function Header() {
                 alt="Basilios"
                 className="logo-img logo-white-glow"
               />
-            </div>
+            </button>
           </div>
 
           <div
@@ -210,6 +227,12 @@ export default function Header() {
 
       {/* Sidebar por role: funcionário vê menu admin, cliente vê menu padrão */}
       <SidebarAdm open={isMenuOpen} onClose={toggleMenu} />
+
+      <AuthRequiredModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        redirectPath="/profile"
+      />
     </>
   );
 }

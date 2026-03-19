@@ -78,7 +78,7 @@ export default function CadastrarProduto() {
           index: p.id ?? index,
           nome: p.name ?? p.nome ?? "",
           descricao: p.description ?? p.descricao ?? "",
-          preco: p.finalPrice ?? p.price ?? p.preco ?? 0,
+          preco: p.price ?? p.preco ?? 0,
           categoria: p.category ?? p.categoria ?? "",
           subcategoria: p.subcategory ?? p.subcategoria ?? "",
           pausado: p.isPaused ?? p.paused ?? false,

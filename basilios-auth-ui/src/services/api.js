@@ -14,6 +14,27 @@ export const AuthAPI = {
     return data
   },
 
+  async forgotPassword(email) {
+    try {
+      await http.post('/auth/esqueci-senha', { email })
+      return { ok: true }
+    } catch (err) {
+      if (err?.status === 400 || err?.status === 429) {
+        throw err
+      }
+      return { ok: true }
+    }
+  },
+
+  async resetPassword(codigo, novaSenha) {
+    const { data } = await http.post('/auth/reset-senha', { codigo, novaSenha })
+    return data
+  },
+
+  async forgot(email) {
+    return this.forgotPassword(email)
+  },
+
 
   logout() {
     authStorage.clear()

@@ -34,7 +34,7 @@ export default function Register({ onGoLogin }) {
   const errors = {
     fullName: form.fullName && !isNonEmpty(form.fullName) ? 'Informe seu nome completo.' : '',
     email: form.email && !validateEmail(form.email) ? 'E-mail inválido.' : '',
-    password: form.password && !validatePassword(form.password) ? 'Senha deve ter 8+ caracteres e conter letras e números.' : '',
+    password: form.password && !validatePassword(form.password) ? '8+ caracteres com maiúscula, número e símbolo' : '',
     confirm: form.confirm && form.confirm !== form.password ? 'As senhas não coincidem.' : '',
     cpf: form.cpf && !validateCPF(form.cpf) ? 'CPF inválido.' : '',
     phone: form.phone && !validatePhone(form.phone) ? 'Telefone inválido.' : '',

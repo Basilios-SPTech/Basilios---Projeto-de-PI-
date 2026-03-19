@@ -1,17 +1,17 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
-import ForgotPasswordForm from "../components/forms/ForgotPasswordForm.jsx";
+import ResetPasswordForm from "../components/forms/ResetPasswordForm.jsx";
 import MenuButtonAuto from "../components/MenuButtonAuto.jsx";
 
-export default function ForgotPassword() {
+export default function ResetPassword() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const initialEmail = searchParams.get("email") || "";
+  const token = searchParams.get("token") || "";
 
   return (
     <>
       <MenuButtonAuto />
-      <ForgotPasswordForm
-        initialEmail={initialEmail}
+      <ResetPasswordForm
+        token={token}
         onGoLogin={() => navigate("/login")}
       />
     </>
