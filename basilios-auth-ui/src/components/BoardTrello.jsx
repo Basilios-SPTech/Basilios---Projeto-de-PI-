@@ -54,6 +54,77 @@ function statusLabel(status) {
   return STATUS_LABELS[status] || status;
 }
 
+const BOARD_COLUMNS = {
+  PENDENTE: {
+    id: "PENDENTE",
+    title: "Recebidos",
+    color: "pending",
+  },
+  PREPARANDO: {
+    id: "PREPARANDO",
+    title: "Em preparação",
+    color: "preparing",
+  },
+  DESPACHADO: {
+    id: "DESPACHADO",
+    title: "Saiu para entrega",
+    color: "dispatch",
+  },
+  ENTREGUE: {
+    id: "ENTREGUE",
+    title: "Entregue",
+    color: "delivered",
+  },
+  CANCELADO: {
+    id: "CANCELADO",
+    title: "Cancelado",
+    color: "cancelled",
+  },
+};
+
+function createColumns() {
+  return Object.fromEntries(
+    Object.entries(BOARD_COLUMNS).map(([key, column]) => [
+      key,
+      { ...column, tasks: [] },
+    ]),
+  );
+}
+
+function normalizeBoardStatus(status) {
+  if (!status) return "PENDENTE";
+
+  const normalized = String(status)
+    .trim()
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  if (["RECEBIDO", "PENDENTE", "CONFIRMADO"].includes(normalized)) {
+    return "PENDENTE";
+  }
+
+  if (["EM_PREPARO", "PREPARANDO"].includes(normalized)) {
+    return "PREPARANDO";
+  }
+
+  if (["SAIU_PARA_ENTREGA", "DESPACHADO"].includes(normalized)) {
+    return "DESPACHADO";
+  }
+
+  if (normalized === "ENTREGUE") return "ENTREGUE";
+  if (normalized === "CANCELADO") return "CANCELADO";
+
+  return "PENDENTE";
+}
+
+function mapBoardStatusToApi(status) {
+  if (status === "PREPARANDO") return "EM_PREPARO";
+  if (status === "DESPACHADO") return "SAIU_PARA_ENTREGA";
+
+  return status;
+}
+
 export default function BoardPedidos() {
   const [columns, setColumns] = useState({
     PENDENTE: {
@@ -323,6 +394,7 @@ export default function BoardPedidos() {
       };
 
       orders.forEach((order) => {
+        const normalizedStatus = normalizeBoardStatus(order.status);
         const task = {
           id: order.id,
           orderId: order.id,
@@ -390,6 +462,22 @@ export default function BoardPedidos() {
         hover: "hover:border-rose-600",
         dropzone: "bg-rose-200 border-rose-600",
         headerAccent: "text-rose-800",
+      },
+      dispatch: {
+        border: "border-cyan-500",
+        bg: "bg-cyan-50",
+        badge: "bg-cyan-500",
+        hover: "hover:border-cyan-600",
+        dropzone: "bg-cyan-100 border-cyan-500",
+        headerAccent: "text-cyan-600",
+      },
+      cancelled: {
+        border: "border-rose-500",
+        bg: "bg-rose-50",
+        badge: "bg-rose-500",
+        hover: "hover:border-rose-600",
+        dropzone: "bg-rose-100 border-rose-500",
+        headerAccent: "text-rose-600",
       },
     };
     return colors[color];

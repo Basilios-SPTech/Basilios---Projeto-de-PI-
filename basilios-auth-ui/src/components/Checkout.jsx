@@ -223,16 +223,34 @@ export default function Checkout() {
         try {
           const response = await http.get("/address");
 
-          setEndUser(response.data);
+          const enderecos = Array.isArray(response.data) ? response.data : [];
+          setEndUser(enderecos);
+
+          const preferredAddressId = Number(
+            localStorage.getItem("checkout-address-id"),
+          );
+
+          if (
+            Number.isFinite(preferredAddressId) &&
+            enderecos.some((endereco) => endereco.id === preferredAddressId)
+          ) {
+            setEnderecoSelecionado(preferredAddressId);
+          } else if (enderecos.length > 0) {
+            setEnderecoSelecionado(enderecos[0].id);
+          }
+
+          localStorage.removeItem("checkout-address-id");
         } catch (err) {
           console.log(err);
         }
       }
 
       getEnderecos();
-      setItens(JSON.parse(localStorage.getItem(CHAVE_CART)));
+      const cart = JSON.parse(localStorage.getItem(CHAVE_CART) || "[]");
+      setItens(Array.isArray(cart) ? cart : []);
     } catch (err) {
       console.log(err);
+      setItens([]);
     }
   }, []);
 
@@ -464,7 +482,7 @@ export default function Checkout() {
                       : "bg-gray-50 border-gray-200 hover:border-gray-400"
                   }`}
                 >
-                  <QrCode size={36} className="mx-auto mb-2 md:mb-3 md:!w-12 md:!h-12" />
+                  <QrCode size={36} className="mx-auto mb-2 md:mb-3 md:w-12! md:h-12!" />
                   <p className="font-semibold text-base md:text-lg">PIX</p>
                   <p
                     className={`text-sm mt-1 ${formaPagamento === "pix" ? "text-gray-300" : "text-gray-600"}`}
@@ -479,7 +497,7 @@ export default function Checkout() {
                       : "bg-gray-50 border-gray-200 hover:border-gray-400"
                   }`}
                 >
-                  <CreditCard size={36} className="mx-auto mb-2 md:mb-3 md:!w-12 md:!h-12" />
+                  <CreditCard size={36} className="mx-auto mb-2 md:mb-3 md:w-12! md:h-12!" />
                   <p className="font-semibold text-base md:text-lg">Cartão de Crédito</p>
                   <p
                     className={`text-sm mt-1 ${formaPagamento === "cartao" ? "text-gray-300" : "text-gray-600"}`}

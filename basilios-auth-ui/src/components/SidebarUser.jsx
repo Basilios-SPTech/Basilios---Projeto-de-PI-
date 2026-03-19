@@ -17,7 +17,7 @@ export default function SidebarUser({ open, onClose }) {
   const items = isLogged
     ? [
         { icon: Home,       label: "Início",         href: "/home" },
-        { icon: ShoppingBag,label: "Meus Pedidos",   href: "#pedidos" },
+        { icon: ShoppingBag,label: "Meus Pedidos",   href: "/meus-pedidos" },
         { icon: Package,    label: "Meus Endereços", href: "#enderecos" },
         { icon: UserRound,  label: "Meu Perfil",     href: "/profile" },
         { icon: Hamburger,  label: "Sobre Nós",      href: "/about" },
