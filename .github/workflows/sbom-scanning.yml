@@ -1,211 +1,37 @@
-name: SCA - Bomber (SBOM Vulnerability Scan)
+name: SBOM Scan with HTML Report
 
 on:
   push:
-    branches-ignore:
-      - main
-  pull_request:
-    branches:
-      - main
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pull-requests: write
-  security-events: write
-  issues: write
+    branches: ["main"]
 
 jobs:
-  bomber-scan:
-    name: Generate SBOM + Bomber Scan
+  sbom-scan:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # ----------------------------------------
-      # 1. Instalar Syft (gerador de SBOM)
-      # ----------------------------------------
       - name: Install Syft
-        uses: anchore/sbom-action/download-syft@v0.17.9
-
-      - name: Generate SBOM with Syft
         run: |
-          syft packages . \
-            --output cyclonedx-json=sbom.cyclonedx.json \
-            --output spdx-json=sbom.spdx.json
-          echo "SBOM gerado com sucesso."
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
 
-      # ----------------------------------------
-      # 2. Instalar bomber via .deb (forma oficial no Ubuntu)
-      # ----------------------------------------
-      # bomber é escrito em Go — não existe versão Python.
-      # A instalação oficial no Ubuntu é via pacote .deb com dpkg.
-      - name: Install bomber
+      - name: Generate SBOM
         run: |
-          BOMBER_VERSION="0.5.1"
+          syft . -o cyclonedx-json > sbom.json
 
-          # Faz download do pacote .deb oficial para amd64
-          curl -sSfL \
-            "https://github.com/devops-kung-fu/bomber/releases/download/v${BOMBER_VERSION}/bomber_${BOMBER_VERSION}_linux_amd64.deb" \
-            -o bomber.deb
-
-          # Instala via dpkg (forma recomendada na documentação)
-          sudo dpkg -i bomber.deb
-
-          # Verifica instalação — flag correta é --version (não "version")
-          bomber --version
-
-      # ----------------------------------------
-      # 3. Scan com provider OSV (sem credenciais)
-      # ----------------------------------------
-      - name: Run Bomber with OSV
-        id: bomber_scan
+      - name: Install Bomber
         run: |
-          # Scan com saída JSON para o PR comment
-          bomber scan \
-            --provider osv \
-            --output json \
-            sbom.cyclonedx.json > bomber-osv-results.json 2>&1 || true
+          curl -L https://github.com/devops-kung-fu/bomber/releases/latest/download/bomber_Linux_x86_64.tar.gz \
+          | tar -xz
+          sudo mv bomber /usr/local/bin/
 
-          # Segundo scan só para capturar o exit code de severidade
-          # Exit codes: 0=nenhum, 1=low, 2=medium, 3=high, 4=critical
-          bomber scan \
-            --provider osv \
-            --exitcode \
-            sbom.cyclonedx.json > /dev/null 2>&1
-          echo "BOMBER_EXIT_CODE=$?" >> $GITHUB_ENV
-        continue-on-error: true
-
-      # ----------------------------------------
-      # 4. Scan com GitHub Advisory Database (opcional)
-      # ----------------------------------------
-      # Descomente para cobertura adicional — usa o GITHUB_TOKEN padrão.
-      #
-      # - name: Run Bomber with GitHub Advisory Database
-      #   run: |
-      #     bomber scan \
-      #       --provider github \
-      #       --token ${{ secrets.GITHUB_TOKEN }} \
-      #       --output json \
-      #       sbom.cyclonedx.json > bomber-github-results.json 2>&1 || true
-      #   continue-on-error: true
-
-      # ----------------------------------------
-      # 5. Gerar relatório HTML para artefato
-      # ----------------------------------------
       - name: Generate HTML report
         run: |
-          bomber scan \
-            --provider osv \
-            --output html \
-            sbom.cyclonedx.json > bomber-report.html 2>&1 || true
-        continue-on-error: true
+          bomber scan sbom.json -o html > bomber-report.html
 
-      # ----------------------------------------
-      # 6. Gerar relatório Markdown (exibido nativamente no GitHub)
-      # ----------------------------------------
-      - name: Generate Markdown report
-        run: |
-          bomber scan \
-            --provider osv \
-            --output markdown \
-            sbom.cyclonedx.json 2>/dev/null || true
-
-          # bomber salva o .md com timestamp — renomeia para nome fixo
-          MD_FILE=$(ls *-bomber-results.md 2>/dev/null | head -1)
-          if [ -n "$MD_FILE" ]; then
-            mv "$MD_FILE" bomber-report.md
-            echo "Markdown salvo como bomber-report.md"
-          fi
-        continue-on-error: true
-
-      # ----------------------------------------
-      # 7. Upload dos artefatos (SBOM + relatórios)
-      # ----------------------------------------
-      - name: Upload SBOM and Bomber reports
+      - name: Upload HTML report
         uses: actions/upload-artifact@v4
-        if: always()
         with:
-          name: sbom-and-bomber-reports
-          path: |
-            sbom.cyclonedx.json
-            sbom.spdx.json
-            bomber-osv-results.json
-            bomber-report.html
-            bomber-report.md
-          retention-days: 30
-
-      # ----------------------------------------
-      # 8. Comentário de resumo no PR
-      # ----------------------------------------
-      - name: Comment Bomber summary on PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        env:
-          BOMBER_EXIT_CODE: ${{ env.BOMBER_EXIT_CODE }}
-        with:
-          script: |
-            const fs = require('fs');
-
-            const exitCode = parseInt(process.env.BOMBER_EXIT_CODE || '0', 10);
-
-            const severityMap = {
-              0: '✅ Nenhuma vulnerabilidade',
-              1: '🟡 LOW',
-              2: '🟠 MEDIUM',
-              3: '🔴 HIGH',
-              4: '🚨 CRITICAL',
-            };
-
-            const severity = severityMap[exitCode] ?? '❓ Desconhecido';
-
-            let vulnCount  = 'N/A';
-            let pkgScanned = 'N/A';
-
-            if (fs.existsSync('bomber-osv-results.json')) {
-              try {
-                const raw  = fs.readFileSync('bomber-osv-results.json', 'utf8');
-                const data = JSON.parse(raw);
-                vulnCount  = data?.vulnerabilities?.length ?? data?.results?.length  ?? 'N/A';
-                pkgScanned = data?.packages?.length        ?? data?.components?.length ?? 'N/A';
-              } catch (_) {}
-            }
-
-            const emoji   = exitCode >= 4 ? '🚨' : exitCode >= 3 ? '🔴' : exitCode >= 1 ? '⚠️' : '✅';
-            const blocker = exitCode >= 3
-              ? '\n> 🚨 **Vulnerabilidades HIGH/CRITICAL nas dependências!** Revise antes de fazer merge.'
-              : '';
-
-            const body = [
-              `### ${emoji} SCA — Bomber SBOM Scan`,
-              '',
-              '| Campo | Valor |',
-              '|-------|-------|',
-              `| 📦 **Provider**               | OSV (Google Open Source Vulnerabilities) |`,
-              `| 🔎 **Pacotes escaneados**      | ${pkgScanned} |`,
-              `| 🐛 **Vulnerabilidades**        | ${vulnCount} |`,
-              `| 🎯 **Severidade máxima**       | ${severity} |`,
-              `| 📄 **Relatório HTML/Markdown** | Actions → Artifacts → \`sbom-and-bomber-reports\` |`,
-              blocker,
-              '',
-              '> 💡 O SBOM completo (CycloneDX + SPDX) foi salvo como artefato do workflow.',
-            ].join('\n');
-
-            await github.rest.issues.createComment({
-              owner:        context.repo.owner,
-              repo:         context.repo.repo,
-              issue_number: context.issue.number,
-              body,
-            });
-
-      # ----------------------------------------
-      # 9. Falhar o job se severidade >= HIGH
-      # ----------------------------------------
-      - name: Fail on HIGH or CRITICAL vulnerabilities
-        if: env.BOMBER_EXIT_CODE >= 3
-        run: |
-          echo "::error::Bomber encontrou vulnerabilidades de severidade HIGH ou CRITICAL."
-          echo "Verifique o relatório em Actions → Artifacts → sbom-and-bomber-reports"
-          exit 1
+          name: bomber-html-report
+          path: bomber-report.html
