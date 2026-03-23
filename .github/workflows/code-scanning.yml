@@ -51,7 +51,7 @@ jobs:
           node-version: "20"
 
       - name: Run Snyk Code (SAST)
-        uses: snyk/actions/node@v1.4.0
+        uses: snyk/actions/node@master
         with:
           command: code test
           args: --severity-threshold=low --sarif-file-output=snyk-sast.sarif

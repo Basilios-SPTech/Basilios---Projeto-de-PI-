@@ -13,6 +13,7 @@ permissions:
   contents: read
   pull-requests: write
   security-events: write
+  issues: write
 
 jobs:
   bomber-scan:
@@ -26,8 +27,6 @@ jobs:
       # ----------------------------------------
       # 1. Instalar Syft (gerador de SBOM)
       # ----------------------------------------
-      # Syft escaneia o projeto e gera um SBOM no formato CycloneDX JSON,
-      # que é o formato preferido pelo bomber.
       - name: Install Syft
         uses: anchore/sbom-action/download-syft@v0.17.9
 
@@ -39,37 +38,39 @@ jobs:
           echo "SBOM gerado com sucesso."
 
       # ----------------------------------------
-      # 2. Instalar bomber v0.5.1
+      # 2. Instalar bomber via .deb (forma oficial no Ubuntu)
       # ----------------------------------------
-      # Não há GitHub Action oficial do bomber, então instalamos
-      # o binário diretamente do release mais recente (v0.5.1).
+      # bomber é escrito em Go — não existe versão Python.
+      # A instalação oficial no Ubuntu é via pacote .deb com dpkg.
       - name: Install bomber
         run: |
           BOMBER_VERSION="0.5.1"
+
+          # Faz download do pacote .deb oficial para amd64
           curl -sSfL \
-            "https://github.com/devops-kung-fu/bomber/releases/download/v${BOMBER_VERSION}/bomber_${BOMBER_VERSION}_linux_amd64.tar.gz" \
-            -o bomber.tar.gz
-          tar -xzf bomber.tar.gz bomber
-          chmod +x bomber
-          sudo mv bomber /usr/local/bin/bomber
-          bomber version
+            "https://github.com/devops-kung-fu/bomber/releases/download/v${BOMBER_VERSION}/bomber_${BOMBER_VERSION}_linux_amd64.deb" \
+            -o bomber.deb
+
+          # Instala via dpkg (forma recomendada na documentação)
+          sudo dpkg -i bomber.deb
+
+          # Verifica instalação — flag correta é --version (não "version")
+          bomber --version
 
       # ----------------------------------------
       # 3. Scan com provider OSV (sem credenciais)
       # ----------------------------------------
-      # OSV é o provider padrão e gratuito do bomber.
-      # Usamos --exitcode para que o step falhe se vulnerabilidades
-      # críticas forem encontradas (o exit code reflete a severidade).
-      - name: Run Bomber with OSV (default, no credentials needed)
-        id: bomber_osv
+      - name: Run Bomber with OSV
+        id: bomber_scan
         run: |
+          # Scan com saída JSON para o PR comment
           bomber scan \
             --provider osv \
             --output json \
-            --exitcode \
             sbom.cyclonedx.json > bomber-osv-results.json 2>&1 || true
 
-          # Captura o exit code real para avaliar severidade
+          # Segundo scan só para capturar o exit code de severidade
+          # Exit codes: 0=nenhum, 1=low, 2=medium, 3=high, 4=critical
           bomber scan \
             --provider osv \
             --exitcode \
@@ -78,10 +79,9 @@ jobs:
         continue-on-error: true
 
       # ----------------------------------------
-      # 4. Scan com GitHub Advisory Database (opcional, requer token)
+      # 4. Scan com GitHub Advisory Database (opcional)
       # ----------------------------------------
-      # Para usar o GitHub como provider, basta um GITHUB_TOKEN padrão.
-      # Descomente este bloco se quiser cobertura adicional.
+      # Descomente para cobertura adicional — usa o GITHUB_TOKEN padrão.
       #
       # - name: Run Bomber with GitHub Advisory Database
       #   run: |
@@ -104,7 +104,25 @@ jobs:
         continue-on-error: true
 
       # ----------------------------------------
-      # 6. Upload dos artefatos (SBOM + relatórios)
+      # 6. Gerar relatório Markdown (exibido nativamente no GitHub)
+      # ----------------------------------------
+      - name: Generate Markdown report
+        run: |
+          bomber scan \
+            --provider osv \
+            --output markdown \
+            sbom.cyclonedx.json 2>/dev/null || true
+
+          # bomber salva o .md com timestamp — renomeia para nome fixo
+          MD_FILE=$(ls *-bomber-results.md 2>/dev/null | head -1)
+          if [ -n "$MD_FILE" ]; then
+            mv "$MD_FILE" bomber-report.md
+            echo "Markdown salvo como bomber-report.md"
+          fi
+        continue-on-error: true
+
+      # ----------------------------------------
+      # 7. Upload dos artefatos (SBOM + relatórios)
       # ----------------------------------------
       - name: Upload SBOM and Bomber reports
         uses: actions/upload-artifact@v4
@@ -116,10 +134,11 @@ jobs:
             sbom.spdx.json
             bomber-osv-results.json
             bomber-report.html
+            bomber-report.md
           retention-days: 30
 
       # ----------------------------------------
-      # 7. Comentário de resumo no PR
+      # 8. Comentário de resumo no PR
       # ----------------------------------------
       - name: Comment Bomber summary on PR
         if: github.event_name == 'pull_request'
@@ -130,39 +149,33 @@ jobs:
           script: |
             const fs = require('fs');
 
-            // Exit codes do bomber refletem a severidade máxima encontrada:
-            // 0 = nenhuma vulnerabilidade
-            // 1 = LOW   2 = MEDIUM   3 = HIGH   4 = CRITICAL
             const exitCode = parseInt(process.env.BOMBER_EXIT_CODE || '0', 10);
 
             const severityMap = {
-              0: { label: '✅ Nenhuma vulnerabilidade', color: 'verde' },
-              1: { label: '🟡 LOW',      color: 'amarelo' },
-              2: { label: '🟠 MEDIUM',   color: 'laranja' },
-              3: { label: '🔴 HIGH',     color: 'vermelho' },
-              4: { label: '🚨 CRITICAL', color: 'crítico' },
+              0: '✅ Nenhuma vulnerabilidade',
+              1: '🟡 LOW',
+              2: '🟠 MEDIUM',
+              3: '🔴 HIGH',
+              4: '🚨 CRITICAL',
             };
 
-            const severity = severityMap[exitCode] ?? { label: '❓ Desconhecido', color: '' };
+            const severity = severityMap[exitCode] ?? '❓ Desconhecido';
 
-            // Tenta extrair totais do JSON
             let vulnCount  = 'N/A';
             let pkgScanned = 'N/A';
 
             if (fs.existsSync('bomber-osv-results.json')) {
               try {
-                const raw = fs.readFileSync('bomber-osv-results.json', 'utf8');
-                // bomber JSON inclui metadados de pacotes e vulnerabilidades
-                const lines = raw.split('\n').filter(Boolean);
-                const data  = JSON.parse(lines[lines.length - 1] || '{}');
-                vulnCount  = data?.vulnerabilities?.length ?? 'N/A';
-                pkgScanned = data?.packages?.length ?? 'N/A';
+                const raw  = fs.readFileSync('bomber-osv-results.json', 'utf8');
+                const data = JSON.parse(raw);
+                vulnCount  = data?.vulnerabilities?.length ?? data?.results?.length  ?? 'N/A';
+                pkgScanned = data?.packages?.length        ?? data?.components?.length ?? 'N/A';
               } catch (_) {}
             }
 
-            const emoji     = exitCode >= 4 ? '🚨' : exitCode >= 3 ? '🔴' : exitCode >= 1 ? '⚠️' : '✅';
-            const blocker   = exitCode >= 3
-              ? '\n> 🚨 **ATENÇÃO:** Vulnerabilidades HIGH/CRITICAL detectadas nas dependências! Revise antes de fazer merge.'
+            const emoji   = exitCode >= 4 ? '🚨' : exitCode >= 3 ? '🔴' : exitCode >= 1 ? '⚠️' : '✅';
+            const blocker = exitCode >= 3
+              ? '\n> 🚨 **Vulnerabilidades HIGH/CRITICAL nas dependências!** Revise antes de fazer merge.'
               : '';
 
             const body = [
@@ -170,11 +183,11 @@ jobs:
               '',
               '| Campo | Valor |',
               '|-------|-------|',
-              `| 📦 **Provider** | OSV (Google Open Source Vulnerabilities) |`,
-              `| 🔎 **Pacotes escaneados** | ${pkgScanned} |`,
-              `| 🐛 **Vulnerabilidades encontradas** | ${vulnCount} |`,
-              `| 🎯 **Severidade máxima** | ${severity.label} |`,
-              `| 📄 **Relatório HTML** | Disponível em Actions → Artifacts → \`sbom-and-bomber-reports\` |`,
+              `| 📦 **Provider**               | OSV (Google Open Source Vulnerabilities) |`,
+              `| 🔎 **Pacotes escaneados**      | ${pkgScanned} |`,
+              `| 🐛 **Vulnerabilidades**        | ${vulnCount} |`,
+              `| 🎯 **Severidade máxima**       | ${severity} |`,
+              `| 📄 **Relatório HTML/Markdown** | Actions → Artifacts → \`sbom-and-bomber-reports\` |`,
               blocker,
               '',
               '> 💡 O SBOM completo (CycloneDX + SPDX) foi salvo como artefato do workflow.',
@@ -188,12 +201,11 @@ jobs:
             });
 
       # ----------------------------------------
-      # 8. Falhar o job se severidade >= HIGH
+      # 9. Falhar o job se severidade >= HIGH
       # ----------------------------------------
-      # Remove este step se quiser que o scan seja apenas informativo.
       - name: Fail on HIGH or CRITICAL vulnerabilities
         if: env.BOMBER_EXIT_CODE >= 3
         run: |
-          echo "::error::Vulnerabilidades de severidade HIGH ou CRITICAL encontradas pelo Bomber."
+          echo "::error::Bomber encontrou vulnerabilidades de severidade HIGH ou CRITICAL."
           echo "Verifique o relatório em Actions → Artifacts → sbom-and-bomber-reports"
           exit 1
