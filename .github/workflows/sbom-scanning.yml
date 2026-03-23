@@ -2,7 +2,12 @@ name: SBOM Scan with HTML Report
 
 on:
   push:
-    branches: ["main"]
+    branches-ignore:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   sbom-scan:
