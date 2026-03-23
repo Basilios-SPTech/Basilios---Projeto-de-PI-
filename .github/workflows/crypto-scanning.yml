@@ -1,0 +1,313 @@
+name: Crypto Scan — Quantum Vulnerability Assessment
+
+on:
+  push:
+    branches-ignore:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
+
+jobs:
+  crypto-scan:
+    name: crypto-scanner (Post-Quantum Readiness)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # ----------------------------------------
+      # 1. Instalar o crypto-scanner
+      # ----------------------------------------
+      - name: Install crypto-scanner
+        run: |
+          pip install crypto-scanner --quiet
+          crypto-scanner --version
+
+      # ----------------------------------------
+      # 2. Executar o scan (JSON + HTML)
+      # ----------------------------------------
+      # --exclude: ignora pastas que não são código-fonte próprio
+      - name: Run crypto-scanner
+        run: |
+          crypto-scanner scan . \
+            --output crypto-scan-results.json \
+            --exclude node_modules \
+            --exclude .venv \
+            --exclude venv \
+            --exclude dist \
+            --exclude build \
+            --exclude vendor \
+            --exclude "*.test.*" \
+            --exclude "*.spec.*" \
+            --verbose || true
+
+          crypto-scanner scan . \
+            --html \
+            --output crypto-scan-report.html \
+            --exclude node_modules \
+            --exclude .venv \
+            --exclude venv \
+            --exclude dist \
+            --exclude build \
+            --exclude vendor || true
+        continue-on-error: true
+
+      # ----------------------------------------
+      # 3. Converter JSON → SARIF
+      # (crypto-scanner não gera SARIF nativamente)
+      # ----------------------------------------
+      - name: Convert results to SARIF
+        run: |
+          python3 << 'EOF'
+          import json, sys, hashlib
+          from pathlib import Path
+
+          results_file = Path("crypto-scan-results.json")
+          sarif_file   = Path("crypto-scan.sarif")
+
+          # Mapeamento de risco do crypto-scanner para severidade SARIF
+          SEVERITY_MAP = {
+              "critical": "error",
+              "high":     "error",
+              "medium":   "warning",
+              "low":      "note",
+              "info":     "none",
+          }
+
+          # Descrições das regras por tipo de algoritmo
+          RULE_DESCRIPTIONS = {
+              "RSA":    "RSA é vulnerável a ataques de computadores quânticos via algoritmo de Shor. Migre para algoritmos pós-quânticos (CRYSTALS-Kyber, NTRU).",
+              "ECC":    "Criptografia de curva elíptica (ECC) é vulnerável ao algoritmo de Shor em computadores quânticos.",
+              "DH":     "Diffie-Hellman clássico é vulnerável a ataques quânticos. Use CRYSTALS-Kyber para troca de chaves.",
+              "DSA":    "DSA é vulnerável a ataques quânticos. Considere CRYSTALS-Dilithium ou FALCON.",
+              "MD5":    "MD5 está quebrado — vulnerável a colisões. Use SHA-256 ou superior.",
+              "SHA1":   "SHA-1 está quebrado — vulnerável a ataques de colisão. Use SHA-256 ou superior.",
+              "DES":    "DES/3DES são cifras simétricas fracas. Use AES-256.",
+              "RC4":    "RC4 é inseguro e não deve ser usado em nenhum contexto.",
+              "AES128": "AES-128 tem segurança reduzida em cenários pós-quânticos. Prefira AES-256.",
+          }
+
+          def get_rule_id(algorithm: str) -> str:
+              """Gera um ID de regra normalizado a partir do nome do algoritmo."""
+              key = algorithm.upper().replace("-", "").replace("_", "")
+              for prefix in RULE_DESCRIPTIONS:
+                  if key.startswith(prefix):
+                      return f"CRYPTO-{prefix}"
+              return f"CRYPTO-{key[:8]}"
+
+          def make_fingerprint(file_path: str, line: int, algorithm: str) -> str:
+              raw = f"{file_path}:{line}:{algorithm}"
+              return hashlib.md5(raw.encode()).hexdigest()
+
+          # Carrega os resultados do crypto-scanner
+          if not results_file.exists():
+              print("Arquivo de resultados não encontrado — gerando SARIF vazio.")
+              findings = []
+          else:
+              try:
+                  data     = json.loads(results_file.read_text())
+                  # O crypto-scanner retorna uma lista de findings ou um dict com "findings"
+                  findings = data if isinstance(data, list) else data.get("findings", data.get("results", []))
+              except (json.JSONDecodeError, Exception) as e:
+                  print(f"Aviso: falha ao parsear JSON: {e}. Gerando SARIF vazio.")
+                  findings = []
+
+          # Coleta regras únicas para o campo rules[]
+          rules_seen = {}
+          sarif_results = []
+
+          for f in findings:
+              algorithm   = f.get("algorithm") or f.get("type") or f.get("name", "UNKNOWN")
+              file_path   = f.get("file") or f.get("path") or f.get("location", "unknown")
+              line_number = int(f.get("line") or f.get("line_number") or 1)
+              risk        = (f.get("risk") or f.get("severity") or f.get("quantum_risk") or "medium").lower()
+              description = f.get("description") or f.get("message") or f"Uso de {algorithm} detectado"
+
+              rule_id   = get_rule_id(algorithm)
+              sarif_sev = SEVERITY_MAP.get(risk, "warning")
+
+              # Registra a regra se ainda não foi vista
+              if rule_id not in rules_seen:
+                  rules_seen[rule_id] = {
+                      "id": rule_id,
+                      "name": f"WeakCrypto{algorithm.replace('-','').replace('_','')}",
+                      "shortDescription": {"text": f"Uso de criptografia fraca ou vulnerável: {algorithm}"},
+                      "fullDescription":  {"text": RULE_DESCRIPTIONS.get(algorithm.upper().replace("-","")[:6],
+                                                    f"Algoritmo {algorithm} identificado como vulnerável ou fraco.")},
+                      "helpUri": "https://github.com/mbennett-labs/crypto-scanner",
+                      "defaultConfiguration": {"level": sarif_sev},
+                      "properties": {"tags": ["cryptography", "quantum-readiness", "security"]},
+                  }
+
+              sarif_results.append({
+                  "ruleId": rule_id,
+                  "level": sarif_sev,
+                  "message": {"text": f"{algorithm}: {description}"},
+                  "locations": [{
+                      "physicalLocation": {
+                          "artifactLocation": {
+                              "uri": file_path.lstrip("/"),
+                              "uriBaseId": "%SRCROOT%",
+                          },
+                          "region": {
+                              "startLine":   line_number,
+                              "startColumn": int(f.get("column") or 1),
+                          }
+                      }
+                  }],
+                  "partialFingerprints": {
+                      "primaryLocationLineHash": make_fingerprint(file_path, line_number, algorithm)
+                  },
+                  "properties": {
+                      "algorithm":    algorithm,
+                      "quantum_risk": risk,
+                  },
+              })
+
+          sarif = {
+              "version": "2.1.0",
+              "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+              "runs": [{
+                  "tool": {
+                      "driver": {
+                          "name":            "crypto-scanner",
+                          "version":         "latest",
+                          "informationUri":  "https://github.com/mbennett-labs/crypto-scanner",
+                          "rules":           list(rules_seen.values()),
+                      }
+                  },
+                  "results": sarif_results,
+              }]
+          }
+
+          sarif_file.write_text(json.dumps(sarif, indent=2))
+          print(f"SARIF gerado: {len(sarif_results)} findings, {len(rules_seen)} regras únicas.")
+
+          # Exporta contagens por severidade para o PR comment
+          from collections import Counter
+          counts = Counter(
+              (f.get("risk") or f.get("severity") or f.get("quantum_risk") or "medium").lower()
+              for f in findings
+          )
+          with open("crypto-scan-counts.env", "w") as env:
+              env.write(f"CRYPTO_CRITICAL={counts.get('critical', 0)}\n")
+              env.write(f"CRYPTO_HIGH={counts.get('high', 0)}\n")
+              env.write(f"CRYPTO_MEDIUM={counts.get('medium', 0)}\n")
+              env.write(f"CRYPTO_LOW={counts.get('low', 0)}\n")
+              env.write(f"CRYPTO_TOTAL={len(findings)}\n")
+          EOF
+        continue-on-error: false
+
+      # Carrega as contagens no GITHUB_ENV
+      - name: Load scan counts into env
+        run: |
+          if [ -f crypto-scan-counts.env ]; then
+            cat crypto-scan-counts.env >> $GITHUB_ENV
+          else
+            echo "CRYPTO_CRITICAL=0" >> $GITHUB_ENV
+            echo "CRYPTO_HIGH=0"     >> $GITHUB_ENV
+            echo "CRYPTO_MEDIUM=0"   >> $GITHUB_ENV
+            echo "CRYPTO_LOW=0"      >> $GITHUB_ENV
+            echo "CRYPTO_TOTAL=0"    >> $GITHUB_ENV
+          fi
+
+      # ----------------------------------------
+      # 4. Upload SARIF → GitHub Code Scanning
+      # ----------------------------------------
+      - name: Upload SARIF to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: crypto-scan.sarif
+          category: crypto-scanner
+
+      # ----------------------------------------
+      # 5. Upload artefatos (JSON + HTML + SARIF)
+      # ----------------------------------------
+      - name: Upload crypto-scan artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: crypto-scan-reports
+          path: |
+            crypto-scan-results.json
+            crypto-scan-report.html
+            crypto-scan.sarif
+          retention-days: 30
+
+      # ----------------------------------------
+      # 6. Comentário de resumo no PR
+      # ----------------------------------------
+      - name: Comment summary on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          CRYPTO_CRITICAL: ${{ env.CRYPTO_CRITICAL }}
+          CRYPTO_HIGH: ${{ env.CRYPTO_HIGH }}
+          CRYPTO_MEDIUM: ${{ env.CRYPTO_MEDIUM }}
+          CRYPTO_LOW: ${{ env.CRYPTO_LOW }}
+          CRYPTO_TOTAL: ${{ env.CRYPTO_TOTAL }}
+        with:
+          script: |
+            const critical = parseInt(process.env.CRYPTO_CRITICAL || '0', 10);
+            const high     = parseInt(process.env.CRYPTO_HIGH     || '0', 10);
+            const medium   = parseInt(process.env.CRYPTO_MEDIUM   || '0', 10);
+            const low      = parseInt(process.env.CRYPTO_LOW      || '0', 10);
+            const total    = parseInt(process.env.CRYPTO_TOTAL    || '0', 10);
+
+            const hasBlocker = critical > 0 || high > 0;
+            const emoji = critical > 0 ? '🚨' : high > 0 ? '🔴' : medium > 0 ? '🟠' : total === 0 ? '✅' : '🟡';
+
+            const blockerMsg = hasBlocker
+              ? `\n> ⚠️ **Criptografia vulnerável a ataques quânticos detectada.** Revise antes de fazer merge.\n> Consulte o [NIST Post-Quantum Cryptography](https://csrc.nist.gov/projects/post-quantum-cryptography) para guias de migração.`
+              : total === 0
+              ? `\n> ✅ Nenhum algoritmo criptográfico vulnerável encontrado.`
+              : '';
+
+            const body = [
+              `### ${emoji} Crypto Scan — Quantum Vulnerability Assessment`,
+              '',
+              '| Risco Quântico | Ocorrências |',
+              '|----------------|-------------|',
+              `| 🚨 **Critical** (RSA, ECC, DSA — quebráveis por Shor) | ${critical} |`,
+              `| 🔴 **High** (SHA-1, MD5, DES, RC4)                    | ${high}     |`,
+              `| 🟠 **Medium** (AES-128, chaves curtas)                 | ${medium}   |`,
+              `| 🟡 **Low** (algoritmos legacy mas ainda aceitos)       | ${low}      |`,
+              `| **Total de ocorrências**                               | **${total}** |`,
+              blockerMsg,
+              '',
+              '📊 Relatório HTML completo: **Actions → Artifacts → `crypto-scan-reports`**',
+              '🔍 Alertas inline: **Security → Code Scanning Alerts** (categoria: `crypto-scanner`)',
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner:        context.repo.owner,
+              repo:         context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
+
+      # ----------------------------------------
+      # 7. Falhar o job se houver Critical ou High
+      # ----------------------------------------
+      # Remova este step se quiser apenas observar sem bloquear o PR.
+      - name: Fail on Critical or High quantum-vulnerable crypto
+        if: env.CRYPTO_CRITICAL > 0 || env.CRYPTO_HIGH > 0
+        run: |
+          echo "::error::crypto-scanner encontrou ${{ env.CRYPTO_CRITICAL }} critical e ${{ env.CRYPTO_HIGH }} high."
+          echo "Algoritmos vulneráveis a ataques quânticos (RSA, ECC, SHA-1, MD5, DES) devem ser substituídos."
+          echo "Veja o relatório em: Actions → Artifacts → crypto-scan-reports"
+          exit 1
