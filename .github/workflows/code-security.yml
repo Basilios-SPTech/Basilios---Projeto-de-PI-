@@ -289,11 +289,11 @@ jobs:
               '',
               '| Categoria | Resultado |',
               '|-----------|-----------|',
-              `| 🔐 **TruffleHog (secrets verificados)**  | ${truffleHogCount > 0 ? \`🚨 \${truffleHogCount} encontrado(s)\` : '✅ Nenhum'} |`,
-              `| 🔍 **Detect-Secrets (não auditados)**    | ${detectSecretsCount > 0 ? \`⚠️ \${detectSecretsCount} pendente(s)\` : '✅ Nenhum'} |`,
-              `| ❌ **Erros de Lint**                     | ${lintErrors > 0 ? \`⚠️ \${lintErrors}\` : '✅ 0'} |`,
+              `| 🔐 **TruffleHog (secrets verificados)**  | ${truffleHogCount > 0 ? '🚨 ' + truffleHogCount + ' encontrado(s)' : '✅ Nenhum'} |`,
+              `| 🔍 **Detect-Secrets (não auditados)**    | ${detectSecretsCount > 0 ? '⚠️ ' + detectSecretsCount + ' pendente(s)' : '✅ Nenhum'} |`,
+              `| ❌ **Erros de Lint**                     | ${lintErrors > 0 ? '⚠️ ' + lintErrors : '✅ 0'} |`,
               `| ⚠️ **Warnings de Lint**                  | ${lintWarnings} |`,
-              `| 🛡️ **Problemas de Segurança (ESLint)**  | ${securityIssues > 0 ? \`⚠️ \${securityIssues}\` : '✅ 0'} |`,
+              `| 🛡️ **Problemas de Segurança (ESLint)**  | ${securityIssues > 0 ? '⚠️ ' + securityIssues : '✅ 0'} |`,
               '',
               totalSecrets > 0
                 ? '> 🚨 **CRÍTICO:** Secrets ativos detectados! Revogue as credenciais imediatamente e verifique o histórico Git.'
@@ -303,7 +303,7 @@ jobs:
                 : '',
               '',
               '📎 Detalhes: **Security → Code Scanning Alerts** (categoria: `trufflehog`) e logs do workflow.',
-            ].filter(l => l !== undefined).join('\n');
+            ].filter(l => l !== '').join('\n');
 
             await github.rest.issues.createComment({
               owner:        context.repo.owner,
