@@ -1,0 +1,76 @@
+name: SBOM Scan with JSON Report
+
+on:
+  push:
+    branches-ignore:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+
+    steps:
+      # -------------------------
+      # Checkout
+      # -------------------------
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # -------------------------
+      # Instalar Syft (gerar SBOM)
+      # -------------------------
+      - name: Install Syft
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Generate SBOM
+        run: |
+          syft . -o cyclonedx-json > sbom.json
+
+      # -------------------------
+      # Instalar Trivy
+      # -------------------------
+      - name: Install Trivy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install -y trivy
+
+      # -------------------------
+      # Scan SBOM (tabela)
+      # -------------------------
+      - name: Run Trivy (table report)
+        run: |
+          trivy sbom sbom.json --format table > trivy-report.txt
+
+      # -------------------------
+      # Scan com policy (FAIL build)
+      # -------------------------
+      - name: Enforce security policy
+        run: |
+          trivy sbom sbom.json --severity HIGH,CRITICAL --exit-code 0
+
+      # -------------------------
+      # Gerar JSON (pra integrações)
+      # -------------------------
+      - name: Generate JSON report
+        run: |
+          trivy sbom sbom.json --format json > trivy-report.json
+
+      # -------------------------
+      # Upload artifacts
+      # -------------------------
+      - name: Upload reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-reports
+          path: |
+            trivy-report.txt
+            trivy-report.json

@@ -1,43 +1,185 @@
 name: Code Quality & Secrets Scan
+
 on:
   push:
     branches-ignore:
       - main
   pull_request:
-    branches-ignore:
+    branches:
       - main
   workflow_dispatch:
+
 permissions:
   contents: read
   pull-requests: write
   security-events: write
+
 jobs:
   security:
     name: Linting + Secrets Detection
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Necessário para detectar secrets em todo histórico
+          fetch-depth: 0 # Necessário para TruffleHog escanear todo o histórico
 
       # ----------------
       # Secrets Detection - TruffleHog
       # ----------------
+      # TruffleHog não suporta SARIF nativamente — usamos --json e
+      # convertemos para SARIF com um script Python inline.
       - name: Run TruffleHog
-        uses: trufflesecurity/trufflehog@main
+        id: trufflehog
+        uses: trufflesecurity/trufflehog@v3.88.2
         with:
-          extra_args: --json --only-verified
+          extra_args: --only-verified --json
         continue-on-error: true
+
+      - name: Capture TruffleHog JSON output
+        run: |
+          # A action do TruffleHog imprime JSON no stdout do runner.
+          # Capturamos via log do step anterior usando a GitHub API,
+          # ou rodamos o binário diretamente para ter o arquivo em disco.
+          pip install trufflehog3 --quiet 2>/dev/null || true
+
+          # Instala o binário Go diretamente para saída em arquivo
+          curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh \
+            | sh -s -- -b /usr/local/bin v3.88.2 2>/dev/null || true
+
+          # Escaneia o repositório e salva JSON em disco
+          trufflehog git file://. \
+            --only-verified \
+            --json \
+            --no-update \
+            > trufflehog-results.jsonl 2>/dev/null || true
+
+          echo "TruffleHog scan concluído."
+          echo "TRUFFLEHOG_COUNT=$(wc -l < trufflehog-results.jsonl | tr -d ' ')" >> $GITHUB_ENV
+        continue-on-error: true
+
+      - name: Convert TruffleHog JSON to SARIF
+        run: |
+          python3 << 'EOF'
+          import json, hashlib
+          from pathlib import Path
+
+          jsonl_file = Path("trufflehog-results.jsonl")
+          sarif_file = Path("trufflehog.sarif")
+
+          findings = []
+          if jsonl_file.exists():
+              for line in jsonl_file.read_text().splitlines():
+                  line = line.strip()
+                  if not line:
+                      continue
+                  try:
+                      findings.append(json.loads(line))
+                  except json.JSONDecodeError:
+                      pass
+
+          rules_seen = {}
+          sarif_results = []
+
+          for f in findings:
+              detector  = f.get("DetectorName") or f.get("detector_name") or "UnknownDetector"
+              rule_id   = f"TRUFFLEHOG-{detector.upper().replace(' ', '_')}"
+              file_path = (
+                  f.get("SourceMetadata", {}).get("Data", {}).get("Git", {}).get("file")
+                  or f.get("file") or "unknown"
+              )
+              line_num  = int(
+                  f.get("SourceMetadata", {}).get("Data", {}).get("Git", {}).get("line", 1)
+                  or f.get("line", 1)
+              )
+              raw       = f.get("Raw") or f.get("raw") or ""
+              commit    = f.get("SourceMetadata", {}).get("Data", {}).get("Git", {}).get("commit", "")
+
+              fingerprint = hashlib.md5(f"{file_path}:{line_num}:{detector}:{raw[:32]}".encode()).hexdigest()
+
+              if rule_id not in rules_seen:
+                  rules_seen[rule_id] = {
+                      "id": rule_id,
+                      "name": f"LeakedSecret{detector.replace(' ', '')}",
+                      "shortDescription": {"text": f"Credencial verificada detectada: {detector}"},
+                      "fullDescription":  {"text": f"TruffleHog detectou e verificou uma credencial ativa do tipo {detector}. Revogue imediatamente."},
+                      "helpUri": "https://github.com/trufflesecurity/trufflehog",
+                      "defaultConfiguration": {"level": "error"},
+                      "properties": {"tags": ["secrets", "credentials", "security"]},
+                  }
+
+              sarif_results.append({
+                  "ruleId": rule_id,
+                  "level": "error",
+                  "message": {
+                      "text": f"Credencial {detector} verificada como ativa.{(' Commit: ' + commit[:8]) if commit else ''}"
+                  },
+                  "locations": [{
+                      "physicalLocation": {
+                          "artifactLocation": {
+                              "uri": file_path.lstrip("/"),
+                              "uriBaseId": "%SRCROOT%",
+                          },
+                          "region": {"startLine": max(line_num, 1), "startColumn": 1},
+                      }
+                  }],
+                  "partialFingerprints": {"primaryLocationLineHash": fingerprint},
+              })
+
+          sarif = {
+              "version": "2.1.0",
+              "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+              "runs": [{
+                  "tool": {
+                      "driver": {
+                          "name": "TruffleHog",
+                          "version": "3.88.2",
+                          "informationUri": "https://github.com/trufflesecurity/trufflehog",
+                          "rules": list(rules_seen.values()),
+                      }
+                  },
+                  "results": sarif_results,
+              }]
+          }
+
+          sarif_file.write_text(json.dumps(sarif, indent=2))
+          print(f"SARIF gerado: {len(sarif_results)} secrets encontrados.")
+          EOF
+        continue-on-error: false
+
+      - name: Upload TruffleHog SARIF to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v4 # ✅ v4 (v3 deprecado em dez/2026)
+        if: always()
+        with:
+          sarif_file: trufflehog.sarif
+          category: trufflehog
 
       # ----------------
       # Secrets Detection - Detect-Secrets
       # ----------------
       - name: Run Detect-Secrets
         run: |
-          pip install detect-secrets
-          detect-secrets scan --baseline .secrets.baseline || true
-          detect-secrets audit .secrets.baseline > secrets-report.txt || true
+          pip install detect-secrets --quiet
+
+          # Cria baseline se não existir (evita falha em repos novos)
+          if [ ! -f .secrets.baseline ]; then
+            detect-secrets scan > .secrets.baseline
+          fi
+
+          detect-secrets scan --baseline .secrets.baseline
+          detect-secrets audit .secrets.baseline --report --json > secrets-report.json 2>/dev/null || true
+
+          NEW_SECRETS=$(python3 -c "
+          import json, sys
+          try:
+              data = json.load(open('secrets-report.json'))
+              count = sum(1 for r in data.get('results', {}).values() for s in r if not s.get('is_verified', False))
+              print(count)
+          except:
+              print(0)
+          ")
+          echo "DETECT_SECRETS_COUNT=$NEW_SECRETS" >> $GITHUB_ENV
         continue-on-error: true
 
       # ----------------
@@ -49,7 +191,14 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        run: npm ci || npm install
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          elif [ -f package.json ]; then
+            npm install
+          else
+            echo "Nenhum package.json encontrado, pulando instalação."
+          fi
         continue-on-error: true
 
       - name: Run ESLint
@@ -65,9 +214,18 @@ jobs:
       # ----------------
       - name: Run ESLint Security Rules
         run: |
-          npm install --save-dev eslint-plugin-security
+          npm install --save-dev eslint-plugin-security --quiet
+
           npx eslint . \
+            --no-eslintrc \
             --plugin security \
+            --rule 'security/detect-eval-with-expression: error' \
+            --rule 'security/detect-non-literal-fs-filename: warn' \
+            --rule 'security/detect-non-literal-regexp: warn' \
+            --rule 'security/detect-object-injection: warn' \
+            --rule 'security/detect-possible-timing-attacks: warn' \
+            --rule 'security/detect-pseudoRandomBytes: error' \
+            --rule 'security/detect-unsafe-regex: error' \
             --format json \
             --output-file eslint-security.json || true
         continue-on-error: true
@@ -82,24 +240,32 @@ jobs:
           script: |
             const fs = require('fs');
 
-            let secretsFound = 0;
-            let lintErrors = 0;
-            let lintWarnings = 0;
-            let securityIssues = 0;
+            let lintErrors         = 0;
+            let lintWarnings       = 0;
+            let securityIssues     = 0;
+            let detectSecretsCount = parseInt(process.env.DETECT_SECRETS_COUNT || '0', 10);
 
-            // Parse TruffleHog results (check logs)
-            // TruffleHog outputs to stdout, hard to parse here
+            // Parse TruffleHog via SARIF gerado pelo script Python
+            let truffleHogCount = 0;
+            if (fs.existsSync('trufflehog.sarif')) {
+              try {
+                const sarif = JSON.parse(fs.readFileSync('trufflehog.sarif'));
+                truffleHogCount = sarif.runs?.[0]?.results?.length ?? 0;
+              } catch (e) {
+                console.log('Erro ao parsear TruffleHog SARIF:', e.message);
+              }
+            }
 
             // Parse ESLint
             if (fs.existsSync('eslint-report.json')) {
               try {
                 const eslint = JSON.parse(fs.readFileSync('eslint-report.json'));
                 eslint.forEach(file => {
-                  lintErrors += file.errorCount || 0;
-                  lintWarnings += file.warningCount || 0;
+                  lintErrors   += file.errorCount   || 0;
+                  lintWarnings += file.warningCount  || 0;
                 });
               } catch (e) {
-                console.log('Error parsing ESLint:', e.message);
+                console.log('Erro ao parsear ESLint:', e.message);
               }
             }
 
@@ -108,34 +274,40 @@ jobs:
               try {
                 const security = JSON.parse(fs.readFileSync('eslint-security.json'));
                 security.forEach(file => {
-                  securityIssues += file.errorCount || 0;
+                  securityIssues += (file.errorCount || 0) + (file.warningCount || 0);
                 });
               } catch (e) {
-                console.log('Error parsing ESLint Security:', e.message);
+                console.log('Erro ao parsear ESLint Security:', e.message);
               }
             }
 
-            const emoji = secretsFound > 0 ? '🔐🚨' : lintErrors > 10 ? '⚠️' : '✅';
+            const totalSecrets = truffleHogCount + detectSecretsCount;
+            const emoji = totalSecrets > 0 ? '🚨' : lintErrors > 0 ? '⚠️' : '✅';
 
-            const body = `
-            ### ${emoji} Code Quality & Security Summary
+            const body = [
+              `### ${emoji} Code Quality & Security Summary`,
+              '',
+              '| Categoria | Resultado |',
+              '|-----------|-----------|',
+              `| 🔐 **TruffleHog (secrets verificados)**  | ${truffleHogCount > 0 ? '🚨 ' + truffleHogCount + ' encontrado(s)' : '✅ Nenhum'} |`,
+              `| 🔍 **Detect-Secrets (não auditados)**    | ${detectSecretsCount > 0 ? '⚠️ ' + detectSecretsCount + ' pendente(s)' : '✅ Nenhum'} |`,
+              `| ❌ **Erros de Lint**                     | ${lintErrors > 0 ? '⚠️ ' + lintErrors : '✅ 0'} |`,
+              `| ⚠️ **Warnings de Lint**                  | ${lintWarnings} |`,
+              `| 🛡️ **Problemas de Segurança (ESLint)**  | ${securityIssues > 0 ? '⚠️ ' + securityIssues : '✅ 0'} |`,
+              '',
+              totalSecrets > 0
+                ? '> 🚨 **CRÍTICO:** Secrets ativos detectados! Revogue as credenciais imediatamente e verifique o histórico Git.'
+                : '',
+              lintErrors > 0
+                ? '> ⚠️ Corrija os erros de lint antes de fazer merge.'
+                : '',
+              '',
+              '📎 Detalhes: **Security → Code Scanning Alerts** (categoria: `trufflehog`) e logs do workflow.',
+            ].filter(l => l !== '').join('\n');
 
-            | Category | Count |
-            |----------|-------|
-            | 🔐 **Secrets Detected** | ${secretsFound > 0 ? '⚠️ Check logs!' : '✅ None'} |
-            | ❌ **Lint Errors** | ${lintErrors} |
-            | ⚠️ **Lint Warnings** | ${lintWarnings} |
-            | 🛡️ **Security Issues** | ${securityIssues} |
-
-            ${secretsFound > 0 ? '🚨 **CRITICAL:** Potential secrets found! Review TruffleHog output immediately.' : ''}
-            ${lintErrors > 0 ? '⚠️ Fix linting errors before merging.' : ''}
-
-            📎 Check workflow logs for detailed results.
-            `;
-
-            github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
+            await github.rest.issues.createComment({
+              owner:        context.repo.owner,
+              repo:         context.repo.repo,
               issue_number: context.issue.number,
-              body
+              body,
             });
