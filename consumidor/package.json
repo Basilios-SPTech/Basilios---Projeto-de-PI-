@@ -1,0 +1,13 @@
+{
+  "name": "consumidor",
+  "version": "1.0.0",
+  "description": "Consumidor de pedidos Basilios via RabbitMQ",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.4",
+    "express": "^4.19.2"
+  }
+}
