@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
@@ -17,13 +17,19 @@ import AddAddress from "./AddAddress";
 import ProgressBar from "./loading/ProgressBar";
 import CustomizeBurger from "./CustomizeBurger";
 import { http } from "../services/http.js";
+import {
+  listMyAddresses,
+  deleteAddress as deleteAddressApi,
+} from "../services/addressApi.js";
 
 const CHAVE_CART = "carrinho-basilios";
 
 export default function Checkout() {
   const [formaPagamento, setFormaPagamento] = useState("pix");
-  const [enderecoSelecionado, setEnderecoSelecionado] = useState("1");
+  const [enderecoSelecionado, setEnderecoSelecionado] = useState("");
   const [endUser, setEndUser] = useState([]);
+  const [loadingAddresses, setLoadingAddresses] = useState(true);
+  const [addressError, setAddressError] = useState("");
   const [itens, setItens] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [deletingAddress, setDeletingAddress] = useState(false);
@@ -31,6 +37,54 @@ export default function Checkout() {
   const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const navigate = useNavigate();
+
+  const loadAddresses = useCallback(async () => {
+    setLoadingAddresses(true);
+    setAddressError("");
+
+    try {
+      const enderecos = await listMyAddresses();
+      setEndUser(enderecos);
+
+      const preferredAddressId = Number(
+        localStorage.getItem("checkout-address-id"),
+      );
+
+      setEnderecoSelecionado((current) => {
+        if (
+          Number.isFinite(preferredAddressId) &&
+          enderecos.some((endereco) => Number(endereco.id) === preferredAddressId)
+        ) {
+          return String(preferredAddressId);
+        }
+
+        if (
+          current &&
+          enderecos.some((endereco) => String(endereco.id) === String(current))
+        ) {
+          return current;
+        }
+
+        return "";
+      });
+
+      localStorage.removeItem("checkout-address-id");
+    } catch (err) {
+      console.error("Erro ao carregar endereços:", err);
+
+      if (err?.status === 401) {
+        toast.error("Sessão expirada. Faça login novamente.");
+        navigate("/login");
+        return;
+      }
+
+      setEndUser([]);
+      setEnderecoSelecionado("");
+      setAddressError(err?.message || "Erro ao carregar endereços.");
+    } finally {
+      setLoadingAddresses(false);
+    }
+  }, [navigate]);
 
   const getAddressLabel = (endereco) => {
     if (endereco?.enderecoCompleto) return endereco.enderecoCompleto;
@@ -93,13 +147,15 @@ export default function Checkout() {
 
     setDeletingAddress(true);
     try {
-      await http.delete(`/address/${id}`);
-      const updated = endUser.filter((endereco) => Number(endereco.id) !== id);
-      setEndUser(updated);
+      const wasSelected = Number(enderecoSelecionado) === id;
 
-      if (Number(enderecoSelecionado) === id) {
-        setEnderecoSelecionado(updated.length > 0 ? String(updated[0].id) : "");
+      await deleteAddressApi(id);
+
+      if (wasSelected) {
+        setEnderecoSelecionado("");
       }
+
+      await loadAddresses();
 
       setAddressToDelete(null);
       toast.success("Endereço excluído com sucesso.");
@@ -132,6 +188,11 @@ export default function Checkout() {
   };
 
   const endOrder = async () => {
+    if (!enderecoSelecionado) {
+      toast.error("Selecione um endereço antes de finalizar o pedido.");
+      return;
+    }
+
     if (submitting) return;
     setSubmitting(true);
 
@@ -212,6 +273,11 @@ export default function Checkout() {
     // localStorage.removeItem(CHAVE_CART);
     } catch (err) {
       console.error("Erro ao finalizar pedido:", err);
+      if (err?.status === 401) {
+        toast.error("Sessão expirada. Faça login novamente.");
+        navigate("/login");
+        return;
+      }
       toast.error("Erro ao finalizar pedido. Tente novamente.");
       setSubmitting(false);
     }
@@ -219,40 +285,21 @@ export default function Checkout() {
 
   useEffect(() => {
     try {
-      async function getEnderecos() {
-        try {
-          const response = await http.get("/address");
-
-          const enderecos = Array.isArray(response.data) ? response.data : [];
-          setEndUser(enderecos);
-
-          const preferredAddressId = Number(
-            localStorage.getItem("checkout-address-id"),
-          );
-
-          if (
-            Number.isFinite(preferredAddressId) &&
-            enderecos.some((endereco) => endereco.id === preferredAddressId)
-          ) {
-            setEnderecoSelecionado(preferredAddressId);
-          } else if (enderecos.length > 0) {
-            setEnderecoSelecionado(enderecos[0].id);
-          }
-
-          localStorage.removeItem("checkout-address-id");
-        } catch (err) {
-          console.log(err);
-        }
-      }
-
-      getEnderecos();
+      loadAddresses();
       const cart = JSON.parse(localStorage.getItem(CHAVE_CART) || "[]");
       setItens(Array.isArray(cart) ? cart : []);
     } catch (err) {
       console.log(err);
       setItens([]);
     }
-  }, []);
+  }, [loadAddresses]);
+
+  const handleAddressCreated = async (createdAddress) => {
+    await loadAddresses();
+    if (createdAddress?.id != null) {
+      setEnderecoSelecionado(String(createdAddress.id));
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900 px-4 py-6 md:p-8">
@@ -404,64 +451,94 @@ export default function Checkout() {
                 </h2>
               </div>
               <div className="space-y-3">
-                {endUser.map((endereco) => (
-                  <label
-                    key={endereco.id}
-                    className={`block p-3 md:p-4 rounded-lg cursor-pointer transition-all ${
-                      Number(enderecoSelecionado) === endereco.id
-                        ? "bg-gray-800 text-white border-2 border-gray-700"
-                        : "bg-gray-50 border-2 border-gray-200 hover:border-gray-400"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="endereco"
-                      value={endereco.id}
-                      checked={Number(enderecoSelecionado) === endereco.id}
-                      onChange={(e) => setEnderecoSelecionado(e.target.value)}
-                      className="hidden"
-                    />
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div
-                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                            Number(enderecoSelecionado) === endereco.id
-                              ? "border-white"
-                              : "border-gray-400"
-                          }`}
-                        >
-                          {Number(enderecoSelecionado) === endereco.id && (
-                            <div className="w-3 h-3 bg-white rounded-full"></div>
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-semibold text-sm md:text-base leading-none truncate">
-                            {getAddressLabel(endereco)}
-                          </p>
-                          <p
-                            className={`text-sm ${Number(enderecoSelecionado) === endereco.id ? "text-gray-300" : "text-gray-600"}`}
-                          ></p>
-                        </div>
-                      </div>
+                {loadingAddresses ? (
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                    Carregando endereços...
+                  </div>
+                ) : null}
 
-                      <button
-                        type="button"
-                        onClick={(e) => openDeleteAddressModal(endereco, e)}
-                        className={`shrink-0 p-2 rounded-md transition-colors ${
+                {!loadingAddresses && addressError ? (
+                  <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                    <p>{addressError}</p>
+                    <button
+                      type="button"
+                      onClick={loadAddresses}
+                      className="mt-3 rounded-md bg-red-600 px-3 py-1.5 text-white hover:bg-red-700"
+                    >
+                      Tentar novamente
+                    </button>
+                  </div>
+                ) : null}
+
+                {!loadingAddresses && !addressError && endUser.length === 0 ? (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                    <p className="font-semibold">Nenhum endereço cadastrado.</p>
+                    <p className="mt-1">
+                      Adicione um endereço para continuar com a finalização do pedido.
+                    </p>
+                  </div>
+                ) : null}
+
+                {!loadingAddresses && !addressError
+                  ? endUser.map((endereco) => (
+                      <label
+                        key={endereco.id}
+                        className={`block p-3 md:p-4 rounded-lg cursor-pointer transition-all ${
                           Number(enderecoSelecionado) === endereco.id
-                            ? "hover:bg-gray-700 text-gray-200"
-                            : "hover:bg-red-50 text-red-600"
+                            ? "bg-gray-800 text-white border-2 border-gray-700"
+                            : "bg-gray-50 border-2 border-gray-200 hover:border-gray-400"
                         }`}
-                        title="Excluir endereço"
-                        aria-label="Excluir endereço"
                       >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </label>
-                ))}
+                        <input
+                          type="radio"
+                          name="endereco"
+                          value={endereco.id}
+                          checked={Number(enderecoSelecionado) === endereco.id}
+                          onChange={(e) => setEnderecoSelecionado(e.target.value)}
+                          className="hidden"
+                        />
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div
+                              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                Number(enderecoSelecionado) === endereco.id
+                                  ? "border-white"
+                                  : "border-gray-400"
+                              }`}
+                            >
+                              {Number(enderecoSelecionado) === endereco.id && (
+                                <div className="w-3 h-3 bg-white rounded-full"></div>
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-semibold text-sm md:text-base leading-none truncate">
+                                {getAddressLabel(endereco)}
+                              </p>
+                              <p
+                                className={`text-sm ${Number(enderecoSelecionado) === endereco.id ? "text-gray-300" : "text-gray-600"}`}
+                              ></p>
+                            </div>
+                          </div>
 
-                <AddAddress />
+                          <button
+                            type="button"
+                            onClick={(e) => openDeleteAddressModal(endereco, e)}
+                            className={`shrink-0 p-2 rounded-md transition-colors ${
+                              Number(enderecoSelecionado) === endereco.id
+                                ? "hover:bg-gray-700 text-gray-200"
+                                : "hover:bg-red-50 text-red-600"
+                            }`}
+                            title="Excluir endereço"
+                            aria-label="Excluir endereço"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </label>
+                    ))
+                  : null}
+
+                <AddAddress onCreated={handleAddressCreated} />
               </div>
             </div>
 
@@ -550,7 +627,7 @@ export default function Checkout() {
 
               <button
                 onClick={endOrder}
-                disabled={!Array.isArray(itens) || itens.length === 0 || submitting}
+                disabled={!Array.isArray(itens) || itens.length === 0 || submitting || !enderecoSelecionado}
                 className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed text-white py-3 md:py-4 rounded-lg font-semibold text-base md:text-lg transition-colors"
               >
                 Finalizar Pedido
@@ -559,6 +636,12 @@ export default function Checkout() {
               {(!Array.isArray(itens) || itens.length === 0) && (
                 <p className="mt-2 text-xs text-amber-600 text-center font-medium">
                   Adicione itens ao pedido para liberar a finalização.
+                </p>
+              )}
+
+              {!!Array.isArray(itens) && itens.length > 0 && !enderecoSelecionado && (
+                <p className="mt-2 text-xs text-amber-600 text-center font-medium">
+                  Selecione um endereço para finalizar.
                 </p>
               )}
 
@@ -572,13 +655,13 @@ export default function Checkout() {
       </div>
 
       {addressToDelete && (
-        <div className="fixed inset-0 z-[1000] bg-black/50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-1000 bg-black/50 flex items-center justify-center p-4">
           <div className="w-full max-w-md rounded-lg bg-white shadow-xl p-5">
             <h3 className="text-lg font-semibold text-gray-900">Excluir endereço</h3>
-            <p className="mt-2 text-sm text-gray-600 break-words">
+            <p className="mt-2 text-sm text-gray-600 wrap-break-word">
               Tem certeza que deseja excluir este endereço?
             </p>
-            <p className="mt-2 text-sm font-medium text-gray-800 break-words">
+            <p className="mt-2 text-sm font-medium text-gray-800 wrap-break-word">
               {getAddressLabel(addressToDelete)}
             </p>
 

@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { Plus, X, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
-import { http } from "../services/http.js";
+import { createAddress } from "../services/addressApi.js";
 
-export default function CadastroEndereco() {
+export default function CadastroEndereco({ onCreated }) {
   const [mostrarModal, setMostrarModal] = useState(false);
   const [carregandoCep, setCarregandoCep] = useState(false);
   const [enviando, setEnviando] = useState(false);
@@ -93,11 +93,7 @@ export default function CadastroEndereco() {
     setEnviando(true);
 
     try {
-      console.log("Dados enviados:", novoEndereco);
-
-      // Código real com axios:
-
-      let body = {
+      const body = {
         cep: novoEndereco.cep,
         rua: novoEndereco.rua,
         numero: novoEndereco.numero,
@@ -109,18 +105,14 @@ export default function CadastroEndereco() {
         longitude: -46.6333,
       };
 
-      const response = await http.post("/address", body);
+      const createdAddress = await createAddress(body);
 
-      console.log(response);
-      if (response.status >= 200 && response.status < 300) {
-        toast.success("Endereço cadastrado com sucesso", { duration: 3000 });
-        setMostrarModal(false);
-        setTimeout(() => {
-          window.location.reload();
-        }, 800);
-      } else {
-        toast.error("Erro ao cadastrar endereço");
+      if (typeof onCreated === "function") {
+        await onCreated(createdAddress);
       }
+
+      toast.success("Endereço cadastrado com sucesso", { duration: 3000 });
+      setMostrarModal(false);
 
       setNovoEndereco({
         cep: "",
@@ -135,7 +127,6 @@ export default function CadastroEndereco() {
       console.error("Erro ao salvar endereço:", error);
       const backendMessage =
         error?.response?.data?.message ||
-        error?.data?.message ||
         error?.message ||
         "Erro ao salvar endereço. Tente novamente.";
       toast.error(backendMessage);
@@ -152,7 +143,7 @@ export default function CadastroEndereco() {
     <>
       <button
         onClick={() => setMostrarModal(true)}
-        className="w-full bg-gray-800 hover:bg-gray-900 text-white py-4 rounded-lg font-semibold text-lg transition-colors flex items-center justify-center gap-2"
+        className="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-lg font-semibold text-lg transition-colors flex items-center justify-center gap-2"
       >
         <Plus size={24} />
         Cadastrar Novo Endereço

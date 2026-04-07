@@ -376,7 +376,7 @@ export default function MyOrders() {
     <>
       <MenuButtonAuto />
 
-      <section className="min-h-screen bg-transparent px-4 py-6 md:px-8">
+      <section className="my-orders-page min-h-screen bg-transparent px-4 py-6 md:px-8">
         <div className="mx-auto max-w-5xl">
           <button
             type="button"
@@ -663,9 +663,9 @@ export default function MyOrders() {
         </div>
 
         {selectedOrder && (
-          <div className="fixed inset-0 z-[150] flex items-end justify-center bg-zinc-950/55 p-0 backdrop-blur-[2px] md:items-center md:p-4">
-            <div className="max-h-[90vh] w-full overflow-hidden rounded-t-2xl border border-zinc-200 bg-white shadow-[0_28px_80px_rgba(15,23,42,0.35)] md:max-w-3xl md:rounded-2xl">
-              <div className="flex items-start justify-between gap-3 border-b border-zinc-200 bg-zinc-50 px-4 py-3 md:px-5">
+          <div className="fixed inset-0 z-150 flex items-end justify-center bg-zinc-950/55 p-0 backdrop-blur-[2px] md:items-center md:p-4">
+            <div className="my-orders-modal max-h-[90vh] w-full overflow-hidden rounded-t-2xl border border-zinc-200 bg-white shadow-[0_28px_80px_rgba(15,23,42,0.35)] md:max-w-3xl md:rounded-2xl">
+              <div className="my-orders-modal-header flex items-start justify-between gap-3 border-b border-zinc-200 bg-zinc-50 px-4 py-3 md:px-5">
                 <div className="text-center md:text-left">
                   <p className="text-xs font-bold uppercase tracking-wide text-zinc-500">
                     Detalhes do pedido
