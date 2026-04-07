@@ -31,9 +31,8 @@ const STATUS_LABELS = {
   PENDENTE: "Recebido",
   CONFIRMADO: "Confirmado",
   PREPARANDO: "Em preparação",
-  // Na tela do cliente, DESPACHADO deve ser exibido como recebido.
-  DESPACHADO: "Recebido",
-  ENTREGUE: "Recebido",
+  DESPACHADO: "Saiu para entrega",
+  ENTREGUE: "Entregue",
   CANCELADO: "Cancelado",
 };
 
@@ -58,7 +57,7 @@ const STATUS_ICON_STYLES = {
 function StatusIcon({ status, size = 14 }) {
   if (status === "PENDENTE") return <Clock3 size={size} />;
   if (status === "CONFIRMADO") return <CheckCircle2 size={size} />;
-  if (status === "DESPACHADO") return <CheckCircle2 size={size} />;
+  if (status === "DESPACHADO") return <Truck size={size} />;
   if (status === "ENTREGUE") return <CheckCircle2 size={size} />;
   if (status === "CANCELADO") return <XCircle size={size} />;
   return <Package size={size} />;

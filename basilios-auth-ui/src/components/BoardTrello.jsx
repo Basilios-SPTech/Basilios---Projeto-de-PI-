@@ -160,6 +160,14 @@ export default function BoardPedidos() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expandedAddresses, setExpandedAddresses] = useState({});
+  const [confirmModal, setConfirmModal] = useState({
+    open: false,
+    step: 1,
+    mode: null,
+    task: null,
+  });
+  const [finalizingOrderId, setFinalizingOrderId] = useState(null);
+  const [finalizingAll, setFinalizingAll] = useState(false);
 
   // ─── Touch Drag-and-Drop ───
   const touchState = useRef({
@@ -373,6 +381,130 @@ export default function BoardPedidos() {
 
   const toggleAddress = (taskId) => {
     setExpandedAddresses((prev) => ({ ...prev, [taskId]: !prev[taskId] }));
+  };
+
+  const dispatchedTasks = columns?.DESPACHADO?.tasks || [];
+
+  const openSingleFinalizeModal = (task) => {
+    setConfirmModal({
+      open: true,
+      step: 1,
+      mode: "single",
+      task,
+    });
+  };
+
+  const openBulkFinalizeModal = () => {
+    if (!dispatchedTasks.length) {
+      toast("Não há pedidos em 'Saiu para entrega'.");
+      return;
+    }
+
+    setConfirmModal({
+      open: true,
+      step: 1,
+      mode: "bulk",
+      task: null,
+    });
+  };
+
+  const closeConfirmModal = () => {
+    if (finalizingOrderId || finalizingAll) return;
+    setConfirmModal({
+      open: false,
+      step: 1,
+      mode: null,
+      task: null,
+    });
+  };
+
+  const removeOrdersFromDispatched = (orderIds) => {
+    const ids = new Set(orderIds);
+    setColumns((prev) => ({
+      ...prev,
+      DESPACHADO: {
+        ...prev.DESPACHADO,
+        tasks: prev.DESPACHADO.tasks.filter((task) => !ids.has(task.id)),
+      },
+    }));
+  };
+
+  const finalizeSingleOrder = async (task) => {
+    if (!task?.id) return;
+
+    try {
+      setFinalizingOrderId(task.id);
+      await http.patch(`/orders/${task.id}/status`, { status: "ENTREGUE" });
+      removeOrdersFromDispatched([task.id]);
+      toast.success(`Pedido #${task.orderId} finalizado como entregue.`);
+      setConfirmModal({ open: false, step: 1, mode: null, task: null });
+    } catch (err) {
+      console.error("Erro ao finalizar pedido:", err);
+      toast.error(err?.message || `Não foi possível finalizar o pedido #${task.orderId}.`);
+    } finally {
+      setFinalizingOrderId(null);
+    }
+  };
+
+  const finalizeAllDispatchedOrders = async () => {
+    const tasksToFinalize = columns?.DESPACHADO?.tasks || [];
+
+    if (!tasksToFinalize.length) {
+      toast("Não há pedidos em 'Saiu para entrega'.");
+      setConfirmModal({ open: false, step: 1, mode: null, task: null });
+      return;
+    }
+
+    try {
+      setFinalizingAll(true);
+
+      const results = await Promise.allSettled(
+        tasksToFinalize.map((task) =>
+          http.patch(`/orders/${task.id}/status`, { status: "ENTREGUE" }).then(() => task.id),
+        ),
+      );
+
+      const successIds = results
+        .filter((result) => result.status === "fulfilled")
+        .map((result) => result.value);
+
+      const failCount = results.length - successIds.length;
+
+      if (successIds.length) {
+        removeOrdersFromDispatched(successIds);
+      }
+
+      if (successIds.length && !failCount) {
+        toast.success(`${successIds.length} pedido(s) finalizado(s) como entregue.`);
+      } else if (successIds.length && failCount) {
+        toast.success(`${successIds.length} pedido(s) finalizado(s), ${failCount} com falha.`);
+      } else {
+        toast.error("Não foi possível finalizar os pedidos selecionados.");
+      }
+
+      setConfirmModal({ open: false, step: 1, mode: null, task: null });
+    } catch (err) {
+      console.error("Erro ao finalizar todos os pedidos:", err);
+      toast.error(err?.message || "Erro ao finalizar pedidos em lote.");
+    } finally {
+      setFinalizingAll(false);
+    }
+  };
+
+  const handleConfirmModalAction = async () => {
+    if (confirmModal.mode === "bulk" && confirmModal.step === 1) {
+      setConfirmModal((prev) => ({ ...prev, step: 2 }));
+      return;
+    }
+
+    if (confirmModal.mode === "single" && confirmModal.task) {
+      await finalizeSingleOrder(confirmModal.task);
+      return;
+    }
+
+    if (confirmModal.mode === "bulk") {
+      await finalizeAllDispatchedOrders();
+    }
   };
 
   useEffect(() => {
@@ -627,13 +759,24 @@ export default function BoardPedidos() {
               })}
             </p>
           </div>
-          <button
-            onClick={fetchOrders}
-            className="inline-flex items-center gap-2 bg-neutral-900 text-white px-4 py-2.5 rounded-lg hover:bg-neutral-800 transition-colors text-sm font-semibold self-start sm:self-auto"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Atualizar
-          </button>
+          <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+            <button
+              onClick={openBulkFinalizeModal}
+              disabled={!dispatchedTasks.length || finalizingAll || !!finalizingOrderId}
+              className="inline-flex items-center gap-2 bg-red-700 text-white px-4 py-2.5 rounded-lg hover:bg-red-800 disabled:opacity-60 disabled:cursor-not-allowed transition-colors text-sm font-semibold"
+            >
+              {finalizingAll ? "Finalizando..." : `Finalizados TODOS pedidos (${dispatchedTasks.length})`}
+            </button>
+
+            <button
+              onClick={fetchOrders}
+              disabled={finalizingAll || !!finalizingOrderId}
+              className="inline-flex items-center gap-2 bg-neutral-900 text-white px-4 py-2.5 rounded-lg hover:bg-neutral-800 disabled:opacity-60 disabled:cursor-not-allowed transition-colors text-sm font-semibold"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Atualizar
+            </button>
+          </div>
         </div>
 
         {/* Indicador de fluxo */}
@@ -856,6 +999,17 @@ export default function BoardPedidos() {
                               </span>
                             </div>
                           </div>
+
+                          {column.id === "DESPACHADO" && (
+                            <button
+                              type="button"
+                              onClick={() => openSingleFinalizeModal(task)}
+                              disabled={finalizingAll || finalizingOrderId === task.id}
+                              className="mt-3 w-full inline-flex items-center justify-center bg-red-700 text-white px-3 py-2 rounded-lg hover:bg-red-800 disabled:opacity-60 disabled:cursor-not-allowed transition-colors text-sm font-semibold"
+                            >
+                              {finalizingOrderId === task.id ? "Finalizando..." : "Finalizar pedido"}
+                            </button>
+                          )}
                         </div>
                       </div>
                     )})
@@ -866,6 +1020,57 @@ export default function BoardPedidos() {
           })}
         </div>
       </div>
+
+      {confirmModal.open && (
+        <div className="fixed inset-0 z-1000 bg-black/50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-xl bg-white shadow-xl p-5">
+            <h3 className="text-lg font-bold text-neutral-900">
+              {confirmModal.mode === "bulk" ? "Finalizados TODOS pedidos" : "Finalizar pedido"}
+            </h3>
+
+            {confirmModal.mode === "single" ? (
+              <p className="mt-2 text-sm text-neutral-600">
+                {`Você deseja finalizar o pedido #${confirmModal.task?.orderId}?`}
+              </p>
+            ) : (
+              <>
+                {confirmModal.step === 1 ? (
+                  <p className="mt-2 text-sm text-neutral-600">
+                    {`Você deseja finalizar todos os ${dispatchedTasks.length} pedido(s) em 'Saiu para entrega'?`}
+                  </p>
+                ) : (
+                  <p className="mt-2 text-sm text-neutral-600">
+                    Confirma novamente? Esta ação marcará os pedidos como ENTREGUE e removerá os cards da board.
+                  </p>
+                )}
+              </>
+            )}
+
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeConfirmModal}
+                disabled={finalizingAll || !!finalizingOrderId}
+                className="px-4 py-2 rounded-md bg-neutral-200 text-neutral-800 hover:bg-neutral-300 disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmModalAction}
+                disabled={finalizingAll || !!finalizingOrderId}
+                className="px-4 py-2 rounded-md bg-red-700 text-white hover:bg-red-800 disabled:opacity-60"
+              >
+                {finalizingAll || !!finalizingOrderId
+                  ? "Processando..."
+                  : confirmModal.mode === "bulk" && confirmModal.step === 1
+                    ? "Continuar"
+                    : "Sim, finalizar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -48,7 +48,16 @@ export default function PromocoesPage() {
   async function carregarProdutos() {
     try {
       const response = await http.get("/products");
-      const data = Array.isArray(response.data) ? response.data : response.data?.data || [];
+      const payload = response.data;
+      const data = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.content)
+          ? payload.content
+          : Array.isArray(payload?.items)
+            ? payload.items
+            : Array.isArray(payload?.data)
+              ? payload.data
+              : [];
       setProdutos(data);
     } catch (err) {
       console.error("Erro ao carregar produtos:", err.message);

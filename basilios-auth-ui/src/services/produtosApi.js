@@ -2,6 +2,19 @@
 
 import { http } from "./http.js";
 
+function normalizeProductsListResponse(data) {
+  if (Array.isArray(data)) return data;
+
+  if (data && typeof data === "object") {
+    if (Array.isArray(data.content)) return data.content;
+    if (Array.isArray(data.items)) return data.items;
+    if (Array.isArray(data.data)) return data.data;
+    if (Array.isArray(data.results)) return data.results;
+  }
+
+  return [];
+}
+
 /**
  * Cria um novo produto no backend.
  * POST /api/products
@@ -23,7 +36,7 @@ export async function listarProdutos(activeOnly = false) {
   }
 
   const { data } = await http.get("/products", { params });
-  return data;
+  return normalizeProductsListResponse(data);
 }
 
 /**
