@@ -3,7 +3,7 @@ import { Plus, X, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { http } from "../services/http.js";
 
-export default function CadastroEndereco() {
+export default function CadastroEndereco({ onSaveSuccess }) {
   const [mostrarModal, setMostrarModal] = useState(false);
   const [carregandoCep, setCarregandoCep] = useState(false);
   const [enviando, setEnviando] = useState(false);
@@ -115,9 +115,13 @@ export default function CadastroEndereco() {
       if (response.status >= 200 && response.status < 300) {
         toast.success("Endereço cadastrado com sucesso", { duration: 3000 });
         setMostrarModal(false);
-        setTimeout(() => {
-          window.location.reload();
-        }, 800);
+        if (typeof onSaveSuccess === "function") {
+          onSaveSuccess(response.data);
+        } else {
+          setTimeout(() => {
+            window.location.reload();
+          }, 800);
+        }
       } else {
         toast.error("Erro ao cadastrar endereço");
       }
