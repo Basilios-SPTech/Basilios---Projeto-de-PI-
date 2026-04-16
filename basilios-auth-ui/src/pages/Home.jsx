@@ -19,19 +19,48 @@ function ExpandableDesc({ text }) {
 
   useEffect(() => {
     const el = ref.current;
-    if (el) setClamped(el.scrollHeight > el.clientHeight + 1);
+    if (el) {
+      // Força o layout com display para calcular corretamente
+      const scrollHeight = el.scrollHeight;
+      const clientHeight = el.clientHeight;
+      setClamped(scrollHeight > clientHeight + 1);
+    }
   }, [text]);
+
+  // Força recalcular quando o estado de expansão muda
+  useEffect(() => {
+    const el = ref.current;
+    if (el && expanded) {
+      el.style.maxHeight = el.scrollHeight + 'px';
+    } else if (el) {
+      el.style.maxHeight = '';
+    }
+  }, [expanded]);
 
   return (
     <div className={`hp-card__desc-wrap${expanded ? " expanded" : ""}`}>
-      <p ref={ref} className={`hp-card__desc ${expanded ? "hp-card__desc--expanded" : ""}`}>
+      <p 
+        ref={ref} 
+        className={`hp-card__desc`}
+        style={{
+          display: '-webkit-box',
+          WebkitLineClamp: expanded ? 'unset' : 2,
+          WebkitBoxOrient: 'vertical',
+          overflow: expanded ? 'visible' : 'hidden',
+        }}
+      >
         {text}
       </p>
       {clamped && (
         <button
           type="button"
           className="hp-card__desc-toggle"
-          onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
+          onClick={(e) => { 
+            e.preventDefault();
+            e.stopPropagation(); 
+            setExpanded((v) => !v); 
+          }}
+          title={expanded ? "Mostrar menos" : "Mostrar mais"}
         >
           {expanded ? "ver menos" : "ver mais"}
           <svg className="hp-card__desc-chevron" viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
@@ -58,7 +87,7 @@ export default function Home() {
     async function carregarPromocoes() {
       try {
         console.log("🔍 Buscando promoções do endpoint /promotions/current...");
-        const response = await http.get("/promotions/current");
+        const response = await http.get("/promotions/current?page=0&size=100");
         const data = response.data || response;
         
         console.log("✅ Resposta bruta do servidor:", response);
@@ -67,8 +96,10 @@ export default function Home() {
         console.log("✅ É array?:", Array.isArray(data));
         console.log("✅ Quantidade de items:", (data || []).length);
 
-        // Usar os dados como estão (sem filtrar)
-        const promoList = Array.isArray(data) ? data : (data?.data || []);
+        // Extrair content da resposta paginada do Spring
+        const promoList = Array.isArray(data) 
+          ? data 
+          : (data?.content || data?.data || []);
         console.log("✅ Lista final de promoções:", promoList);
         
         setPromocoes(promoList);
@@ -654,7 +685,7 @@ export default function Home() {
                         <article key={p.index} data-product-id={p.index} className="hp-card">
                           <div className="hp-card__media">
                             {p.imagem ? (
-                              <img src={p.imagem} alt={p.nome || "Produto"} />
+                              <img src={sanitizeImageUrl(p.imagem)} alt={p.nome || "Produto"} />
                             ) : (
                               <div className="hp-card__placeholder">
                                 Sem imagem
@@ -708,7 +739,7 @@ export default function Home() {
               <article key={p.index} data-product-id={p.index} className="hp-card">
                 <div className="hp-card__media">
                   {p.imagem ? (
-                    <img src={p.imagem} alt={p.nome || "Produto"} />
+                    <img src={sanitizeImageUrl(p.imagem)} alt={p.nome || "Produto"} />
                   ) : (
                     <div className="hp-card__placeholder">Sem imagem</div>
                   )}

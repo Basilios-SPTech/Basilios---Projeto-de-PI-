@@ -26,10 +26,14 @@ export async function criarProduto(dto) {
 
 /**
  * Lista produtos.
- * GET /api/products?activeOnly=true|false
+ * GET /api/products?activeOnly=true|false&page=0&size=1000&sort=id,desc
  */
 export async function listarProdutos(activeOnly = false) {
-  const params = {};
+  const params = {
+    page: 0,
+    size: 1000, // Busca até 1000 produtos (praticamente todos)
+    sort: "id,desc" // Ordena por ID decrescente para manter compatibilidade
+  };
 
   if (typeof activeOnly === "boolean") {
     params.activeOnly = activeOnly;
@@ -57,19 +61,10 @@ export async function deletarProduto(id) {
 }
 
 /**
- * Pausa um produto (tira do menu).
- * POST /api/products/{id}/pause
+ * Atualiza o status de pausa de um produto.
+ * PATCH /api/products/{id}/status
  */
-export async function pausarProduto(id) {
-  const { data } = await http.post(`/products/${id}/pause`);
-  return data;
-}
-
-/**
- * Ativa um produto pausado (volta pro menu).
- * POST /api/products/{id}/activate
- */
-export async function ativarProduto(id) {
-  const { data } = await http.post(`/products/${id}/activate`);
+export async function atualizarStatusProduto(id, isPaused) {
+  const { data } = await http.patch(`/products/${id}/status`, { isPaused });
   return data;
 }

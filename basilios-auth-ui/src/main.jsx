@@ -6,8 +6,9 @@ import './styles/app.css'
 import './styles/dark-mode.css'
 import './styles/high-contrast.css'
 import './styles/hc-toggle.css'
+import './styles/cadastrarproduto.css'
+import './styles/home.css'
 import './utils/themeManager.js'
-import "./styles/cadastrarproduto.css";
 
 
 

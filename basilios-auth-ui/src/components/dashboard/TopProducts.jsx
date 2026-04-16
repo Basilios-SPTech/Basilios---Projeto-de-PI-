@@ -20,11 +20,16 @@ export default function TopProducts({ endpoint, range, rangeVersion }) {
           params: {
             dta_inicio: range.start,
             dta_fim: range.end,
-            limit: 5, // bate com o que você já está passando na URL
+            limit: 5,
+            page: 0,
+            size: 5,
           },
         });
 
-        const raw = Array.isArray(res.data) ? res.data : [];
+        // Extrair content da resposta paginada
+        const raw = Array.isArray(res.data) 
+          ? res.data 
+          : (res.data?.content ?? []);
 
         const normalized = raw.slice(0, 5).map((p) => ({
           id: p.productId ?? p.id ?? p.name,

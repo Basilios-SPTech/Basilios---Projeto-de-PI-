@@ -271,7 +271,7 @@ export default function MyOrders() {
     setError("");
 
     try {
-      const { data } = await http.get("/orders/me");
+      const { data } = await http.get("/orders/me?page=0&size=1000");
       const normalized = normalizeOrdersPayload(data);
       const sorted = [...normalized].sort(
         (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0),

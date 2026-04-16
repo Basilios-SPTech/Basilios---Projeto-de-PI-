@@ -31,8 +31,10 @@ export default function PromocoesPage() {
 
   async function carregarPromocoes() {
     try {
-      const response = await http.get("/promotions/current");
-      const data = Array.isArray(response.data) ? response.data : response.data?.data || [];
+      const response = await http.get("/promotions/current?page=0&size=100");
+      const data = Array.isArray(response.data) 
+        ? response.data 
+        : (response.data?.content || response.data?.data || []);
       setPromocoes(data);
       setErroCarregamento(false);
     } catch (err) {
@@ -47,17 +49,11 @@ export default function PromocoesPage() {
 
   async function carregarProdutos() {
     try {
-      const response = await http.get("/products");
+      const response = await http.get("/products?page=0&size=1000");
       const payload = response.data;
       const data = Array.isArray(payload)
         ? payload
-        : Array.isArray(payload?.content)
-          ? payload.content
-          : Array.isArray(payload?.items)
-            ? payload.items
-            : Array.isArray(payload?.data)
-              ? payload.data
-              : [];
+        : (payload?.content || payload?.items || payload?.data || []);
       setProdutos(data);
     } catch (err) {
       console.error("Erro ao carregar produtos:", err.message);

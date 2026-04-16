@@ -514,7 +514,7 @@ export default function BoardPedidos() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const { data } = await http.get("/orders", { params: { size: 50 } });
+      const { data } = await http.get("/orders", { params: { page: 0, size: 50 } });
 
       const orders = Array.isArray(data) ? data : (data?.content ?? []);
 

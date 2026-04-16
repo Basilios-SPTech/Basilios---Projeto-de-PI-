@@ -227,25 +227,6 @@ export default function ProdutoForm({
           </p>
         </div>
 
-        {/* Disponibilidade (pausado / ativo) - placed above action buttons */}
-        <div className="field-row">
-          <label className="field-label">Disponibilidade</label>
-
-          <label className="flex items-center gap-2 text-[14px] text-[color:var(--text)]">
-            <input
-              type="checkbox"
-              id="pausado"
-              name="pausado"
-              checked={!!formData.pausado}
-              onChange={onChange}
-              className="h-[16px] w-[16px]"
-            />
-            <span>
-              Pausado (Marcar = não aparece pra venda / está fora do cardápio)
-            </span>
-          </label>
-        </div>
-
         {/* Ações */}
         <div className="mt-4 flex items-center gap-3">
           <button type="submit" className="btn-salvar">

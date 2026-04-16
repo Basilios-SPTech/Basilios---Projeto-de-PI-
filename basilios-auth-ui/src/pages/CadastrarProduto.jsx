@@ -10,8 +10,7 @@ import {
   listarProdutos,
   atualizarProduto,
   deletarProduto,
-  pausarProduto,
-  ativarProduto,
+  atualizarStatusProduto,
 } from "../services/produtosApi.js";
 
 import { http } from "../services/http.js";
@@ -51,6 +50,27 @@ const SUBCATEGORY_OPTIONS = {
   COMBO: [],
 };
 
+function getLabelToEnumMap() {
+  const map = {};
+  Object.entries(SUBCATEGORY_OPTIONS).forEach(([category, options]) => {
+    options.forEach(({ value, label }) => {
+      map[label] = value;
+    });
+  });
+  return map;
+}
+
+// Extrai URL relativa do upload (remove baseURL se contiver)
+function extractRelativeImageUrl(fullUrl) {
+  if (!fullUrl) return null;
+  // Se contém o baseURL completo, remove e deixa só a parte relativa
+  if (fullUrl.includes(API_BASE)) {
+    return fullUrl.replace(API_BASE, '');
+  }
+  // Se já é relativa, retorna como está
+  return fullUrl;
+}
+
 export default function CadastrarProduto() {
   const [produtos, setProdutos] = useState([]);
 
@@ -63,7 +83,6 @@ export default function CadastrarProduto() {
     subcategoria: "",
     imagem: "",
     imagemArquivo: null,
-    pausado: false,
   });
 
   const [indiceEdicao, setIndiceEdicao] = useState(null);
@@ -83,6 +102,7 @@ export default function CadastrarProduto() {
           subcategoria: p.subcategory ?? p.subcategoria ?? "",
           pausado: p.isPaused ?? p.paused ?? false,
           imagem: p.imageUrl ? `${API_BASE}${p.imageUrl}` : p.imagem || "",
+          imageUrl: p.imageUrl || "", // Preserva a URL relativa do backend
         }));
 
         setProdutos(adaptados);
@@ -163,7 +183,6 @@ export default function CadastrarProduto() {
       subcategoria: "",
       imagem: "",
       imagemArquivo: null,
-      pausado: false,
     });
   }
 
@@ -212,7 +231,7 @@ export default function CadastrarProduto() {
             headers: { "Content-Type": "multipart/form-data" },
           });
 
-          imageUrl = respUpload.data; // ex: "/uploads/xxx.jpg"
+          imageUrl = extractRelativeImageUrl(respUpload.data); // Extrai apenas /uploads/...
         }
 
         const dtoUpdate = {
@@ -254,6 +273,7 @@ export default function CadastrarProduto() {
             (atualizadoBack.subcategory ?? formData.subcategoria) || "",
           pausado: atualizadoBack.isPaused ?? !!formData.pausado,
           imagem: imagemAtual,
+          imageUrl: atualizadoBack.imageUrl || "", // Preserva URL relativa
         };
 
         setProdutos((prev) =>
@@ -285,7 +305,7 @@ export default function CadastrarProduto() {
           },
         });
 
-        imageUrl = respUpload.data; // ex: "/uploads/962690f8-....jpg"
+        imageUrl = extractRelativeImageUrl(respUpload.data); // Extrai apenas /uploads/...
       }
 
       const dto = {
@@ -302,7 +322,6 @@ export default function CadastrarProduto() {
               .filter(Boolean)
           : [],
         ingredientsDetailed: [],
-        isPaused: !!formData.pausado,
         imageUrl,
       };
 
@@ -324,6 +343,7 @@ export default function CadastrarProduto() {
         imagem: produtoCriadoDoBack.imageUrl
           ? `${API_BASE}${produtoCriadoDoBack.imageUrl}`
           : formData.imagem || "",
+        imageUrl: produtoCriadoDoBack.imageUrl || "", // Preserva URL relativa
       };
 
       setProdutos((prev) => [novoProdutoLocal, ...prev]);
@@ -353,7 +373,6 @@ export default function CadastrarProduto() {
       subcategoria: produto.subcategoria || "",
       imagem: produto.imagem || "",
       imagemArquivo: null,
-      pausado: !!produto.pausado,
     });
 
     setModalOpen(true);
@@ -381,32 +400,35 @@ export default function CadastrarProduto() {
     if (!alvo) return;
 
     try {
-      const atualizadoBack = alvo.pausado
-        ? await ativarProduto(index)
-        : await pausarProduto(index);
+      const novoStatus = !alvo.pausado;
 
-      const imagemAtual =
-        produtos.find((p) => p.index === index)?.imagem || "";
+      console.log(`🔄 Alterando status do produto ${index} para isPaused=${novoStatus}`);
+      const atualizadoBack = await atualizarStatusProduto(index, novoStatus);
+      console.log("✅ Resposta do backend:", atualizadoBack);
+
+      const imagemAtual = alvo.imagem || "";
 
       const atualizadoLocal = {
         index: atualizadoBack.id,
         nome: atualizadoBack.name ?? alvo.nome,
         descricao: atualizadoBack.description ?? alvo.descricao,
-        preco:
-          atualizadoBack.finalPrice ??
-          atualizadoBack.price ??
-          alvo.preco,
+        preco: atualizadoBack.finalPrice ?? atualizadoBack.price ?? alvo.preco,
         categoria: atualizadoBack.category ?? alvo.categoria,
         subcategoria: atualizadoBack.subcategory ?? alvo.subcategoria,
-        pausado: atualizadoBack.isPaused ?? !alvo.pausado,
+        pausado: atualizadoBack.isPaused ?? novoStatus,
         imagem: imagemAtual,
+        imageUrl: atualizadoBack.imageUrl ?? alvo.imageUrl,
       };
 
       setProdutos((prev) =>
         prev.map((p) => (p.index === index ? atualizadoLocal : p))
       );
+
+      toast.success(
+        atualizadoLocal.pausado ? "Produto pausado!" : "Produto retomado!"
+      );
     } catch (err) {
-      console.error("Erro ao alterar status do produto:", err);
+      console.error("❌ Erro ao alterar status do produto:", err);
       toast.error("Não foi possível alterar o status do produto.");
     }
   }
@@ -498,12 +520,6 @@ export default function CadastrarProduto() {
 
                   <strong className="cp-price">R$ {previewPreco}</strong>
                 </div>
-
-                {formData.pausado && (
-                  <div className="cp-chip cp-chip--warn mt-2">
-                    PAUSADO (não vende)
-                  </div>
-                )}
               </div>
             </div>
           </section>

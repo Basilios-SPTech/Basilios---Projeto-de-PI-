@@ -121,9 +121,11 @@ body.dark-mode .hp-card__desc {
 }
 body.dark-mode .hp-card__desc-toggle {
   color: #ff6b6b !important;
+  background: rgba(255, 107, 107, 0.08) !important;
 }
 body.dark-mode .hp-card__desc-toggle:hover {
   color: #ff8a8a !important;
+  background: rgba(255, 107, 107, 0.15) !important;
 }
 body.dark-mode .hp-card__footer {
   border-top-color: #333 !important;
