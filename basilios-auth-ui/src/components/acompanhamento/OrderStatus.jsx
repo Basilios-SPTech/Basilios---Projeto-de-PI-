@@ -17,6 +17,7 @@ export default function OrderStatus() {
   const [error, setError] = useState(null);
 
   const orderId = localStorage.getItem("lastOrderId");
+  const orderDate = order?.createdAt ? new Date(order.createdAt) : null;
 
   useEffect(() => {
     if (orderId) {
@@ -139,13 +140,15 @@ export default function OrderStatus() {
                 <span className="font-semibold text-gray-900">#{order.id}</span>
               </p>
               <p className="text-xs sm:text-sm text-gray-500">
-                {new Date(order.createdAt).toLocaleDateString("pt-BR", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                {orderDate
+                  ? orderDate.toLocaleDateString("pt-BR", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : "Data não disponível"}
               </p>
             </div>
           </div>
@@ -154,7 +157,7 @@ export default function OrderStatus() {
         {/* Tempo Estimado */}
         <div className="bg-white rounded-lg p-4 sm:p-6 shadow-md mb-4 sm:mb-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="bg-blue-100 p-2 sm:p-3 rounded-full flex-shrink-0">
+            <div className="bg-blue-100 p-2 sm:p-3 rounded-full shrink-0">
               <Package size={20} className="sm:w-6 sm:h-6 text-blue-600" />
             </div>
             <div className="flex-1">
@@ -179,7 +182,7 @@ export default function OrderStatus() {
             <h3 className="font-semibold text-sm sm:text-base text-gray-700 mb-2 flex items-center gap-2">
               <MapPin
                 size={16}
-                className="sm:w-[18px] sm:h-[18px] flex-shrink-0"
+                className="sm:w-[18px] sm:h-[18px] shrink-0"
               />
               <span>Endereço de Entrega</span>
             </h3>
@@ -204,26 +207,30 @@ export default function OrderStatus() {
               Itens do Pedido
             </h3>
             <div className="space-y-3">
-              {order.items.map((item, index) => (
-                <div
-                  key={index}
-                  className="flex justify-between gap-2 text-xs sm:text-sm"
-                >
-                  <div className="flex-1 min-w-0">
-                    <span className="text-gray-600 block">
-                      {item.quantity}x {item.productName}
+              {Array.isArray(order.items) && order.items.length > 0 ? (
+                order.items.map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex justify-between gap-2 text-xs sm:text-sm"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <span className="text-gray-600 block">
+                        {item.quantity}x {item.productName}
+                      </span>
+                      {item.observations && (
+                        <p className="text-xs text-gray-500 mt-1 wrap-break-word">
+                          Obs: {item.observations}
+                        </p>
+                      )}
+                    </div>
+                    <span className="font-medium whitespace-nowrap">
+                      R$ {item.total}
                     </span>
-                    {item.observations && (
-                      <p className="text-xs text-gray-500 mt-1 break-words">
-                        Obs: {item.observations}
-                      </p>
-                    )}
                   </div>
-                  <span className="font-medium whitespace-nowrap">
-                    R$ {item.total}
-                  </span>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-gray-500">Nenhum item encontrado no pedido.</p>
+              )}
             </div>
 
             {/* Resumo Financeiro */}
@@ -262,7 +269,7 @@ export default function OrderStatus() {
               <h3 className="font-semibold text-sm sm:text-base text-gray-700 mb-2">
                 Observações
               </h3>
-              <p className="text-gray-600 text-xs sm:text-sm break-words">
+              <p className="text-gray-600 text-xs sm:text-sm wrap-break-word">
                 {order.observations}
               </p>
             </div>
