@@ -26,6 +26,7 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.7.0",
     "baseline-browser-mapping": "^2.10.8",
+    "cypress": "^15.14.0",
     "tailwindcss": "^4.1.15",
     "vite": "^5.4.20"
   }
