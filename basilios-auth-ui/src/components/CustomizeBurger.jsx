@@ -1,9 +1,38 @@
-import React, { useState, useEffect, useMemo } from "react";
+﻿import React, { useState, useEffect, useMemo } from "react";
 import { X, Sliders, Minus, Plus } from "lucide-react";
 
 export default function CustomizeBurger({ item, onClose, onSave }) {
   const [isOpen, setIsOpen] = useState(true);
   const [meatPoint, setMeatPoint] = useState("médio");
+
+  // Determina se o produto é um hamburguer/lanche
+  // Se for bebida, acompanhamento ou sobremesa, retorna false
+  const isBurger = useMemo(() => {
+    if (!item) return false;
+    const categoria = (item.categoria || item.category || "").toLowerCase();
+    const nome = (item.nome || item.name || "").toLowerCase();
+    
+    // Categorias que NÃO são hambugueres
+    const nonBurgerCategories = ["bebida", "acompanhamento", "sobremesa", "drink", "drinks"];
+    
+    // Se a categoria está na lista de não-hambugueres, não é hamburguer
+    for (const cat of nonBurgerCategories) {
+      if (categoria.includes(cat) || nome.includes(cat)) {
+        return false;
+      }
+    }
+    
+    // Se for Lanches Premium, Beirutes, Hot-Dog, Combos, etc. = é hamburguer
+    const burgerKeywords = ["lanche", "premium", "beirute", "hot-dog", "combo", "x-", "burger", "hamburguer"];
+    for (const keyword of burgerKeywords) {
+      if (categoria.includes(keyword) || nome.includes(keyword)) {
+        return true;
+      }
+    }
+    
+    // Por padrão, se tem a opção de ponto da carne, é hamburguer
+    return true;
+  }, [item]);
 
   // Ingredientes
   const [ingredients, setIngredients] = useState([

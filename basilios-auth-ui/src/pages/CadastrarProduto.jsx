@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import ProdutoForm from "../components/ProdutoForm.jsx";
 import MenuButton from "../components/MenuButtonAdm.jsx";
 import SidebarAdm from "../components/SidebarAdm.jsx";
+import CategoryManager from "../components/CategoryManager.jsx";
 import {
   criarProduto,
   listarProdutos,
@@ -16,9 +17,19 @@ import {
 import { http } from "../services/http.js";
 
 const CHAVE_STORAGE = "produtos-basilios";
+const CHAVE_CATEGORIAS_STORAGE = "categorias-basilios";
+const CHAVE_SUBCATEGORIAS_STORAGE = "subcategorias-basilios";
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
-const SUBCATEGORY_OPTIONS = {
+const DEFAULT_CATEGORIES = [
+  { label: "Lanches / Hambúrguer", value: "BURGER" },
+  { label: "Combo / Promoção", value: "COMBO" },
+  { label: "Acompanhamento / Side", value: "SIDE" },
+  { label: "Bebidas", value: "DRINK" },
+  { label: "Sobremesa", value: "DESSERT" },
+];
+
+const DEFAULT_SUBCATEGORIES = {
   BURGER: [
     { value: "BEEF", label: "Carne Bovina" },
     { value: "CHICKEN", label: "Frango" },
@@ -50,9 +61,9 @@ const SUBCATEGORY_OPTIONS = {
   COMBO: [],
 };
 
-function getLabelToEnumMap() {
+function getLabelToEnumMap(subcategories) {
   const map = {};
-  Object.entries(SUBCATEGORY_OPTIONS).forEach(([category, options]) => {
+  Object.entries(subcategories).forEach(([category, options]) => {
     options.forEach(({ value, label }) => {
       map[label] = value;
     });
@@ -73,6 +84,8 @@ function extractRelativeImageUrl(fullUrl) {
 
 export default function CadastrarProduto() {
   const [produtos, setProdutos] = useState([]);
+  const [categorias, setCategorias] = useState(DEFAULT_CATEGORIES);
+  const [subcategorias, setSubcategorias] = useState(DEFAULT_SUBCATEGORIES);
 
   const [formData, setFormData] = useState({
     nome: "",
@@ -87,6 +100,30 @@ export default function CadastrarProduto() {
 
   const [indiceEdicao, setIndiceEdicao] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+
+  useEffect(() => {
+    // Carrega categorias personalizadas do localStorage
+    try {
+      const categoriasLocal = JSON.parse(
+        localStorage.getItem(CHAVE_CATEGORIAS_STORAGE) || "[]"
+      );
+      if (Array.isArray(categoriasLocal) && categoriasLocal.length > 0) {
+        setCategorias([...DEFAULT_CATEGORIES, ...categoriasLocal]);
+      }
+    } catch (err) {
+      console.error("Erro ao carregar categorias do localStorage:", err);
+    }
+
+    // Carrega subcategorias personalizadas do localStorage
+    try {
+      const subcategoriasLocal = JSON.parse(
+        localStorage.getItem(CHAVE_SUBCATEGORIAS_STORAGE) || "{}"
+      );
+      setSubcategorias({ ...DEFAULT_SUBCATEGORIES, ...subcategoriasLocal });
+    } catch (err) {
+      console.error("Erro ao carregar subcategorias do localStorage:", err);
+    }
+  }, []);
 
   useEffect(() => {
     async function carregarProdutos() {
@@ -172,6 +209,50 @@ export default function CadastrarProduto() {
     }));
   }
 
+  function handleAddCategory(novaCat) {
+    setCategorias((prev) => {
+      const atualizado = [...prev, novaCat];
+      // Salva no localStorage (só a parte personalizada)
+      const personalizadas = atualizado.filter(
+        (c) => !DEFAULT_CATEGORIES.some((dc) => dc.value === c.value)
+      );
+      localStorage.setItem(
+        CHAVE_CATEGORIAS_STORAGE,
+        JSON.stringify(personalizadas)
+      );
+      return atualizado;
+    });
+  }
+
+  function handleAddSubcategory(categoria, novaSubcat) {
+    setSubcategorias((prev) => {
+      const atualizado = {
+        ...prev,
+        [categoria]: [...(prev[categoria] || []), novaSubcat],
+      };
+      // Salva no localStorage (só a parte personalizada)
+      const personalizadas = {};
+      Object.entries(atualizado).forEach(([cat, opts]) => {
+        if (!DEFAULT_SUBCATEGORIES.hasOwnProperty(cat)) {
+          personalizadas[cat] = opts;
+        } else {
+          const optsNaoDefault = opts.filter(
+            (opt) =>
+              !DEFAULT_SUBCATEGORIES[cat].some((dopt) => dopt.value === opt.value)
+          );
+          if (optsNaoDefault.length > 0) {
+            personalizadas[cat] = optsNaoDefault;
+          }
+        }
+      });
+      localStorage.setItem(
+        CHAVE_SUBCATEGORIAS_STORAGE,
+        JSON.stringify(personalizadas)
+      );
+      return atualizado;
+    });
+  }
+
   function clearForm() {
     setIndiceEdicao(null);
     setFormData({
@@ -211,7 +292,7 @@ export default function CadastrarProduto() {
       return;
     }
 
-    const subOpts = SUBCATEGORY_OPTIONS[formData.categoria] || [];
+    const subOpts = subcategorias[formData.categoria] || [];
     if (subOpts.length > 0 && !formData.subcategoria) {
       toast.error("Selecione uma subcategoria.");
       return;
@@ -454,7 +535,7 @@ export default function CadastrarProduto() {
     return Array.from(map.entries());
   }, [produtosOrdenados]);
 
-  const subcatOptions = SUBCATEGORY_OPTIONS[formData.categoria] || [];
+  const subcatOptions = subcategorias[formData.categoria] || [];
 
   return (
     <div className="cp-page cp-page--no-header">
@@ -473,6 +554,14 @@ export default function CadastrarProduto() {
             onSubmit={handleSubmit}
             onCancel={handleCancel}
             subcatOptions={subcatOptions}
+            categorias={categorias}
+          />
+
+          <CategoryManager
+            categories={categorias}
+            subcategories={subcategorias}
+            onAddCategory={handleAddCategory}
+            onAddSubcategory={handleAddSubcategory}
           />
         </section>
 

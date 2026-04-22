@@ -1,11 +1,4 @@
 // src/components/ProdutoForm.jsx
-const CATEGORIAS_BACKEND = [
-  { label: "Lanches / Hambúrguer", value: "BURGER" },
-  { label: "Combo / Promoção", value: "COMBO" },
-  { label: "Acompanhamento / Side", value: "SIDE" },
-  { label: "Bebidas", value: "DRINK" },
-  { label: "Sobremesa", value: "DESSERT" },
-];
 
 export default function ProdutoForm({
   formData,
@@ -15,6 +8,7 @@ export default function ProdutoForm({
   onCancel,
   subcatOptions = [],
   showCloseButton = false,
+  categorias = [],
 }) {
   return (
     <div>
@@ -163,7 +157,7 @@ export default function ProdutoForm({
                   Selecione uma categoria…
                 </option>
 
-                {CATEGORIAS_BACKEND.map((cat) => (
+                {(categorias && categorias.length > 0 ? categorias : []).map((cat) => (
                   <option key={cat.value} value={cat.value}>
                     {cat.label}
                   </option>
