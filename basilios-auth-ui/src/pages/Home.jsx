@@ -447,6 +447,7 @@ export default function Home() {
         id: produto.index + "-" + Date.now(), // ID único para item customizado
         originalProductId: produto.index, // ID do produto original
         nome: produto.nome,
+        precoBase: Number(produto.preco || "0"), // Preço base sem extras
         preco: Number(customOptions.price || produto.preco || "0"),
         qtd: 1,
         imagem: produto.imagem || "",
@@ -462,6 +463,7 @@ export default function Home() {
         id: produto.index,
         originalProductId: produto.index, // ID do produto original
         nome: produto.nome,
+        precoBase: Number(produto.preco || "0"), // Preço base sem extras
         preco: Number(produto.preco || "0"),
         qtd: 1,
         imagem: produto.imagem || "",

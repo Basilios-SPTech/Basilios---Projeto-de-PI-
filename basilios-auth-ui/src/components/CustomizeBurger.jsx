@@ -199,7 +199,8 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
         ? breads.find((b) => b.id === selectedBreadId)?.price || 0
         : 0;
 
-    const basePrice = item.preco ?? item.price ?? 0;
+    // Usa precoBase se existir (foi editado antes), senão usa preco/price
+    const basePrice = item.precoBase ?? item.preco ?? item.price ?? 0;
 
     return basePrice + extraIngredientsPrice + extraSaucesPrice + extraDrinksPrice + breadPrice;
   }, [ingredientQuantities, sauceQuantities, drinkQuantities, selectedBreadId, item]);
@@ -525,7 +526,7 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
                   }
                 });
 
-                const basePrice = item.preco ?? item.price ?? 0;
+                const basePrice = item.precoBase ?? item.preco ?? item.price ?? 0;
                 const breadPrice =
                   selectedBreadId != null
                     ? breads.find((b) => b.id === selectedBreadId)?.price || 0
