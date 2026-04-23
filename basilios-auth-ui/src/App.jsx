@@ -24,6 +24,7 @@ import StatusOrderPage from "./pages/StatusOrderPage.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import MyOrders from "./pages/MyOrders.jsx";
 import PromocoesPage from "./pages/PromocoesPage.jsx";
+import UserManagement from "./pages/UserManagement.jsx";
 import { ProfilePage } from "./pages/ProfilePage.jsx";
 // Layouts
 import AuthLayout from "./layouts/AuthLayout.jsx";
@@ -248,8 +249,8 @@ export default function App() {
               <Route path="/order-status" element={<StatusOrderPage />} />
             </Route>
 
-            {/* Rotas exclusivas de FUNCIONARIO */}
-            <Route element={<RequireAuth roles={["ROLE_FUNCIONARIO"]} />}>
+            {/* Rotas exclusivas de perfil administrativo */}
+            <Route element={<RequireAuth roles={["ROLE_FUNCIONARIO", "ROLE_ADMIN"]} />}>
               <Route
                 path="/cadastro"
                 element={
@@ -276,6 +277,18 @@ export default function App() {
                   <ProdutoLayout>
                     <PromocoesPage />
                   </ProdutoLayout>
+                }
+              />
+
+              <Route
+                path="/gerenciar-usuarios"
+                element={
+                  <>
+                    <ProdutoLayout>
+                      <UserManagement />
+                    </ProdutoLayout>
+                    <FooterBasilios />
+                  </>
                 }
               />
             </Route>

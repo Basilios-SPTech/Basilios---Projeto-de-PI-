@@ -1,5 +1,5 @@
 /** SidebarAdm */
-import { Home, ListOrdered, LogOut, Package, Hamburger, LayoutDashboard, LogIn, UserRound, Gift } from "lucide-react";
+import { Home, ListOrdered, LogOut, Package, Hamburger, LayoutDashboard, LogIn, UserRound, Gift, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { AuthAPI } from "../services/api";
@@ -14,7 +14,7 @@ export default function SidebarAdm({ open, onClose }) {
   let isLogged = false;
   try { isLogged = !!authStorage.getToken(); } catch { isLogged = false; }
 
-  const isFuncionario = authStorage.hasAnyRole('ROLE_FUNCIONARIO');
+  const isFuncionario = authStorage.hasAnyRole('ROLE_FUNCIONARIO', 'ROLE_ADMIN');
 
   const items = isLogged
     ? [
@@ -24,6 +24,7 @@ export default function SidebarAdm({ open, onClose }) {
           { icon: ListOrdered, label: "Pedidos (Board)",  href: "/board" },
           { icon: LayoutDashboard, label: "Dashboard",    href: "/dashboard" },
           { icon: Gift, label: "Promoções",              href: "/promocoes" },
+          { icon: Users, label: "Gerenciar Usuários",     href: "/gerenciar-usuarios" },
         ] : []),
         { icon: ListOrdered, label: "Meus Pedidos",      href: "/meus-pedidos" },
         { icon: UserRound, label: "Meu Perfil",          href: "/profile" },

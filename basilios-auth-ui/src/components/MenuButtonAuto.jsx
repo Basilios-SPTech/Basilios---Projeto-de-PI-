@@ -14,13 +14,15 @@ import MenuButton from "./MenuButton.jsx";
 
 export default function MenuButtonAuto(props) {
   const [isAdmin, setIsAdmin] = useState(
-    () => authStorage.hasRole("ROLE_FUNCIONARIO"),
+    () => authStorage.hasAnyRole("ROLE_FUNCIONARIO", "ROLE_ADMIN"),
   );
 
   useEffect(() => {
     return authStorage.subscribe((snap) => {
       setIsAdmin(
-        snap.roles?.includes("ROLE_FUNCIONARIO") ?? false,
+        snap.roles?.includes("ROLE_FUNCIONARIO") ||
+          snap.roles?.includes("ROLE_ADMIN") ||
+          false,
       );
     });
   }, []);
