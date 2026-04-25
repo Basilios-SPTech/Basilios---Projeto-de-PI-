@@ -11,6 +11,7 @@ const CHAVE_STORAGE = "produtos-basilios";
 const CHAVE_CART = "carrinho-basilios";
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
+
 // Mini componente para descrição expansível
 function ExpandableDesc({ text }) {
   const [expanded, setExpanded] = useState(false);
@@ -39,8 +40,8 @@ function ExpandableDesc({ text }) {
 
   return (
     <div className={`hp-card__desc-wrap${expanded ? " expanded" : ""}`}>
-      <p 
-        ref={ref} 
+      <p
+        ref={ref}
         className={`hp-card__desc`}
         style={{
           display: '-webkit-box',
@@ -55,16 +56,16 @@ function ExpandableDesc({ text }) {
         <button
           type="button"
           className="hp-card__desc-toggle"
-          onClick={(e) => { 
+          onClick={(e) => {
             e.preventDefault();
-            e.stopPropagation(); 
-            setExpanded((v) => !v); 
+            e.stopPropagation();
+            setExpanded((v) => !v);
           }}
           title={expanded ? "Mostrar menos" : "Mostrar mais"}
         >
           {expanded ? "ver menos" : "ver mais"}
           <svg className="hp-card__desc-chevron" viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
-            <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06z" clipRule="evenodd"/>
+            <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06z" clipRule="evenodd" />
           </svg>
         </button>
       )}
@@ -81,15 +82,64 @@ export default function Home() {
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [productToCustomize, setProductToCustomize] = useState(null);
   const [promoAtual, setPromoAtual] = useState(null);
+  const [paginaAtual, setPaginaAtual] = useState(0);
+  const [tamanho, setTamanho] = useState(10);
+  const [totalPaginas, setTotalPaginas] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // 🔥 Buscar promoções ativas
+  const ORDEM_CATEGORIAS = [
+    "Combos Individuais",
+    "Lanches Premium",
+    "Burguer",
+    "Porções",
+    "Hot-Dog",
+    "Beirutes",
+  ];
+
+  function normalizarCategoria(cat, nome) {
+    const c = (cat || "").toLowerCase();
+    const n = (nome || "").toLowerCase();
+
+    // Combos
+    if (n.includes("combo")) return "Combos Individuais";
+
+    // Premium (nomes específicos que você mostrou)
+    if (
+      n.includes("klabin") ||
+      n.includes("vila mariana") ||
+      n.includes("paraiso") ||
+      n.includes("cambuci") ||
+      n.includes("basilios") ||
+      n.includes("vila monumento") ||
+      n.includes("glicério")
+    ) return "Lanches Premium";
+
+    // Burguer 
+    if (n.includes("burger") || n.includes("x-")) return "Burguer";
+
+    // Hot Dog
+    if (n.includes("dog") ||
+      n.includes("Dog Maionese Batata Palha")) return "Hot-Dog";
+
+    // Porções
+    if (
+      n.includes("batata") ||
+      n.includes("onion")
+    ) return "Porções";
+
+    // Beirutes
+    if (n.includes("beirute")) return "Beirutes";
+
+    return "Outros";
+  }
+
   useEffect(() => {
     async function carregarPromocoes() {
       try {
         console.log("🔍 Buscando promoções do endpoint /promotions/current...");
         const response = await http.get("/promotions/current?page=0&size=100");
         const data = response.data || response;
-        
+
         console.log("✅ Resposta bruta do servidor:", response);
         console.log("✅ Dados extraídos:", data);
         console.log("✅ Tipo de dados:", typeof data);
@@ -97,11 +147,11 @@ export default function Home() {
         console.log("✅ Quantidade de items:", (data || []).length);
 
         // Extrair content da resposta paginada do Spring
-        const promoList = Array.isArray(data) 
-          ? data 
+        const promoList = Array.isArray(data)
+          ? data
           : (data?.content || data?.data || []);
         console.log("✅ Lista final de promoções:", promoList);
-        
+
         setPromocoes(promoList);
       } catch (err) {
         console.error("❌ Erro ao carregar promoções:");
@@ -119,12 +169,17 @@ export default function Home() {
 
   useEffect(() => {
     async function carregarProdutos() {
+      setIsLoading(true);
       try {
-        const data = await listarProdutos();
+        // Sempre carrega TODOS os produtos (página 0, tamanho grande)
+        const response = await listarProdutos(true, 0, 1000);
 
-        console.log("✅ Produtos carregados da API:", data);
+        console.log("✅ Resposta da API:", response);
 
-        const adaptados = (data || []).map((p, index) => {
+        // Extrai o conteúdo da resposta paginada
+        const produtosData = response.content || [];
+
+        const adaptados = (produtosData || []).map((p, index) => {
           const rawPrice = p.price ?? p.preco ?? 0;
           const parsedPrice = parseFloat(
             String(rawPrice).replace(/[^\d.,-]/g, "").replace(",", ".")
@@ -135,7 +190,10 @@ export default function Home() {
             nome: p.name ?? p.nome ?? "",
             descricao: p.description ?? p.descricao ?? "",
             preco: Number.isFinite(parsedPrice) ? parsedPrice : 0,
-            categoria: p.category ?? p.categoria ?? "",
+            categoria: normalizarCategoria(
+              p.category ?? p.categoria,
+              p.name ?? p.nome
+            ),
             subcategoria: p.subcategory ?? p.subcategoria ?? "",
             pausado: p.isPaused ?? p.paused ?? false,
             imagem: p.imageUrl ? `${API_BASE}${p.imageUrl}` : p.imagem || "",
@@ -145,6 +203,8 @@ export default function Home() {
         const ativos = adaptados.filter((p) => !p.pausado);
 
         setProdutos(ativos);
+        console.log("CATEGORIAS NORMALIZADAS:");
+        ativos.forEach(p => console.log(p.nome, "→", p.categoria));
 
         // Notifica a SearchBar sobre os produtos disponíveis
         window.dispatchEvent(new CustomEvent("productsLoaded", { detail: ativos }));
@@ -162,6 +222,8 @@ export default function Home() {
         } catch {
           setProdutos([]);
         }
+      } finally {
+        setIsLoading(false);
       }
     }
 
@@ -172,6 +234,94 @@ export default function Home() {
     const c = JSON.parse(localStorage.getItem(CHAVE_CART) || "[]");
     setCartCount(Array.isArray(c) ? c.length : 0);
   }, []);
+
+  // 🎯 Identifica produtos que estão em promoção ativa hoje
+  const produtosEmPromocaoAtiva = useMemo(() => {
+    const hoje = new Date();
+    const idsEmPromo = new Set();
+
+    for (const promo of promocoes) {
+      if (promo.isActive) {
+        const startDate = new Date(promo.startDate);
+        const endDate = new Date(promo.endDate);
+        endDate.setHours(23, 59, 59, 999);
+
+        if (hoje >= startDate && hoje <= endDate && promo.productId) {
+          idsEmPromo.add(promo.productId);
+        }
+      }
+    }
+    return idsEmPromo;
+  }, [promocoes]);
+
+  // Ordena produtos por categoria e depois por ID
+  const produtosOrdenadosPorCategoria = useMemo(() => {
+    // Aplica filtros de categoria e busca
+    const termo = q.trim().toLowerCase();
+    let filtrados = produtos.filter((p) => {
+      const okCat = cat === "Todas" || (p.categoria || "").trim() === cat;
+      const okTermo =
+        !termo ||
+        (p.nome || "").toLowerCase().includes(termo) ||
+        (p.descricao || "").toLowerCase().includes(termo);
+      const naoEmPromo = !produtosEmPromocaoAtiva.has(p.index);
+      return okCat && okTermo && naoEmPromo;
+    });
+
+    // Ordena por categoria
+    return filtrados.sort((a, b) => {
+      const catA = (a.categoria || "").trim();
+      const catB = (b.categoria || "").trim();
+
+      const indexA = ORDEM_CATEGORIAS.indexOf(catA);
+      const indexB = ORDEM_CATEGORIAS.indexOf(catB);
+
+      // Se categoria está na ordem, usa o índice. Senão, coloca no final
+      const orderA = indexA === -1 ? 999 : indexA;
+      const orderB = indexB === -1 ? 999 : indexB;
+
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+
+      // Se mesma categoria, ordena por ID crescente
+      return Number(a.index) - Number(b.index);
+    });
+  }, [produtos, q, cat, produtosEmPromocaoAtiva]);
+
+  // Calcula paginação baseada na lista linear
+  const produtosPaginados = useMemo(() => {
+    const inicio = paginaAtual * tamanho;
+    const fim = inicio + tamanho;
+    return produtosOrdenadosPorCategoria.slice(inicio, fim);
+  }, [produtosOrdenadosPorCategoria, paginaAtual, tamanho]);
+
+  const produtosAgrupados = useMemo(() => {
+    const grupos = {};
+
+    for (const produto of produtosPaginados) {
+      const categoria = produto.categoria || "Outros";
+
+      if (!grupos[categoria]) {
+        grupos[categoria] = [];
+      }
+
+      grupos[categoria].push(produto);
+    }
+
+    return grupos;
+  }, [produtosPaginados]);
+
+  // Recalcula total de páginas
+  useEffect(() => {
+    const total = Math.ceil(produtosOrdenadosPorCategoria.length / tamanho);
+    setTotalPaginas(Math.max(1, total));
+  }, [produtosOrdenadosPorCategoria, tamanho]);
+
+  // Reseta para página 0 quando muda de filtro
+  useEffect(() => {
+    setPaginaAtual(0);
+  }, [q, cat]);
 
   // Destaca um card quando selecionado pela busca
   useEffect(() => {
@@ -227,211 +377,6 @@ export default function Home() {
     return numero.toFixed(2).replace(".", ",");
   };
 
-  const categorias = useMemo(() => {
-    const set = new Set(["Todas"]);
-    for (const p of produtos) {
-      const c = (p.categoria || "").trim();
-      if (c) set.add(c);
-    }
-    return Array.from(set);
-  }, [produtos]);
-
-  // 🎯 Identifica produtos que estão em promoção ativa hoje
-  const produtosEmPromocaoAtiva = useMemo(() => {
-    const hoje = new Date();
-    const idsEmPromo = new Set();
-    
-    console.log("📅 Data/hora atual:", hoje);
-    
-    for (const promo of promocoes) {
-      console.log("🔎 Checando promoção:", promo.title, "isActive:", promo.isActive, "productId:", promo.productId);
-      
-      // Verifica se promoção está ativa e dentro do período
-      if (promo.isActive) {
-        const startDate = new Date(promo.startDate);
-        const endDate = new Date(promo.endDate);
-        endDate.setHours(23, 59, 59, 999); // Inclui todo o dia final
-        
-        console.log("   startDate:", startDate, "endDate:", endDate);
-        console.log("   hoje >= startDate?", hoje >= startDate, "| hoje <= endDate?", hoje <= endDate);
-        
-        if (hoje >= startDate && hoje <= endDate && promo.productId) {
-          idsEmPromo.add(promo.productId);
-          console.log("   ✅ ADICIONADO À PROMOÇÃO:", promo.productId);
-        }
-      }
-    }
-    console.log("📍 IDs em promoção final:", Array.from(idsEmPromo));
-    return idsEmPromo;
-  }, [promocoes]);
-
-  const filtrados = useMemo(() => {
-    const termo = q.trim().toLowerCase();
-    return produtos.filter((p) => {
-      const okCat = cat === "Todas" || (p.categoria || "").trim() == cat;
-      const okTermo =
-        !termo ||
-        (p.nome || "").toLowerCase().includes(termo) ||
-        (p.descricao || "").toLowerCase().includes(termo);
-      // ❌ Exclui produtos que estão em promoção ativa
-      const naoEmPromo = !produtosEmPromocaoAtiva.has(p.index);
-      return okCat && okTermo && naoEmPromo;
-    });
-  }, [produtos, q, cat, produtosEmPromocaoAtiva]);
-
-  const produtosOrdenados = useMemo(
-    () => [...filtrados].sort((a, b) => Number(b.index) - Number(a.index)),
-    [filtrados],
-  );
-
-  const secoesPorCategoria = useMemo(() => {
-    const map = new Map();
-    for (const p of produtosOrdenados) {
-      const categoria = (p.categoria || "").trim() || "Sem categoria";
-      if (!map.has(categoria)) map.set(categoria, []);
-      map.get(categoria).push(p);
-    }
-    return Array.from(map.entries());
-  }, [produtosOrdenados]);
-
-  // Integração com a navbar: mapear seções fixas para produtos por nome
-  const slug = (s) =>
-    s
-      .toString()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/\s+/g, "-")
-      .toLowerCase();
-
-  const NAV_SECTION_ORDER = [
-    "Combos Individuais",
-    "Lanches Premium",
-    "Beirutes",
-    "Hot-Dog",
-    "Porções",
-  ];
-
-  const SECTION_PRODUCT_NAMES = {
-    "Combos Individuais": ["Combo X-Bacon Salada", "Combo X-Salada"],
-    "Lanches Premium": [
-      "Glicério",
-      "Vila Monumento",
-      "Basilios",
-      "Cambuci",
-      "Paraiso",
-      "Vila Mariana",
-      "Klabin",
-    ],
-    Beirutes: [
-      "Beirute médio (Filé Mignon)",
-      "Beirute Grande (Frango)",
-      "Beirute médio (Frango)",
-      "Beirute Grande (Filé Mignon)",
-    ],
-    "Hot-Dog": ["Dog Premium", "Dog Maionese Batata Palha"],
-    Porções: [
-      "Batata Frita",
-      "Batata Crinkle",
-      "Batata Frita c/ Cheddar e Bacon",
-      "Onion Rings",
-      "Batata Canoa",
-    ],
-  };
-
-  const customSections = useMemo(() => {
-    const nameMap = {};
-    // normalize names to lowercase for comparison
-    for (const key of Object.keys(SECTION_PRODUCT_NAMES)) {
-      nameMap[key] = SECTION_PRODUCT_NAMES[key].map((n) =>
-        (n || "").toLowerCase().trim(),
-      );
-    }
-
-    const included = new Set();
-
-    const sections = NAV_SECTION_ORDER.map((label) => {
-      const names = nameMap[label] || [];
-      const items = produtos.filter((p) => {
-        const pn = (p.nome || "").toLowerCase().trim();
-        // ❌ Exclui produtos que estão em promoção ativa
-        const naoEmPromo = !produtosEmPromocaoAtiva.has(p.index);
-        const matches = names.includes(pn) && naoEmPromo;
-        
-        if (pn.includes("combo x-salada")) {
-          console.log(`🔍 Combo X-Salada: index=${p.index}, naoEmPromo=${naoEmPromo}, produtosEmPromocaoAtiva=${Array.from(produtosEmPromocaoAtiva)}, matches=${matches}`);
-        }
-        
-        if (matches) {
-          included.add(p.index);
-          return true;
-        }
-        return false;
-      });
-
-      return [label, items];
-    });
-
-    return { sections, included };
-  }, [produtos, produtosEmPromocaoAtiva]);
-
-  // Escuta eventos de scroll disparados pelo Header para rolar até a seção
-  useEffect(() => {
-    const scrollToEl = (el) => {
-      const headerOffset = 120;
-      const y = el.getBoundingClientRect().top + window.scrollY - headerOffset;
-      window.scrollTo({ top: y, behavior: "smooth" });
-    };
-
-    const handler = (e) => {
-      const target = e?.detail;
-      if (!target) return;
-
-      const tryScroll = () => {
-        const el = document.querySelector(`[data-section="${target}"]`);
-        if (el) {
-          scrollToEl(el);
-          return true;
-        }
-        return false;
-      };
-
-      if (!tryScroll()) {
-        setTimeout(() => tryScroll(), 350);
-      }
-    };
-
-    window.addEventListener("scrollToSection", handler);
-
-    try {
-      const pending = sessionStorage.getItem("scrollToSection");
-      if (pending) {
-        let attempts = 0;
-        const maxAttempts = 10;
-        const interval = setInterval(() => {
-          attempts += 1;
-          const el = document.querySelector(`[data-section="${pending}"]`);
-
-          if (el) {
-            scrollToEl(el);
-            clearInterval(interval);
-            try {
-              sessionStorage.removeItem("scrollToSection");
-            } catch (e) {}
-            return;
-          }
-
-          if (attempts >= maxAttempts) {
-            clearInterval(interval);
-          }
-        }, 200);
-      }
-    } catch (err) {
-      /* ignore */
-    }
-
-    return () => window.removeEventListener("scrollToSection", handler);
-  }, []);
-
   function addToCart(produto, customOptions = {}) {
     const carrinho = JSON.parse(localStorage.getItem(CHAVE_CART) || "[]");
     const novo = Array.isArray(carrinho) ? carrinho : [];
@@ -447,7 +392,6 @@ export default function Home() {
         id: produto.index + "-" + Date.now(), // ID único para item customizado
         originalProductId: produto.index, // ID do produto original
         nome: produto.nome,
-        precoBase: Number(produto.preco || "0"), // Preço base sem extras
         preco: Number(customOptions.price || produto.preco || "0"),
         qtd: 1,
         imagem: produto.imagem || "",
@@ -463,7 +407,6 @@ export default function Home() {
         id: produto.index,
         originalProductId: produto.index, // ID do produto original
         nome: produto.nome,
-        precoBase: Number(produto.preco || "0"), // Preço base sem extras
         preco: Number(produto.preco || "0"),
         qtd: 1,
         imagem: produto.imagem || "",
@@ -487,13 +430,13 @@ export default function Home() {
 
   function handleCustomize(produto, promoAtive = null) {
     // Se houver promoção ativa, ajusta o preço do produto antes de customizar
-    const produtoComPreco = promoAtive 
+    const produtoComPreco = promoAtive
       ? {
-          ...produto,
-          preco: Number(produto.preco || 0) - Number(promoAtive.discountAmount || 0)
-        }
+        ...produto,
+        preco: Number(produto.preco || 0) - Number(promoAtive.discountAmount || 0)
+      }
       : produto;
-    
+
     setProductToCustomize(produtoComPreco);
     setPromoAtual(promoAtive);
     setIsCustomizing(true);
@@ -533,17 +476,17 @@ export default function Home() {
               {promocoes.map((promo) => {
                 // Encontra o produto correspondente para exibir informações
                 const produtoPromo = produtos.find(p => p.index === promo.productId);
-                
+
                 // Calcula o percentual de desconto dinamicamente
                 const precoOriginal = produtoPromo?.preco ? parseFloat(String(produtoPromo.preco).replace(/[^\d.,-]/g, "").replace(",", ".")) : 0;
                 const precoComDesconto = Math.max(
                   0,
                   (produtoPromo?.preco || 0) - (promo.discountAmount || 0)
                 );
-                const discountPercentage = precoOriginal > 0 && promo.discountAmount 
+                const discountPercentage = precoOriginal > 0 && promo.discountAmount
                   ? Math.round((promo.discountAmount / precoOriginal) * 100)
                   : promo.discountPercentage || 0;
-                
+
                 return (
                   <article
                     key={`promo-${promo.id}`}
@@ -601,171 +544,83 @@ export default function Home() {
           </div>
         )}
 
-        {cat === "Todas" ? (
-          // Renderizamos primeiro as seções personalizadas mapeadas pela navbar
-          (function () {
-            const parts = [];
+        {produtosPaginados.length > 0 ? (
+          ORDEM_CATEGORIAS
+            .filter((categoria) => produtosAgrupados[categoria])
+            .map((categoria) => (
+              <div key={categoria} className="hp-section">
+                <h2 className="hp-section__title">{categoria}</h2>
 
-            // Seções customizadas (ordem definida em customSections)
-            for (const [label, items] of customSections.sections) {
-              parts.push(
-                <div
-                  key={label}
-                  className="hp-section"
-                  data-section={slug(label)}
-                >
-                  <h2 className="hp-section__title">{label}</h2>
+                <div className="hp-grid">
+                  {produtosAgrupados[categoria].map((p) => (
+                    <article key={p.index} data-product-id={p.index} className="hp-card">
+                      <div className="hp-card__media">
+                        {p.imagem ? (
+                          <img src={sanitizeImageUrl(p.imagem)} alt={p.nome || "Produto"} />
+                        ) : (
+                          <div className="hp-card__placeholder">Sem imagem</div>
+                        )}
+                      </div>
 
-                  {items.length === 0 ? (
-                    <p className="hp-empty">
-                      Nenhum item encontrado nesta seção.
-                    </p>
-                  ) : (
-                    <div className="hp-grid">
-                      {items.map((p) => (
-                        <article key={p.index} data-product-id={p.index} className="hp-card">
-                          <div className="hp-card__media">
-                            {p.imagem ? (
-                              <img
-                                src={sanitizeImageUrl(p.imagem)}
-                                alt={p.nome || "Produto"}
-                              />
-                            ) : (
-                              <div className="hp-card__placeholder">
-                                Sem imagem
-                              </div>
-                            )}
-                          </div>
+                      <div className="hp-card__body">
+                        <h3 className="hp-card__title">{p.nome}</h3>
+                        <ExpandableDesc text={p.descricao} />
+                      </div>
 
-                          <div className="hp-card__body">
-                            <h3 className="hp-card__title">{p.nome}</h3>
-                            <ExpandableDesc text={p.descricao} />
-                          </div>
-
-                          <div className="hp-card__footer">
-                            <div className="hp-price">
-                              <span>R$</span>
-                              <strong>{sanitizePrice(p.preco)}</strong>
-                            </div>
-                            <button
-                              className="btn btn-primary hp-add"
-                              onClick={() => handleCustomize(p)}
-                            >
-                              Adicionar
-                            </button>
-                          </div>
-                        </article>
-                      ))}
-                    </div>
-                  )}
-                </div>,
-              );
-            }
-
-            // Produtos restantes (não incluídos nas seções customizadas)
-            const restantes = produtos.filter(
-              (p) => !customSections.included.has(p.index) && !produtosEmPromocaoAtiva.has(p.index),
-            );
-            if (restantes.length > 0) {
-              const map = new Map();
-              for (const p of restantes) {
-                const categoria = (p.categoria || "").trim() || "Sem categoria";
-                if (!map.has(categoria)) map.set(categoria, []);
-                map.get(categoria).push(p);
-              }
-
-              for (const [categoria, itens] of map.entries()) {
-                parts.push(
-                  <div
-                    key={categoria}
-                    className="hp-section"
-                    data-section={slug(categoria)}
-                  >
-                    <h2 className="hp-section__title">{categoria}</h2>
-                    <div className="hp-grid">
-                      {itens.map((p) => (
-                        <article key={p.index} data-product-id={p.index} className="hp-card">
-                          <div className="hp-card__media">
-                            {p.imagem ? (
-                              <img src={sanitizeImageUrl(p.imagem)} alt={p.nome || "Produto"} />
-                            ) : (
-                              <div className="hp-card__placeholder">
-                                Sem imagem
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="hp-card__body">
-                            <h3 className="hp-card__title">{p.nome}</h3>
-                            <ExpandableDesc text={p.descricao} />
-                          </div>
-
-                          <div className="hp-card__footer">
-                            <div className="hp-price">
-                              <span>R$</span>
-                              <strong>{sanitizePrice(p.preco)}</strong>
-                            </div>
-                            <button
-                              className="btn btn-primary hp-add"
-                              onClick={() => handleCustomize(p)}
-                            >
-                              Adicionar
-                            </button>
-                          </div>
-                        </article>
-                      ))}
-                    </div>
-                  </div>,
-                );
-              }
-            }
-
-            if (parts.length === 0) {
-              return (
-                <p className="hp-empty">
-                  Nada por aqui… Experimente limpar filtros ou cadastrar novos
-                  itens.
-                </p>
-              );
-            }
-
-            return parts;
-          })()
-        ) : filtrados.length === 0 ? (
+                      <div className="hp-card__footer">
+                        <div className="hp-price">
+                          <span>R$</span>
+                          <strong>{sanitizePrice(p.preco)}</strong>
+                        </div>
+                        <button
+                          className="btn btn-primary hp-add"
+                          onClick={() => handleCustomize(p)}
+                        >
+                          Adicionar
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            ))
+        ) : (
           <p className="hp-empty">
             Nada por aqui… Experimente limpar filtros ou cadastrar novos itens.
           </p>
-        ) : (
-          <div className="hp-grid">
-            {produtosOrdenados.map((p) => (
-              <article key={p.index} data-product-id={p.index} className="hp-card">
-                <div className="hp-card__media">
-                  {p.imagem ? (
-                    <img src={sanitizeImageUrl(p.imagem)} alt={p.nome || "Produto"} />
-                  ) : (
-                    <div className="hp-card__placeholder">Sem imagem</div>
-                  )}
-                </div>
+        )}
 
-                <div className="hp-card__body">
-                  <h3 className="hp-card__title">{p.nome}</h3>
-                  <ExpandableDesc text={p.descricao} />
-                </div>
+        {/* 📄 Controles de Paginação */}
+        {totalPaginas > 1 && (
+          <div className="hp-pagination">
+            <button
+              className="hp-pagination__btn hp-pagination__btn--prev"
+              onClick={() => setPaginaAtual((p) => Math.max(0, p - 1))}
+              disabled={paginaAtual === 0}
+            >
+              ← Anterior
+            </button>
 
-                <div className="hp-card__footer">
-                  <div className="hp-price">
-                    <span>R$</span>
-                    <strong>{sanitizePrice(p.preco)}</strong>
-                  </div>
-                  <button
-                    className="btn btn-primary hp-add"
-                    onClick={() => handleCustomize(p)}
-                  >
-                    Adicionar
-                  </button>
-                </div>
-              </article>
-            ))}
+            <div className="hp-pagination__numbers">
+              {Array.from({ length: totalPaginas }, (_, i) => (
+                <button
+                  key={i}
+                  className={`hp-pagination__number ${paginaAtual === i ? "hp-pagination__number--active" : ""
+                    }`}
+                  onClick={() => setPaginaAtual(i)}
+                >
+                  {i + 1}
+                </button>
+              ))}
+            </div>
+
+            <button
+              className="hp-pagination__btn hp-pagination__btn--next"
+              onClick={() => setPaginaAtual((p) => Math.min(totalPaginas - 1, p + 1))}
+              disabled={paginaAtual === totalPaginas - 1}
+            >
+              Próxima →
+            </button>
           </div>
         )}
       </section>

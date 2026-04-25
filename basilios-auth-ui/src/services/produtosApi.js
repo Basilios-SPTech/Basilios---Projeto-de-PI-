@@ -28,11 +28,11 @@ export async function criarProduto(dto) {
  * Lista produtos.
  * GET /api/products?activeOnly=true|false&page=0&size=1000&sort=id,desc
  */
-export async function listarProdutos(activeOnly = false) {
+export async function listarProdutos(activeOnly = false, page = 0, size = 10) {
   const params = {
-    page: 0,
-    size: 1000, // Busca até 1000 produtos (praticamente todos)
-    sort: "id,desc" // Ordena por ID decrescente para manter compatibilidade
+    page,
+    size,
+    sort: "id,desc"
   };
 
   if (typeof activeOnly === "boolean") {
@@ -40,7 +40,12 @@ export async function listarProdutos(activeOnly = false) {
   }
 
   const { data } = await http.get("/products", { params });
-  return normalizeProductsListResponse(data);
+
+  return {
+    content: data.content || [],
+    last: data.last,
+    totalPages: data.totalPages
+  };
 }
 
 /**
