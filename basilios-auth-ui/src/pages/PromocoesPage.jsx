@@ -410,7 +410,7 @@ export default function PromocoesPage() {
                         </div>
                         <div className="detail">
                           <span className="label">Desconto:</span>
-                          <span className="value value--discount" style={{ color: "#bb3530" }}>
+                          <span className="value value--discount">
                             − R$ {descontoNum.toFixed(2).replace(".", ",")}
                           </span>
                         </div>

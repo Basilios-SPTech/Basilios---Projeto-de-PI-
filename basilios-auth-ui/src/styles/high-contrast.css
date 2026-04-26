@@ -744,3 +744,39 @@ body.hc .theme-switcher__label {
   color: #C8A800 !important;
 }
 
+/* ================================================================
+   PROMOCOES (HC)
+   ================================================================ */
+body.hc .promocoes-page .promo-card,
+body.hc .promocoes-page .promo-card__details,
+body.hc .promocoes-page .empty-state,
+body.hc .promocoes-page .modal,
+body.hc .promocoes-page .modal__header,
+body.hc .promocoes-page .modal__form,
+body.hc .promocoes-page .modal__footer,
+body.hc .promocoes-page .promo-card__image-container {
+  background: #000 !important;
+  background-image: none !important;
+}
+
+body.hc .promocoes-page .promo-card,
+body.hc .promocoes-page .promo-card__details,
+body.hc .promocoes-page .empty-state,
+body.hc .promocoes-page .modal,
+body.hc .promocoes-page .modal__header,
+body.hc .promocoes-page .modal__footer {
+  border-color: #FFD400 !important;
+}
+
+body.hc .promocoes-page .modal__subtitle,
+body.hc .promocoes-page .promocoes-subtitle,
+body.hc .promocoes-page .detail .label,
+body.hc .promocoes-page .empty-state__hint {
+  color: #C8A800 !important;
+}
+
+body.hc .promocoes-page .empty-state__icon {
+  background: #FFD400 !important;
+  color: #000 !important;
+}
+

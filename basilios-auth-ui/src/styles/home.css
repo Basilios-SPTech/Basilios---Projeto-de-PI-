@@ -365,62 +365,79 @@
 .hp-price--promo {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  align-items: flex-start;
+  gap: 4px;
   padding: 0;
   background: transparent;
   border: none;
-  width: 100%;
+  width: auto;
+  flex: 1;
 }
 
 .hp-price__old-wrap {
   display: flex;
   align-items: center;
   gap: 4px;
+  margin-left: 2px;
+  line-height: 1;
 }
 
 .hp-price__label {
-  font-size: 0.75rem;
-  color: #9CA3AF;
-  font-weight: 500;
+  font-size: 0.68rem;
+  color: rgba(187, 53, 48, .78);
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .3px;
 }
 
 .hp-price__old-value {
-  font-size: 0.9rem;
-  color: #9CA3AF;
+  font-size: 0.8rem;
+  color: rgba(187, 53, 48, .78);
   text-decoration: line-through;
+  text-decoration-color: rgba(187, 53, 48, .78);
   text-decoration-thickness: 1px;
   font-weight: 600;
 }
 
 .hp-price__new-wrap {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: color-mix(in oklab, #1F7A3F, white 88%);
+  border: 1px solid color-mix(in oklab, #1F7A3F, white 70%);
+  color: color-mix(in oklab, #1F7A3F, black 20%);
+  font-variant-numeric: tabular-nums;
 }
 
 .hp-price__label--new {
   font-size: 0.75rem;
-  color: #6B7280;
-  font-weight: 500;
+  color: color-mix(in oklab, #1F7A3F, black 20%);
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .3px;
 }
 
 .hp-price__new-value {
-  font-size: 1.4rem;
-  color: #BB3530;
+  font-size: 1.05rem;
+  color: color-mix(in oklab, #1F7A3F, black 20%);
   font-weight: 800;
-  letter-spacing: -.3px;
+  letter-spacing: .2px;
 }
 
 /* Rodapé especial para promoção */
 .hp-card__footer--promo {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 12px;
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
   border-top: 1px solid rgba(0, 0, 0, .06);
+}
+
+.hp-card__footer--promo .hp-add {
+  margin-left: auto;
 }
 
 /* ============ Paginação ============ */

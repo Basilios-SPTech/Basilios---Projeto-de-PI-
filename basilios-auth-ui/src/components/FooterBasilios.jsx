@@ -58,7 +58,14 @@ export default function Footer() {
                 </a>
               </li>
               <li className="inline-flex items-center gap-2">
-                <IfodIcon className="h-4 w-4" />
+                <span className="inline-flex items-center justify-center rounded-md bg-[#BB3530] px-1.5 py-1">
+                  <img
+                    src="/ifoodPNG.png"
+                    alt="iFood"
+                    className="h-3.5 w-auto object-contain"
+                    loading="lazy"
+                  />
+                </span>
                 <a
                   href="https://www.ifood.com.br/delivery/sao-paulo-sp/basilios-burger-e-acai-vila-deodoro/09e48dd3-82b7-40b6-b5db-99dbf9180291"
                   target="_blank"
@@ -66,6 +73,42 @@ export default function Footer() {
                   className="hover:text-white"
                 >
                   iFood (peça agora)
+                </a>
+              </li>
+              <li className="inline-flex items-center gap-2">
+                <span className="inline-flex items-center justify-center rounded-md bg-[#FFDD00] px-1.5 py-1">
+                  <img
+                    src="/99PNG.png"
+                    alt="99"
+                    className="h-3.5 w-auto object-contain"
+                    loading="lazy"
+                  />
+                </span>
+                <a
+                  href="https://oia.99app.com/dlp9/5e0eUu"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white"
+                >
+                  99 (peça agora)
+                </a>
+              </li>
+              <li className="inline-flex items-center gap-2">
+                <span className="inline-flex items-center justify-center rounded-md bg-[#22c55e] px-1.5 py-1">
+                  <img
+                    src="/keetaPNG.png"
+                    alt="Keeta"
+                    className="h-3.5 w-auto object-contain"
+                    loading="lazy"
+                  />
+                </span>
+                <a
+                  href="https://url-eu.mykeeta.com/31kF9Klz"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white"
+                >
+                  Keeta (peça agora)
                 </a>
               </li>
             </ul>
@@ -149,15 +192,6 @@ function FacebookIcon({ className = "h-5 w-5" }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
       <path d="M22 12.07C22 6.49 17.52 2 11.93 2 6.35 2 1.86 6.49 1.86 12.07c0 4.96 3.63 9.08 8.4 9.9v-7H7.9v-2.9h2.36V9.8c0-2.33 1.38-3.62 3.5-3.62.7 0 1.8.12 2.28.2v2.51h-1.28c-1.26 0-1.65.78-1.65 1.58v1.9h2.81l-.45 2.9h-2.36v7c4.77-.82 8.4-4.94 8.4-9.9z" />
-    </svg>
-  );
-}
-
-function IfodIcon({ className = "h-5 w-5" }) {
-  // ícone genérico de delivery/bag
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
-      <path d="M7 7V6a5 5 0 0 1 10 0v1h1.5A1.5 1.5 0 0 1 20 8.5V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8.5A1.5 1.5 0 0 1 5.5 7H7zm2 0h6V6a3 3 0 0 0-6 0v1z" />
     </svg>
   );
 }

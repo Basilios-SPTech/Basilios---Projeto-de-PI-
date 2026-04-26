@@ -86,6 +86,7 @@ export default function Home() {
   const [tamanho, setTamanho] = useState(10);
   const [totalPaginas, setTotalPaginas] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const catalogoRef = useRef(null);
 
   const ORDEM_CATEGORIAS = [
     "Combos Individuais",
@@ -456,6 +457,39 @@ export default function Home() {
     setPromoAtual(null);
   }
 
+  const scrollToCatalogTop = useCallback(() => {
+    const headerOffset = 120;
+    const top = catalogoRef.current
+      ? catalogoRef.current.getBoundingClientRect().top + window.scrollY - headerOffset
+      : 0;
+
+    const root = document.documentElement;
+    const body = document.body;
+    const prevRootBehavior = root.style.scrollBehavior;
+    const prevBodyBehavior = body.style.scrollBehavior;
+
+    // Forca salto instantaneo para evitar animacao de baixo para cima.
+    root.style.scrollBehavior = "auto";
+    body.style.scrollBehavior = "auto";
+    window.scrollTo(0, Math.max(0, top));
+    root.style.scrollBehavior = prevRootBehavior;
+    body.style.scrollBehavior = prevBodyBehavior;
+  }, []);
+
+  const changePagina = useCallback((nextOrUpdater) => {
+    setPaginaAtual((prev) => {
+      const next =
+        typeof nextOrUpdater === "function"
+          ? nextOrUpdater(prev)
+          : nextOrUpdater;
+
+      if (next === prev) return prev;
+
+      scrollToCatalogTop();
+      return next;
+    });
+  }, [scrollToCatalogTop]);
+
   return (
     <div className="home-page page-with-fixed-header">
       <Header />
@@ -467,7 +501,7 @@ export default function Home() {
           onSave={handleSaveCustomization}
         />
       )}
-      <section className="hp-grid-wrap">
+      <section ref={catalogoRef} className="hp-grid-wrap">
         {/* 🎉 SEÇÃO DE PROMOÇÕES */}
         {promocoes.length > 0 && (
           <div className="hp-section" data-section="promocoes">
@@ -595,7 +629,7 @@ export default function Home() {
           <div className="hp-pagination">
             <button
               className="hp-pagination__btn hp-pagination__btn--prev"
-              onClick={() => setPaginaAtual((p) => Math.max(0, p - 1))}
+              onClick={() => changePagina((p) => Math.max(0, p - 1))}
               disabled={paginaAtual === 0}
             >
               ← Anterior
@@ -607,7 +641,7 @@ export default function Home() {
                   key={i}
                   className={`hp-pagination__number ${paginaAtual === i ? "hp-pagination__number--active" : ""
                     }`}
-                  onClick={() => setPaginaAtual(i)}
+                  onClick={() => changePagina(i)}
                 >
                   {i + 1}
                 </button>
@@ -616,7 +650,7 @@ export default function Home() {
 
             <button
               className="hp-pagination__btn hp-pagination__btn--next"
-              onClick={() => setPaginaAtual((p) => Math.min(totalPaginas - 1, p + 1))}
+              onClick={() => changePagina((p) => Math.min(totalPaginas - 1, p + 1))}
               disabled={paginaAtual === totalPaginas - 1}
             >
               Próxima →

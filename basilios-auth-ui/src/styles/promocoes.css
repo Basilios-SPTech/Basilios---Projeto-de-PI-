@@ -1,6 +1,6 @@
 .promocoes-page {
-  --bsl-red: #bb3530;
-  --bsl-red-dark: #7a1f1a;
+  --bsl-red: var(--color-brand, #BB3530);
+  --bsl-red-dark: var(--color-brand, #BB3530);
   --bsl-ink: #111111;
   --bsl-ink-soft: #4b5563;
   --bsl-surface: #ffffff;
@@ -76,12 +76,12 @@
   min-height: 46px;
   padding-inline: 1.35rem;
   border-radius: 999px;
-  box-shadow: 0 10px 24px rgba(187, 53, 48, 0.28);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.16);
 }
 
 .btn-add-promo:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 14px 30px rgba(187, 53, 48, 0.34);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
 }
 
 .promocoes-grid {
@@ -94,7 +94,7 @@
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(255, 255, 255, 0.92));
+  background: #ffffff;
   border-radius: var(--bsl-radius-xl);
   border: 1px solid var(--bsl-border);
   box-shadow: var(--bsl-shadow-sm);
@@ -151,8 +151,8 @@
 }
 
 .btn-icon--danger:hover {
-  border-color: #b91c1c;
-  background: #b91c1c;
+  border-color: var(--bsl-red);
+  background: var(--bsl-red);
 }
 
 .promo-card__image-container {
@@ -212,7 +212,7 @@
   padding: 0.95rem;
   border-radius: var(--bsl-radius-lg);
   border: 1px solid #e2e8f0;
-  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  background: #f8fafc;
 }
 
 .detail {
@@ -269,8 +269,8 @@
 }
 
 .badge--inactive {
-  color: #991b1b;
-  background: #fee2e2;
+  color: #fff;
+  background: var(--bsl-red);
 }
 
 .empty-state {
@@ -278,9 +278,7 @@
   padding: 4rem 1.2rem;
   border-radius: 24px;
   border: 1px dashed rgba(187, 53, 48, 0.36);
-  background:
-    radial-gradient(700px 260px at 50% -40%, rgba(187, 53, 48, 0.14), transparent 55%),
-    #fff;
+  background: #ffffff;
   box-shadow: var(--bsl-shadow-sm);
 }
 
@@ -307,7 +305,7 @@
   font-size: 1.45rem;
   font-weight: 900;
   color: #fff;
-  background: linear-gradient(145deg, #bb3530, #7a1f1a);
+  background: #BB3530;
 }
 
 .empty-state__hint {
@@ -370,9 +368,7 @@
   justify-content: space-between;
   gap: 1rem;
   color: #fff;
-  background:
-    radial-gradient(520px 220px at 100% -25%, rgba(255, 255, 255, 0.18), transparent 62%),
-    linear-gradient(135deg, #bb3530, #8b221e 60%, #5e1612 100%);
+  background: #BB3530;
 }
 
 .modal__header h2 {
@@ -462,9 +458,9 @@ input[name="finalPrice"].form-input {
 }
 
 .form-input--invalid {
-  border-color: #dc2626;
-  background: #fff5f5;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.14);
+  border-color: var(--bsl-red);
+  background: rgba(187, 53, 48, 0.07);
+  box-shadow: 0 0 0 3px rgba(187, 53, 48, 0.14);
 }
 
 .form-input--readonly,
@@ -485,7 +481,7 @@ input[name="finalPrice"].form-input {
 }
 
 .form-help--error {
-  color: #b91c1c;
+  color: var(--bsl-red);
   font-weight: 700;
 }
 
@@ -506,7 +502,32 @@ body .react-hot-toast {
   gap: 0.7rem;
   padding: 1rem 0;
   border-top: 1px solid #e5e7eb;
-  background: linear-gradient(180deg, rgba(248, 250, 252, 0.68), #fff);
+  background: #ffffff;
+}
+
+.promocoes-page .modal__header {
+  background-color: #BB3530 !important;
+  background-image: none !important;
+}
+
+/* Garante um unico tom de vermelho em toda a pagina de promocoes */
+.promocoes-page .btn-primary,
+.promocoes-page .btn-icon:hover,
+.promocoes-page .btn-icon--danger:hover,
+.promocoes-page .badge--inactive,
+.promocoes-page .empty-state__icon,
+.promocoes-page .modal__header {
+  background-color: var(--bsl-red) !important;
+  border-color: var(--bsl-red) !important;
+  background-image: none !important;
+}
+
+.promocoes-page .btn-primary:hover:not(:disabled),
+.promocoes-page .btn-primary:active,
+.promocoes-page .btn-primary:focus-visible {
+  background-color: var(--bsl-red) !important;
+  border-color: var(--bsl-red) !important;
+  filter: none !important;
 }
 
 @media (max-width: 900px) {
