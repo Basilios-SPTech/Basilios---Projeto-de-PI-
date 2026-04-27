@@ -57,59 +57,35 @@ export default function Footer() {
                   /basiliosburger
                 </a>
               </li>
-              <li className="inline-flex items-center gap-2">
-                <span className="inline-flex items-center justify-center rounded-md bg-[#BB3530] px-1.5 py-1">
-                  <img
-                    src="/ifoodPNG.png"
-                    alt="iFood"
-                    className="h-3.5 w-auto object-contain"
-                    loading="lazy"
-                  />
-                </span>
-                <a
+              <li>
+                <AppBrandLink
                   href="https://www.ifood.com.br/delivery/sao-paulo-sp/basilios-burger-e-acai-vila-deodoro/09e48dd3-82b7-40b6-b5db-99dbf9180291"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-white"
-                >
-                  iFood (peça agora)
-                </a>
+                  label="iFood (peça agora)"
+                  imageSrc="/ifoodPNG.png"
+                  imageAlt="iFood"
+                  badgeClassName="bg-[#BB3530]"
+                    imageClassName="scale-110"
+                />
               </li>
-              <li className="inline-flex items-center gap-2">
-                <span className="inline-flex items-center justify-center rounded-md bg-[#FFDD00] px-1.5 py-1">
-                  <img
-                    src="/99PNG.png"
-                    alt="99"
-                    className="h-3.5 w-auto object-contain"
-                    loading="lazy"
-                  />
-                </span>
-                <a
+              <li>
+                <AppBrandLink
                   href="https://oia.99app.com/dlp9/5e0eUu"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-white"
-                >
-                  99 (peça agora)
-                </a>
+                  label="99 (peça agora)"
+                  imageSrc="/99PNG.png"
+                  imageAlt="99"
+                  badgeClassName="bg-[#FFDD00]"
+                    imageClassName="scale-125"
+                />
               </li>
-              <li className="inline-flex items-center gap-2">
-                <span className="inline-flex items-center justify-center rounded-md bg-[#22c55e] px-1.5 py-1">
-                  <img
-                    src="/keetaPNG.png"
-                    alt="Keeta"
-                    className="h-3.5 w-auto object-contain"
-                    loading="lazy"
-                  />
-                </span>
-                <a
+              <li>
+                <AppBrandLink
                   href="https://url-eu.mykeeta.com/31kF9Klz"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-white"
-                >
-                  Keeta (peça agora)
-                </a>
+                  label="Keeta (peça agora)"
+                  imageSrc="/keetaPNG.png"
+                  imageAlt="Keeta"
+                  badgeClassName="bg-[#22c55e]"
+                    imageClassName="scale-[1.35]"
+                />
               </li>
             </ul>
           </div>
@@ -193,5 +169,30 @@ function FacebookIcon({ className = "h-5 w-5" }) {
     <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
       <path d="M22 12.07C22 6.49 17.52 2 11.93 2 6.35 2 1.86 6.49 1.86 12.07c0 4.96 3.63 9.08 8.4 9.9v-7H7.9v-2.9h2.36V9.8c0-2.33 1.38-3.62 3.5-3.62.7 0 1.8.12 2.28.2v2.51h-1.28c-1.26 0-1.65.78-1.65 1.58v1.9h2.81l-.45 2.9h-2.36v7c4.77-.82 8.4-4.94 8.4-9.9z" />
     </svg>
+  );
+}
+
+function AppBrandLink({ href, label, imageSrc, imageAlt, badgeClassName, imageClassName }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group inline-flex items-center gap-2 rounded-lg px-1 py-0.5 -mx-1 transition-colors hover:bg-white/5"
+    >
+      <span
+        className={`relative inline-flex h-7 w-10 items-center justify-center rounded-full shrink-0 overflow-visible md:h-8 md:w-12 ${badgeClassName}`}
+      >
+        <img
+          src={imageSrc}
+          alt={imageAlt}
+          className={`max-h-[60%] max-w-[68%] object-contain transition-transform duration-200 group-hover:scale-110 ${imageClassName}`}
+          loading="lazy"
+        />
+      </span>
+      <span className="text-gray-300 transition-colors group-hover:text-white">
+        {label}
+      </span>
+    </a>
   );
 }

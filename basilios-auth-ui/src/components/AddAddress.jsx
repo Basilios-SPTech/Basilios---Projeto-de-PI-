@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Plus, X, Loader2, Frown, ExternalLink } from "lucide-react";
 import toast from "react-hot-toast";
 import { createAddress } from "../services/addressApi.js";
@@ -166,6 +166,24 @@ export default function CadastroEndereco({ onSaveSuccess, onCreated }) {
     setMostrarForaRaioModal(false);
     setMostrarModal(true);
   };
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key !== "Escape") return;
+
+      if (mostrarForaRaioModal) {
+        fecharModalForaRaio();
+        return;
+      }
+
+      if (mostrarModal) {
+        fecharModal();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [mostrarModal, mostrarForaRaioModal]);
 
   return (
     <>
@@ -390,8 +408,8 @@ export default function CadastroEndereco({ onSaveSuccess, onCreated }) {
                   <div>
                     <h3 className="text-2xl font-extrabold tracking-tight text-gray-900">Ooops...</h3>
                     <p className="mt-1 text-sm text-gray-600 leading-relaxed max-w-[42ch]">
-                      O endereço está fora do nosso raio de entrega. Mas calma: você ainda pode
-                      pedir pelos aplicativos abaixo ou tentar outro endereço.
+                      Este endereço está fora do nosso raio de entrega no momento.
+                      Você ainda pode pedir pelos aplicativos abaixo ou tentar outro endereço.
                     </p>
                   </div>
                 </div>
@@ -411,11 +429,11 @@ export default function CadastroEndereco({ onSaveSuccess, onCreated }) {
                 href={IFOOD_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full inline-flex items-center justify-between rounded-2xl bg-[#BB3530] hover:bg-[#a72f2a] text-white px-4 py-3 font-semibold transition-colors shadow-[0_10px_24px_rgba(187,53,48,0.25)]"
+                className="w-full h-16 inline-flex items-center justify-between rounded-2xl bg-[#BB3530] hover:bg-[#a72f2a] text-white px-4 font-semibold transition-colors shadow-[0_10px_24px_rgba(187,53,48,0.25)]"
               >
                 <span>Ir para iFood</span>
-                <span className="inline-flex items-center justify-end gap-2 min-w-[138px]">
-                  <span className="w-[92px] inline-flex items-center justify-center">
+                <span className="inline-flex items-center justify-end gap-2 w-32 shrink-0">
+                  <span className="w-24 inline-flex items-center justify-center">
                     <img
                       src="/ifoodPNG.png"
                       alt="iFood"
@@ -431,15 +449,15 @@ export default function CadastroEndereco({ onSaveSuccess, onCreated }) {
                 href={APP_99_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full inline-flex items-center justify-between rounded-2xl bg-[#FFDD00] hover:bg-[#f3d100] text-black px-4 py-3 font-semibold transition-colors shadow-[0_10px_24px_rgba(255,221,0,0.25)]"
+                className="w-full h-16 inline-flex items-center justify-between rounded-2xl bg-[#FFDD00] hover:bg-[#f3d100] text-black px-4 font-semibold transition-colors shadow-[0_10px_24px_rgba(255,221,0,0.25)]"
               >
                 <span>Ir para 99</span>
-                <span className="inline-flex items-center justify-end gap-2 min-w-[138px]">
-                  <span className="w-[92px] inline-flex items-center justify-center">
+                <span className="inline-flex items-center justify-end gap-2 w-32 shrink-0">
+                  <span className="w-24 inline-flex items-center justify-center">
                     <img
                       src="/99PNG.png"
                       alt="99"
-                      className="h-8 w-auto object-contain"
+                      className="h-6 w-auto max-w-20 object-contain"
                       loading="lazy"
                     />
                   </span>
@@ -451,15 +469,15 @@ export default function CadastroEndereco({ onSaveSuccess, onCreated }) {
                 href={KEETA_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full inline-flex items-center justify-between rounded-2xl bg-[#22c55e] hover:bg-[#16a34a] text-white px-4 py-3 font-semibold transition-colors shadow-[0_10px_24px_rgba(34,197,94,0.22)]"
+                className="w-full h-16 inline-flex items-center justify-between rounded-2xl bg-[#22c55e] hover:bg-[#16a34a] text-white px-4 font-semibold transition-colors shadow-[0_10px_24px_rgba(34,197,94,0.22)]"
               >
                 <span>Ir para Keeta</span>
-                <span className="inline-flex items-center justify-end gap-2 min-w-[138px]">
-                  <span className="w-[92px] inline-flex items-center justify-center">
+                <span className="inline-flex items-center justify-end gap-2 w-32 shrink-0">
+                  <span className="w-24 inline-flex items-center justify-center">
                     <img
                       src="/keetaPNG.png"
                       alt="Keeta"
-                      className="h-10 w-auto max-w-[106px] object-contain"
+                      className="h-14 w-auto max-w-28 object-contain"
                       loading="lazy"
                     />
                   </span>
