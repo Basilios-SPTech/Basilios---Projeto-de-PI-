@@ -908,6 +908,18 @@ export default function BoardPedidos() {
                                       {item.observations}
                                     </p>
                                   )}
+                                  {Array.isArray(item.adicionais) && item.adicionais.length > 0 && (
+                                    <p className="text-neutral-500 text-xs mt-1">
+                                      Adicionais: {item.adicionais.map((adicional) => {
+                                        const name =
+                                          adicional?.adicionalName ||
+                                          adicional?.name ||
+                                          `Adicional ${adicional?.adicionalId}`;
+                                        const qty = Number(adicional?.quantity ?? 0);
+                                        return qty > 1 ? `${name} x${qty}` : name;
+                                      }).join(", ")}
+                                    </p>
+                                  )}
                                   {item.hadPromotion && (
                                     <span className="inline-block mt-1 text-xs bg-red-50 text-red-700 px-1.5 py-0.5 rounded font-medium">
                                       Promoção
