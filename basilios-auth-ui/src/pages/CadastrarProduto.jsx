@@ -69,6 +69,8 @@ const ADICIONAL_SUBCATEGORIES = [
   { value: "MOLHO", label: "Molho" },
   { value: "VEGETAL", label: "Vegetal" },
   { value: "ACOMPANHAMENTO", label: "Acompanhamento" },
+  { value: "BEBIDA", label: "Bebida" },
+  { value: "PAO", label: "Pão" },
   { value: "OUTRO", label: "Outro" },
 ];
 
@@ -80,6 +82,25 @@ function getLabelToEnumMap(subcategories) {
     });
   });
   return map;
+}
+
+function normalizeAdicionalSubcategory(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+
+  const match = ADICIONAL_SUBCATEGORIES.find(
+    (opt) =>
+      opt.value === raw ||
+      String(opt.label).toLowerCase() === raw.toLowerCase(),
+  );
+
+  if (match) return match.value;
+
+  return raw
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, "_");
 }
 
 // Extrai URL relativa do upload (remove baseURL se contiver)
@@ -131,6 +152,9 @@ export default function CadastrarProduto() {
     price: "",
   });
   const [isEditAdicionalOpen, setIsEditAdicionalOpen] = useState(false);
+  const [adicionalToDelete, setAdicionalToDelete] = useState(null);
+  const [produtoToDelete, setProdutoToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     // Carrega categorias personalizadas do localStorage
@@ -259,6 +283,20 @@ export default function CadastrarProduto() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isEditAdicionalOpen]);
 
+  useEffect(() => {
+    if (!adicionalToDelete && !produtoToDelete) return;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape" && !isDeleting) {
+        setAdicionalToDelete(null);
+        setProdutoToDelete(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [adicionalToDelete, produtoToDelete, isDeleting]);
+
   function handleAdicionalChange(e) {
     if (!e?.target) return;
     const { name, value } = e.target;
@@ -293,7 +331,7 @@ export default function CadastrarProduto() {
 
     const name = String(adicionalForm.name || "").trim();
     const description = String(adicionalForm.description || "").trim();
-    const subcategory = String(adicionalForm.subcategory || "").trim();
+    const subcategory = normalizeAdicionalSubcategory(adicionalForm.subcategory);
     const parsedPrice = Number(String(adicionalForm.price || "").replace(",", "."));
 
     if (!name || !subcategory) {
@@ -341,7 +379,7 @@ export default function CadastrarProduto() {
       id: adicional.id,
       name: adicional.name || "",
       description: adicional.description || "",
-      subcategory: adicional.subcategory || "",
+      subcategory: normalizeAdicionalSubcategory(adicional.subcategory || ""),
       price: formatPriceInput(adicional.price),
     });
     setIsEditAdicionalOpen(true);
@@ -358,7 +396,7 @@ export default function CadastrarProduto() {
     const id = Number(editAdicionalForm.id);
     const name = String(editAdicionalForm.name || "").trim();
     const description = String(editAdicionalForm.description || "").trim();
-    const subcategory = String(editAdicionalForm.subcategory || "").trim();
+    const subcategory = normalizeAdicionalSubcategory(editAdicionalForm.subcategory);
     const parsedPrice = Number(String(editAdicionalForm.price || "").replace(",", "."));
 
     if (!id || !name || !subcategory) {
@@ -393,15 +431,23 @@ export default function CadastrarProduto() {
 
   async function handleDeletarAdicional(adicional) {
     if (!adicional?.id) return;
-    if (!window.confirm(`Deletar o adicional "${adicional.name}"?`)) return;
+    setAdicionalToDelete(adicional);
+  }
 
+  async function confirmDeleteAdicional() {
+    if (!adicionalToDelete?.id || isDeleting) return;
+
+    setIsDeleting(true);
     try {
-      await http.delete(`/adicionais/${adicional.id}`);
+      await http.delete(`/adicionais/${adicionalToDelete.id}`);
       toast.success("Adicional deletado.");
+      setAdicionalToDelete(null);
       await loadAdicionais();
     } catch (err) {
       console.error("Erro ao deletar adicional:", err);
       toast.error(err?.message || "Nao foi possivel deletar o adicional.");
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -706,15 +752,24 @@ export default function CadastrarProduto() {
     clearForm();
   }
 
-  async function handleDeletar(index) {
-    if (!confirm("Apagar este produto?")) return;
+  async function handleDeletar(produto) {
+    if (!produto?.index) return;
+    setProdutoToDelete(produto);
+  }
 
+  async function confirmDeleteProduto() {
+    if (!produtoToDelete?.index || isDeleting) return;
+
+    setIsDeleting(true);
     try {
-      await deletarProduto(index);
-      setProdutos((prev) => prev.filter((p) => p.index !== index));
+      await deletarProduto(produtoToDelete.index);
+      setProdutos((prev) => prev.filter((p) => p.index !== produtoToDelete.index));
+      setProdutoToDelete(null);
     } catch (err) {
       console.error("Erro ao deletar produto:", err);
       toast.error("Não foi possível deletar o produto.");
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -882,7 +937,7 @@ export default function CadastrarProduto() {
 
               <div className="field-row">
                 <label htmlFor="adicional-description" className="field-label">
-                  Descricao
+                  Descrição (Opcional)
                 </label>
                 <input
                   id="adicional-description"
@@ -921,7 +976,7 @@ export default function CadastrarProduto() {
 
                 <div className="field-row">
                   <label htmlFor="adicional-price" className="field-label">
-                    Preco (R$)
+                    Preço (R$)
                   </label>
                   <input
                     id="adicional-price"
@@ -1057,7 +1112,7 @@ export default function CadastrarProduto() {
                 </div>
 
                 <div className="field-row">
-                  <label htmlFor="edit-adicional-description">Descricao</label>
+                  <label htmlFor="edit-adicional-description">Descrição (Opcional)</label>
                   <input
                     id="edit-adicional-description"
                     name="description"
@@ -1090,7 +1145,7 @@ export default function CadastrarProduto() {
                   </div>
 
                   <div className="field-row">
-                    <label htmlFor="edit-adicional-price">Preco (R$)</label>
+                    <label htmlFor="edit-adicional-price">Preço (R$)</label>
                     <input
                       id="edit-adicional-price"
                       name="price"
@@ -1200,7 +1255,7 @@ export default function CadastrarProduto() {
 
                       <button
                         className="btn btn-ghost"
-                        onClick={() => handleDeletar(p.index)}
+                        onClick={() => handleDeletar(p)}
                       >
                         Deletar
                       </button>
@@ -1238,6 +1293,89 @@ export default function CadastrarProduto() {
                 subcatOptions={subcatOptions}
                 showCloseButton={true}
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {(adicionalToDelete || produtoToDelete) && (
+        <div
+          className="cp-modal-overlay"
+          role="button"
+          tabIndex={0}
+          onClick={() => {
+            if (!isDeleting) {
+              setAdicionalToDelete(null);
+              setProdutoToDelete(null);
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !isDeleting) {
+              setAdicionalToDelete(null);
+              setProdutoToDelete(null);
+            }
+          }}
+          aria-label="Fechar modal"
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="cp-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="cp-modal__header">
+              <h4>Confirmar exclusão</h4>
+              <button
+                type="button"
+                className="cp-modal__close"
+                onClick={() => {
+                  if (!isDeleting) {
+                    setAdicionalToDelete(null);
+                    setProdutoToDelete(null);
+                  }
+                }}
+                aria-label="Fechar"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="cp-modal__body">
+              <p>
+                {adicionalToDelete
+                  ? `Deseja apagar o adicional "${adicionalToDelete.name}"?`
+                  : `Deseja apagar o produto "${produtoToDelete?.nome || "Produto"}"?`}
+              </p>
+
+              <div className="cp-modal__footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    if (!isDeleting) {
+                      setAdicionalToDelete(null);
+                      setProdutoToDelete(null);
+                    }
+                  }}
+                  disabled={isDeleting}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => {
+                    if (adicionalToDelete) {
+                      confirmDeleteAdicional();
+                      return;
+                    }
+                    confirmDeleteProduto();
+                  }}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? "Excluindo..." : "Excluir"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

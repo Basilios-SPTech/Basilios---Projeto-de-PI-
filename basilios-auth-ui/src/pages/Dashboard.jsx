@@ -7,6 +7,7 @@ import OrderPeaksChart from "../components/dashboard/OrderPeaksChart.jsx";
 import ChampionProduct from "../components/dashboard/ChampionProduct.jsx";
 import TopProducts from "../components/dashboard/TopProducts.jsx";
 import MenuButton from "../components/MenuButtonAdm.jsx";
+import DateTimePicker from "../components/DateTimePicker.jsx";
 
 function getTodayRange() {
   const today = new Date();
@@ -26,8 +27,7 @@ export default function Dashboard() {
   const [appliedRange, setAppliedRange] = useState(getTodayRange());
   const [appliedVersion, setAppliedVersion] = useState(0);
 
-  function handleChange(e) {
-    const { name, value } = e.target;
+  function handleDateChange(name, value) {
     setFilters((prev) => ({ ...prev, [name]: value }));
   }
 
@@ -51,22 +51,21 @@ export default function Dashboard() {
             <div className="dashboard-bar__group">
               <label className="dashboard-bar__field">
                 <span>Data início</span>
-                <input
-                  type="date"
-                  name="start"
+                <DateTimePicker
                   value={filters.start}
-                  onChange={handleChange}
+                  onChange={(value) => handleDateChange("start", value)}
+                  maxDate={filters.end || undefined}
+                  inputClassName="dashboard-date-input"
                 />
               </label>
 
               <label className="dashboard-bar__field">
                 <span>Data fim</span>
-                <input
-                  type="date"
-                  name="end"
+                <DateTimePicker
                   value={filters.end}
-                  min={filters.start || undefined}
-                  onChange={handleChange}
+                  onChange={(value) => handleDateChange("end", value)}
+                  minDate={filters.start || undefined}
+                  inputClassName="dashboard-date-input"
                 />
               </label>
             </div>
