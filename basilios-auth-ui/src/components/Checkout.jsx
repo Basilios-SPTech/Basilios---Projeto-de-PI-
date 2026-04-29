@@ -34,6 +34,7 @@ export default function Checkout() {
   const [submitting, setSubmitting] = useState(false);
   const [deletingAddress, setDeletingAddress] = useState(false);
   const [addressToDelete, setAddressToDelete] = useState(null);
+  const [deliveryObservations, setDeliveryObservations] = useState("");
   const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const navigate = useNavigate();
@@ -197,18 +198,39 @@ export default function Checkout() {
     setSubmitting(true);
 
     try {
-    let itensPedido = itens.map((i) => ({
-      productId: i.originalProductId,
-      quantity: i.qtd,
-      observations: i.observation,
-    }));
+    const itensPedido = itens.map((item) => {
+      const additions = Array.isArray(item.additions) ? item.additions : [];
+      const adicionais = additions
+        .map((addition) => {
+          const adicionalId = Number(addition?.adicionalId ?? addition?.id);
+          const quantity = Number(addition?.quantity ?? 0);
+          if (!Number.isFinite(adicionalId) || !Number.isFinite(quantity) || quantity <= 0) {
+            return null;
+          }
+          return { adicionalId, quantity };
+        })
+        .filter(Boolean);
+
+      const observationParts = [];
+      if (item.observation) observationParts.push(String(item.observation).trim());
+      if (item.meatPoint) {
+        observationParts.push(`PONTO DA CARNE: ${item.meatPoint}`);
+      }
+
+      return {
+        productId: item.originalProductId ?? item.productId ?? item.id,
+        quantity: item.qtd ?? item.quantity ?? 1,
+        observations: observationParts.filter(Boolean).join(" | "),
+        adicionais,
+      };
+    });
 
     let body = {
       addressId: Number(enderecoSelecionado),
       items: itensPedido,
       deliveryFee: 0,
       discount: 0,
-      observations: "",
+      observations: String(deliveryObservations || "").trim(),
     };
 
     let req = await http.post("/orders", body);
@@ -386,55 +408,83 @@ export default function Checkout() {
                     </div>
 
                     {/* Adicionais */}
-                    {(item.ingredientQuantities && Object.keys(item.ingredientQuantities).length > 0) ||
-                    (item.drinkQuantities && Object.keys(item.drinkQuantities).length > 0) ||
-                    (item.sauceQuantities && Object.keys(item.sauceQuantities).length > 0) ||
-                    item.selectedBreadId ? (
-                      <div className="mt-3 pl-4 border-l-2 border-gray-300">
-                        <h4 className="text-sm font-medium text-gray-700 mb-2">Adicionais:</h4>
-                        <div className="space-y-1 text-xs text-gray-600">
-                          {item.selectedBreadId && (
-                            <p>• Pão: {item.selectedBreadId === 1 ? "Pão de Gergelim" : item.selectedBreadId === 2 ? "Pão Australiano" : "Pão de Brioche"}</p>
-                          )}
-                          {item.ingredientQuantities && Object.entries(item.ingredientQuantities).map(([id, qty]) => {
-                            const ingredient = [
-                              { id: 1, name: "Presunto" },
-                              { id: 2, name: "Bacon" },
-                              { id: 3, name: "Egg" },
-                              { id: 4, name: "Picles" },
-                              { id: 5, name: "Cheddar" },
-                              { id: 6, name: "Catupiry" },
-                              { id: 7, name: "Acebolado" },
-                              { id: 8, name: "Vinagrete" },
-                              { id: 9, name: "Queijo" },
-                            ].find(i => i.id === parseInt(id));
-                            return ingredient ? <p key={id}>• {ingredient.name}: {qty}x</p> : null;
-                          })}
-                          {item.drinkQuantities && Object.entries(item.drinkQuantities).map(([id, qty]) => {
-                            const drink = [
-                              { id: 1, name: "Coca Cola" },
-                              { id: 2, name: "Coca Cola Zero" },
-                              { id: 3, name: "Guaraná" },
-                              { id: 4, name: "Guaraná Zero" },
-                              { id: 5, name: "Pepsi" },
-                              { id: 6, name: "Pepsi Twist" },
-                              { id: 7, name: "Soda Limonada" },
-                              { id: 8, name: "Citrus Schweppes" },
-                            ].find(d => d.id === parseInt(id));
-                            return drink ? <p key={id}>• {drink.name}: {qty}x</p> : null;
-                          })}
-                          {item.sauceQuantities && Object.entries(item.sauceQuantities).map(([id, qty]) => {
-                            const sauce = [
-                              { id: 1, name: "Maionese" },
-                              { id: 2, name: "Tártaro" },
-                              { id: 3, name: "Maionese de Alho" },
-                            ].find(s => s.id === parseInt(id));
-                            return sauce ? <p key={id}>• {sauce.name}: {qty}x</p> : null;
-                          })}
-                          {item.meatPoint && <p>• Ponto da carne: {item.meatPoint}</p>}
+                    {(() => {
+                      const additions = Array.isArray(item.additions) ? item.additions : [];
+                      const hasLegacyAdditions =
+                        (item.ingredientQuantities && Object.keys(item.ingredientQuantities).length > 0) ||
+                        (item.drinkQuantities && Object.keys(item.drinkQuantities).length > 0) ||
+                        (item.sauceQuantities && Object.keys(item.sauceQuantities).length > 0) ||
+                        item.selectedBreadId;
+
+                      if (additions.length === 0 && !hasLegacyAdditions && !item.meatPoint) return null;
+
+                      return (
+                        <div className="mt-3 pl-4 border-l-2 border-gray-300">
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">Adicionais:</h4>
+                          <div className="space-y-1 text-xs text-gray-600">
+                            {additions.map((addition, idx) => (
+                              <p key={`add-${idx}`}>
+                                • {addition.name || addition.adicionalName || `Adicional ${addition.adicionalId}`}: {addition.quantity}x
+                              </p>
+                            ))}
+
+                            {additions.length === 0 && item.selectedBreadId && (
+                              <p>
+                                • Pão:{" "}
+                                {item.selectedBreadId === 1
+                                  ? "Pão de Gergelim"
+                                  : item.selectedBreadId === 2
+                                    ? "Pão Australiano"
+                                    : "Pão de Brioche"}
+                              </p>
+                            )}
+
+                            {additions.length === 0 && item.ingredientQuantities &&
+                              Object.entries(item.ingredientQuantities).map(([id, qty]) => {
+                                const ingredient = [
+                                  { id: 1, name: "Presunto" },
+                                  { id: 2, name: "Bacon" },
+                                  { id: 3, name: "Egg" },
+                                  { id: 4, name: "Picles" },
+                                  { id: 5, name: "Cheddar" },
+                                  { id: 6, name: "Catupiry" },
+                                  { id: 7, name: "Acebolado" },
+                                  { id: 8, name: "Vinagrete" },
+                                  { id: 9, name: "Queijo" },
+                                ].find(i => i.id === parseInt(id));
+                                return ingredient ? <p key={id}>• {ingredient.name}: {qty}x</p> : null;
+                              })}
+
+                            {additions.length === 0 && item.drinkQuantities &&
+                              Object.entries(item.drinkQuantities).map(([id, qty]) => {
+                                const drink = [
+                                  { id: 1, name: "Coca Cola" },
+                                  { id: 2, name: "Coca Cola Zero" },
+                                  { id: 3, name: "Guaraná" },
+                                  { id: 4, name: "Guaraná Zero" },
+                                  { id: 5, name: "Pepsi" },
+                                  { id: 6, name: "Pepsi Twist" },
+                                  { id: 7, name: "Soda Limonada" },
+                                  { id: 8, name: "Citrus Schweppes" },
+                                ].find(d => d.id === parseInt(id));
+                                return drink ? <p key={id}>• {drink.name}: {qty}x</p> : null;
+                              })}
+
+                            {additions.length === 0 && item.sauceQuantities &&
+                              Object.entries(item.sauceQuantities).map(([id, qty]) => {
+                                const sauce = [
+                                  { id: 1, name: "Maionese" },
+                                  { id: 2, name: "Tártaro" },
+                                  { id: 3, name: "Maionese de Alho" },
+                                ].find(s => s.id === parseInt(id));
+                                return sauce ? <p key={id}>• {sauce.name}: {qty}x</p> : null;
+                              })}
+
+                            {item.meatPoint && <p>• Ponto da carne: {item.meatPoint}</p>}
+                          </div>
                         </div>
-                      </div>
-                    ) : null}
+                      );
+                    })()}
                   </div>
 
   
@@ -540,6 +590,19 @@ export default function Checkout() {
 
                 <AddAddress onCreated={handleAddressCreated} />
               </div>
+            </div>
+
+            {/* Observações de Entrega */}
+            <div className="bg-white rounded-lg p-4 md:p-6 shadow-md">
+              <div className="pb-6 md:pb-8">
+                <h2 className="text-lg md:text-xl font-semibold">Observações de entrega (Opcional)</h2>
+              </div>
+              <textarea
+                value={deliveryObservations}
+                onChange={(e) => setDeliveryObservations(e.target.value)}
+                placeholder="Ex.: deixar na portaria, chamar no interfone, sem contato..."
+                className="w-full h-24 p-3 border border-gray-300 rounded-lg resize-none text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
+              />
             </div>
 
             {/* Forma de Pagamento */}

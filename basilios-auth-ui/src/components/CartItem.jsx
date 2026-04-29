@@ -13,6 +13,33 @@ export default function CartItem({
   onRemoveAdicionalAt,
   onRemoveSauceAt,
 }) {
+  const additions = Array.isArray(item.additions) ? item.additions : [];
+  const extras = additions.filter(
+    (addition) =>
+      String(addition?.subcategory || "").toUpperCase() !== "MOLHO",
+  );
+  const sauces = additions.filter(
+    (addition) =>
+      String(addition?.subcategory || "").toUpperCase() === "MOLHO",
+  );
+
+  const legacyExtras = Array.isArray(item.selectedIngredientNames)
+    ? item.selectedIngredientNames.map((name) => ({
+        name,
+        quantity: 1,
+      }))
+    : [];
+
+  const legacySauces = Array.isArray(item.selectedSauceNames)
+    ? item.selectedSauceNames.map((name) => ({
+        name,
+        quantity: 1,
+      }))
+    : [];
+
+  const extrasToShow = extras.length > 0 ? extras : legacyExtras;
+  const saucesToShow = sauces.length > 0 ? sauces : legacySauces;
+
   return (
     <div className="flex gap-4 p-4 bg-gray-50 rounded-lg">
       {/* Imagem do produto */}
@@ -42,27 +69,30 @@ export default function CartItem({
           </span>
         )}
 
-        {/* Exibir contadores de adicionais e molhos (sem nomes) */}
-        {Array.isArray(item.selectedIngredientNames) && item.selectedIngredientNames.length > 0 && (
+        {/* Exibir contadores de adicionais e molhos */}
+        {extrasToShow.length > 0 && (
           <div className="mt-3 p-3 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200">
             <div className="flex items-center gap-2 mb-2">
               <UtensilsCrossed className="w-4 h-4 text-orange-600" />
               <p className="text-xs font-semibold text-orange-900">Adicionais</p>
               <span className="ml-auto bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                {item.selectedIngredientNames.length}
+                {extrasToShow.reduce((sum, add) => sum + Number(add.quantity || 0), 0)}
               </span>
             </div>
             <div className="flex flex-wrap gap-1.5">
-              {item.selectedIngredientNames.map((name, idx) => (
+              {extrasToShow.map((addition, idx) => (
                 <div 
                   key={idx} 
                   className="bg-white border border-orange-300 hover:border-orange-500 transition-all text-orange-700 text-xs px-2.5 py-1 rounded-full flex items-center gap-1.5 group shadow-sm hover:shadow-md"
                 >
-                  <span className="font-medium">{name}</span>
+                  <span className="font-medium">
+                    {addition.name}
+                    {addition.quantity > 1 ? ` x${addition.quantity}` : ""}
+                  </span>
                   <button
                     onClick={() => onRemoveAdicionalAt?.(item.id, idx)}
                     className="opacity-0 group-hover:opacity-100 hover:bg-orange-100 rounded-full w-4 h-4 flex items-center justify-center cursor-pointer transition-all transform group-hover:scale-110"
-                    aria-label={`Remover adicional ${name}`}
+                    aria-label={`Remover adicional ${addition.name}`}
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -72,26 +102,29 @@ export default function CartItem({
           </div>
         )}
 
-        {Array.isArray(item.selectedSauceNames) && item.selectedSauceNames.length > 0 && (
+        {saucesToShow.length > 0 && (
           <div className="mt-2 p-3 bg-gradient-to-r from-red-50 to-pink-50 rounded-lg border border-red-200">
             <div className="flex items-center gap-2 mb-2">
               <Droplets className="w-4 h-4 text-red-600" />
               <p className="text-xs font-semibold text-red-900">Molhos</p>
               <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                {item.selectedSauceNames.length}
+                {saucesToShow.reduce((sum, add) => sum + Number(add.quantity || 0), 0)}
               </span>
             </div>
             <div className="flex flex-wrap gap-1.5">
-              {item.selectedSauceNames.map((name, idx) => (
+              {saucesToShow.map((addition, idx) => (
                 <div 
                   key={idx} 
                   className="bg-white border border-red-300 hover:border-red-500 transition-all text-red-700 text-xs px-2.5 py-1 rounded-full flex items-center gap-1.5 group shadow-sm hover:shadow-md"
                 >
-                  <span className="font-medium">{name}</span>
+                  <span className="font-medium">
+                    {addition.name}
+                    {addition.quantity > 1 ? ` x${addition.quantity}` : ""}
+                  </span>
                   <button
                     onClick={() => onRemoveSauceAt?.(item.id, idx)}
                     className="opacity-0 group-hover:opacity-100 hover:bg-red-100 rounded-full w-4 h-4 flex items-center justify-center cursor-pointer transition-all transform group-hover:scale-110"
-                    aria-label={`Remover molho ${name}`}
+                    aria-label={`Remover molho ${addition.name}`}
                   >
                     <X className="w-3 h-3" />
                   </button>

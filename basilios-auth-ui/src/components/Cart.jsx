@@ -125,17 +125,30 @@ export default function Cart() {
   // Função para recalcular o preço de um item customizado
   const recalculateItemPrice = (item) => {
     if (!item.isCustom) return item.preco;
-    
+
     const basePrice = item.precoBase || 0;
-    
-    let ingredientsTotal = 0;
-    if (item.ingredientQuantities && item.ingredientPrices) {
+    let additionsTotal = 0;
+
+    if (Array.isArray(item.additions) && item.additions.length > 0) {
+      additionsTotal = item.additions.reduce((sum, addition) => {
+        const price = Number(addition?.price ?? 0);
+        const qty = Number(addition?.quantity ?? 0);
+        return sum + (Number.isFinite(price) ? price : 0) * (Number.isFinite(qty) ? qty : 0);
+      }, 0);
+    } else if (item.ingredientQuantities && item.ingredientPrices) {
       Object.entries(item.ingredientQuantities).forEach(([id, qty]) => {
         const price = item.ingredientPrices[id] || 0;
-        ingredientsTotal += price * qty;
+        additionsTotal += price * qty;
       });
     }
-    
+
+    if (item.sauceQuantities && item.saucePrices) {
+      Object.entries(item.sauceQuantities).forEach(([id, qty]) => {
+        const price = item.saucePrices[id] || 0;
+        additionsTotal += price * qty;
+      });
+    }
+
     let drinksTotal = 0;
     if (item.drinkQuantities && item.drinkPrices) {
       Object.entries(item.drinkQuantities).forEach(([id, qty]) => {
@@ -143,18 +156,10 @@ export default function Cart() {
         drinksTotal += price * qty;
       });
     }
-    
-    let saucesTotal = 0;
-    if (item.sauceQuantities && item.saucePrices) {
-      Object.entries(item.sauceQuantities).forEach(([id, qty]) => {
-        const price = item.saucePrices[id] || 0;
-        saucesTotal += price * qty;
-      });
-    }
-    
+
     const breadPrice = item.selectedBreadId && item.breadPrice ? item.breadPrice : 0;
-    
-    return basePrice + ingredientsTotal + drinksTotal + saucesTotal + breadPrice;
+
+    return basePrice + additionsTotal + drinksTotal + breadPrice;
   };
 
   function goToCheckout() {
@@ -244,6 +249,7 @@ export default function Cart() {
                         item.selectedIngredientNames || [],
                       selectedSauceIds: item.selectedSauceIds || [],
                       selectedSauceNames: item.selectedSauceNames || [],
+                      additions: item.additions || [],
                       isCustom: !!item.isCustom,
                       observation: item.observation || "",
                       meatPoint: item.meatPoint || null,
@@ -295,17 +301,43 @@ export default function Cart() {
                     onRemoveAdicionalAt={(itemId, idx) => {
                       const atualizados = cartItems.map((c) => {
                         if (c.id !== itemId) return c;
-                        
-                        // Remover do array de nomes
+                        if (Array.isArray(c.additions) && c.additions.length > 0) {
+                          const extras = c.additions.filter(
+                            (addition) =>
+                              String(addition?.subcategory || "").toUpperCase() !== "MOLHO",
+                          );
+                          if (idx < 0 || idx >= extras.length) return c;
+
+                          const target = extras[idx];
+                          const targetId = Number(target?.adicionalId ?? target?.id);
+                          const updatedAdditions = c.additions
+                            .map((addition) => {
+                              const additionId = Number(addition?.adicionalId ?? addition?.id);
+                              if (additionId !== targetId) return addition;
+
+                              const nextQty = Number(addition?.quantity ?? 0) - 1;
+                              return { ...addition, quantity: nextQty };
+                            })
+                            .filter((addition) => Number(addition?.quantity ?? 0) > 0);
+
+                          const updatedItem = {
+                            ...c,
+                            additions: updatedAdditions,
+                          };
+
+                          updatedItem.preco = recalculateItemPrice(updatedItem);
+                          return updatedItem;
+                        }
+
+                        // Remover do array de nomes (legado)
                         const names = Array.isArray(c.selectedIngredientNames)
                           ? [...c.selectedIngredientNames]
                           : [];
                         if (idx < 0 || idx >= names.length) return c;
-                        const removedName = names.splice(idx, 1)[0];
-                        
-                        // Remover do objeto de quantidades
+                        names.splice(idx, 1);
+
+                        // Remover do objeto de quantidades (legado)
                         const quantities = { ...c.ingredientQuantities };
-                        // Encontrar qual ID corresponde a esse índice
                         let currentIdx = 0;
                         for (const [id, qty] of Object.entries(quantities)) {
                           for (let i = 0; i < qty; i++) {
@@ -321,16 +353,14 @@ export default function Cart() {
                             currentIdx++;
                           }
                         }
-                        
+
                         const updatedItem = {
                           ...c,
                           selectedIngredientNames: names,
                           ingredientQuantities: quantities,
                         };
-                        
-                        // Recalcular preço
+
                         updatedItem.preco = recalculateItemPrice(updatedItem);
-                        
                         return updatedItem;
                       });
                       setCartItems(atualizados);
@@ -343,17 +373,43 @@ export default function Cart() {
                     onRemoveSauceAt={(itemId, idx) => {
                       const atualizados = cartItems.map((c) => {
                         if (c.id !== itemId) return c;
-                        
-                        // Remover do array de nomes
+                        if (Array.isArray(c.additions) && c.additions.length > 0) {
+                          const sauces = c.additions.filter(
+                            (addition) =>
+                              String(addition?.subcategory || "").toUpperCase() === "MOLHO",
+                          );
+                          if (idx < 0 || idx >= sauces.length) return c;
+
+                          const target = sauces[idx];
+                          const targetId = Number(target?.adicionalId ?? target?.id);
+                          const updatedAdditions = c.additions
+                            .map((addition) => {
+                              const additionId = Number(addition?.adicionalId ?? addition?.id);
+                              if (additionId !== targetId) return addition;
+
+                              const nextQty = Number(addition?.quantity ?? 0) - 1;
+                              return { ...addition, quantity: nextQty };
+                            })
+                            .filter((addition) => Number(addition?.quantity ?? 0) > 0);
+
+                          const updatedItem = {
+                            ...c,
+                            additions: updatedAdditions,
+                          };
+
+                          updatedItem.preco = recalculateItemPrice(updatedItem);
+                          return updatedItem;
+                        }
+
+                        // Remover do array de nomes (legado)
                         const names = Array.isArray(c.selectedSauceNames)
                           ? [...c.selectedSauceNames]
                           : [];
                         if (idx < 0 || idx >= names.length) return c;
-                        const removedName = names.splice(idx, 1)[0];
-                        
-                        // Remover do objeto de quantidades
+                        names.splice(idx, 1);
+
+                        // Remover do objeto de quantidades (legado)
                         const quantities = { ...c.sauceQuantities };
-                        // Encontrar qual ID corresponde a esse índice
                         let currentIdx = 0;
                         for (const [id, qty] of Object.entries(quantities)) {
                           for (let i = 0; i < qty; i++) {
@@ -369,16 +425,14 @@ export default function Cart() {
                             currentIdx++;
                           }
                         }
-                        
+
                         const updatedItem = {
                           ...c,
                           selectedSauceNames: names,
                           sauceQuantities: quantities,
                         };
-                        
-                        // Recalcular preço
+
                         updatedItem.preco = recalculateItemPrice(updatedItem);
-                        
                         return updatedItem;
                       });
                       setCartItems(atualizados);

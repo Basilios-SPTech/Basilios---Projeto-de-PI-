@@ -203,6 +203,11 @@ body {
   align-items: start;
 }
 
+.cp-left {
+  display: grid;
+  gap: 20px;
+}
+
 @media (max-width: 1200px) {
   .cp-grid {
     grid-template-columns: 1fr;
@@ -354,6 +359,10 @@ body {
   top: 100px;
 }
 
+.cp-preview--inline {
+  position: static;
+}
+
 .cp-preview__card {
   display: grid;
   grid-template-columns: 160px 1fr;
@@ -423,6 +432,118 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* ============================================
+   CARD DE ADICIONAIS
+   ============================================ */
+
+.cp-ingredients {
+  display: grid;
+  gap: 18px;
+}
+
+.cp-ingredients__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cp-ingredients__form {
+  display: grid;
+  gap: 16px;
+}
+
+.cp-ingredients__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.cp-ingredients__price-preview {
+  display: inline-block;
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+
+.cp-ingredients__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cp-ingredients__list {
+  display: grid;
+  gap: 12px;
+  max-height: 360px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.cp-ingredients__list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cp-ingredients__list-title {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.cp-ingredients__item {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  background: var(--bg-secondary);
+  display: grid;
+  gap: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.cp-ingredients__info h4 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.cp-ingredients__info p {
+  margin: 0 0 10px;
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
+}
+
+.cp-ingredients__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.cp-ingredients__price {
+  font-weight: 700;
+  color: var(--brand);
+}
+
+.cp-ingredients__item-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cp-ingredients__status {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
+}
+
+.cp-ingredients__status--error {
+  color: var(--error);
+}
+
 @media (max-width: 768px) {
   .cp-preview {
     position: static;
@@ -434,6 +555,10 @@ body {
 
   .cp-preview__media {
     min-height: 200px;
+  }
+
+  .cp-ingredients__row {
+    grid-template-columns: 1fr;
   }
 }
 
