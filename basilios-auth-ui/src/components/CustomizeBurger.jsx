@@ -39,25 +39,6 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
   const [additionsLoading, setAdditionsLoading] = useState(false);
   const [additionsError, setAdditionsError] = useState("");
 
-  // Bebidas
-  const [drinks, setDrinks] = useState([
-    { id: 1, name: "Coca Cola", price: 6.5 },
-    { id: 2, name: "Coca Cola Zero", price: 6.5 },
-    { id: 3, name: "Guaraná", price: 6.5 },
-    { id: 4, name: "Guaraná Zero", price: 6.5 },
-    { id: 5, name: "Pepsi", price: 6.5 },
-    { id: 6, name: "Pepsi Twist", price: 6.5 },
-    { id: 7, name: "Soda Limonada", price: 6.5 },
-    { id: 8, name: "Citrus Schweppes", price: 6.5 },
-  ]);
-
-  // Pães
-  const [breads, setBreads] = useState([
-    { id: 1, name: "Pão de Gergelim", price: 4 },
-    { id: 2, name: "Pão Australiano", price: 4 },
-    { id: 3, name: "Pão de Brioche", price: 4 },
-  ]);
-
   const maxExtras = 5;
   const maxSauces = 2;
 
@@ -114,16 +95,30 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
   }, [productId]);
 
   const extraAdditions = useMemo(() => {
-    return availableAdditions.filter(
-      (addition) =>
-        String(addition?.subcategory || "").toUpperCase() !== "MOLHO",
-    );
+    return availableAdditions.filter((addition) => {
+      const subcategory = String(addition?.subcategory || "").toUpperCase();
+      return !["MOLHO", "PAO", "BEBIDA"].includes(subcategory);
+    });
   }, [availableAdditions]);
 
   const sauceAdditions = useMemo(() => {
     return availableAdditions.filter(
       (addition) =>
         String(addition?.subcategory || "").toUpperCase() === "MOLHO",
+    );
+  }, [availableAdditions]);
+
+  const breadAdditions = useMemo(() => {
+    return availableAdditions.filter(
+      (addition) =>
+        String(addition?.subcategory || "").toUpperCase() === "PAO",
+    );
+  }, [availableAdditions]);
+
+  const drinkAdditions = useMemo(() => {
+    return availableAdditions.filter(
+      (addition) =>
+        String(addition?.subcategory || "").toUpperCase() === "BEBIDA",
     );
   }, [availableAdditions]);
 
@@ -141,6 +136,8 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
     if (additions.length > 0) {
       const extras = {};
       const sauces = {};
+      const drinks = {};
+      let breadId = null;
 
       additions.forEach((addition) => {
         const id = Number(addition?.adicionalId ?? addition?.id);
@@ -150,17 +147,35 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
         if (!Number.isFinite(qty) || qty <= 0) return;
 
         const subcategory = String(addition?.subcategory || "").toUpperCase();
-        const target = subcategory === "MOLHO" ? sauces : extras;
-        target[id] = (target[id] || 0) + qty;
+        if (subcategory === "MOLHO") {
+          sauces[id] = (sauces[id] || 0) + qty;
+          return;
+        }
+
+        if (subcategory === "BEBIDA") {
+          drinks[id] = (drinks[id] || 0) + qty;
+          return;
+        }
+
+        if (subcategory === "PAO") {
+          if (!breadId) breadId = id;
+          return;
+        }
+
+        extras[id] = (extras[id] || 0) + qty;
       });
 
       setIngredientQuantities(extras);
       setSauceQuantities(sauces);
+      setDrinkQuantities(drinks);
+      setSelectedBreadId(breadId);
       return;
     }
 
     setIngredientQuantities(item.ingredientQuantities || {});
     setSauceQuantities(item.sauceQuantities || {});
+    setDrinkQuantities(item.drinkQuantities || {});
+    setSelectedBreadId(item.selectedBreadId || null);
   }, [item]);
 
   // Adicionar classe ao body quando o modal abrir/fechar para deslocar acessibilidade
@@ -256,20 +271,20 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
 
     const extraDrinksPrice = Object.entries(drinkQuantities)
       .reduce((acc, [id, qty]) => {
-        const drink = drinks.find((d) => d.id === parseInt(id));
+        const drink = drinkAdditions.find((d) => d.id === parseInt(id));
         return acc + ((drink?.price || 0) * qty);
       }, 0);
 
     const breadPrice =
       selectedBreadId != null
-        ? breads.find((b) => b.id === selectedBreadId)?.price || 0
+        ? breadAdditions.find((b) => b.id === selectedBreadId)?.price || 0
         : 0;
 
     // Usa precoBase se existir (foi editado antes), senão usa preco/price
     const basePrice = item.precoBase ?? item.preco ?? item.price ?? 0;
 
     return basePrice + extraIngredientsPrice + extraSaucesPrice + extraDrinksPrice + breadPrice;
-  }, [ingredientQuantities, sauceQuantities, drinkQuantities, selectedBreadId, item, extraAdditions, sauceAdditions]);
+  }, [ingredientQuantities, sauceQuantities, drinkQuantities, selectedBreadId, item, extraAdditions, sauceAdditions, drinkAdditions, breadAdditions]);
 
   return (
     <>
@@ -410,83 +425,96 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
             {/* Bebidas */}
             <div>
               <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                Deseja um refrigerante?
+                Deseja bebida?
               </h3>
 
-              <div className="divide-y divide-gray-200">
-                {drinks.map((drink) => (
-                  <div
-                    key={drink.id}
-                    className="flex justify-between items-center py-3"
-                  >
-                    <h4 className="font-medium text-gray-900">
-                      {drink.name}
-                      <span className="text-orange-600 font-semibold ml-1">
-                        + R$ {drink.price.toFixed(2).replace(".", ",")}
-                      </span>
-                    </h4>
-                    {drinkQuantities[drink.id] ? (
-                      <div className="flex items-center gap-2 bg-orange-50 border border-orange-500 rounded-lg px-2 py-1">
-                        <button
-                          onClick={() => removeDrink(drink.id)}
-                          className="w-6 h-6 flex items-center justify-center text-orange-500 hover:bg-orange-100 rounded transition-colors"
-                        >
-                          <Minus className="w-4 h-4" />
-                        </button>
-                        <span className="w-6 text-center font-semibold text-gray-900">
-                          {drinkQuantities[drink.id]}
+              {!additionsLoading && !additionsError && drinkAdditions.length === 0 && (
+                <p className="text-sm text-gray-500">Nenhuma bebida disponível.</p>
+              )}
+
+              {!additionsLoading && !additionsError && drinkAdditions.length > 0 && (
+                <div className="divide-y divide-gray-200">
+                  {drinkAdditions.map((drink) => (
+                    <div
+                      key={drink.id}
+                      className="flex justify-between items-center py-3"
+                    >
+                      <h4 className="font-medium text-gray-900">
+                        {drink.name}
+                        <span className="text-orange-600 font-semibold ml-1">
+                          + R$ {Number(drink.price || 0).toFixed(2).replace(".", ",")}
                         </span>
+                      </h4>
+                      {drinkQuantities[drink.id] ? (
+                        <div className="flex items-center gap-2 bg-orange-50 border border-orange-500 rounded-lg px-2 py-1">
+                          <button
+                            onClick={() => removeDrink(drink.id)}
+                            className="w-6 h-6 flex items-center justify-center text-orange-500 hover:bg-orange-100 rounded transition-colors"
+                          >
+                            <Minus className="w-4 h-4" />
+                          </button>
+                          <span className="w-6 text-center font-semibold text-gray-900">
+                            {drinkQuantities[drink.id]}
+                          </span>
+                          <button
+                            onClick={() => addDrink(drink.id)}
+                            className="w-6 h-6 flex items-center justify-center text-orange-500 hover:bg-orange-100 rounded transition-colors"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
                         <button
                           onClick={() => addDrink(drink.id)}
-                          className="w-6 h-6 flex items-center justify-center text-orange-500 hover:bg-orange-100 rounded transition-colors"
+                          className="w-8 h-8 flex items-center justify-center rounded-full border border-orange-500 text-orange-500 text-lg font-bold transition-all hover:bg-orange-50"
                         >
-                          <Plus className="w-4 h-4" />
+                          +
                         </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => addDrink(drink.id)}
-                        className="w-8 h-8 flex items-center justify-center rounded-full border border-orange-500 text-orange-500 text-lg font-bold transition-all hover:bg-orange-50"
-                      >
-                        +
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Pães */}
             <div>
               <h3 className="text-lg font-semibold text-gray-800 mb-1">
-                Deseja trocar o pão?
+                Tipo de pão
               </h3>
               <p className="text-sm text-gray-500 mb-3">Escolha até 1 opção.</p>
-              <div className="divide-y divide-gray-200">
-                {breads.map((bread) => (
-                  <div
-                    key={bread.id}
-                    className="flex justify-between items-center py-3"
-                  >
-                    <h4 className="font-medium text-gray-900">
-                      {bread.name}
-                      <span className="text-orange-600 font-semibold ml-1">
-                        + R$ {bread.price.toFixed(2).replace(".", ",")}
-                      </span>
-                    </h4>
-                    <button
-                      onClick={() => selectBread(bread.id)}
-                      className={`w-8 h-8 flex items-center justify-center rounded-full border text-orange-500 text-lg font-bold transition-all ${
-                        selectedBreadId === bread.id
-                          ? "bg-orange-500 text-white border-orange-500"
-                          : "border-orange-500 hover:bg-orange-50"
-                      }`}
+
+              {!additionsLoading && !additionsError && breadAdditions.length === 0 && (
+                <p className="text-sm text-gray-500">Nenhum tipo de pão disponível.</p>
+              )}
+
+              {!additionsLoading && !additionsError && breadAdditions.length > 0 && (
+                <div className="divide-y divide-gray-200">
+                  {breadAdditions.map((bread) => (
+                    <div
+                      key={bread.id}
+                      className="flex justify-between items-center py-3"
                     >
-                      {selectedBreadId === bread.id ? "✓" : "+"}
-                    </button>
-                  </div>
-                ))}
-              </div>
+                      <h4 className="font-medium text-gray-900">
+                        {bread.name}
+                        <span className="text-orange-600 font-semibold ml-1">
+                          + R$ {Number(bread.price || 0).toFixed(2).replace(".", ",")}
+                        </span>
+                      </h4>
+                      <button
+                        onClick={() => selectBread(bread.id)}
+                        className={`w-8 h-8 flex items-center justify-center rounded-full border text-orange-500 text-lg font-bold transition-all ${
+                          selectedBreadId === bread.id
+                            ? "bg-orange-500 text-white border-orange-500"
+                            : "border-orange-500 hover:bg-orange-50"
+                        }`}
+                      >
+                        {selectedBreadId === bread.id ? "✓" : "+"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Molhos Extras */}
@@ -607,14 +635,6 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
                   }
                 });
 
-                const drinkPrices = {};
-                Object.keys(drinkQuantities).forEach((id) => {
-                  const drink = drinks.find((d) => d.id === parseInt(id));
-                  if (drink) {
-                    drinkPrices[id] = drink.price;
-                  }
-                });
-
                 const saucePrices = {};
                 Object.keys(sauceQuantities).forEach((id) => {
                   const sauce = additionLookup.get(Number(id));
@@ -624,10 +644,6 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
                 });
 
                 const basePrice = item.precoBase ?? item.preco ?? item.price ?? 0;
-                const breadPrice =
-                  selectedBreadId != null
-                    ? breads.find((b) => b.id === selectedBreadId)?.price || 0
-                    : 0;
 
                 const buildAdditions = (quantities) =>
                   Object.entries(quantities)
@@ -646,9 +662,16 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
                     })
                     .filter((entry) => entry && entry.quantity > 0);
 
+                const breadSelection =
+                  selectedBreadId != null
+                    ? buildAdditions({ [selectedBreadId]: 1 })
+                    : [];
+
                 const additions = [
                   ...buildAdditions(ingredientQuantities),
                   ...buildAdditions(sauceQuantities),
+                  ...buildAdditions(drinkQuantities),
+                  ...breadSelection,
                 ];
 
                 const customItem = {
@@ -661,10 +684,10 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
                   ingredientQuantities,
                   ingredientPrices,
                   selectedIngredientNames,
-                  drinkQuantities,
-                  drinkPrices,
-                  selectedBreadId,
-                  breadPrice,
+                  drinkQuantities: null,
+                  drinkPrices: null,
+                  selectedBreadId: null,
+                  breadPrice: null,
                   sauceQuantities,
                   saucePrices,
                   selectedSauceNames,

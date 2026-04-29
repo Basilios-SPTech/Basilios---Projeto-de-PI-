@@ -12,9 +12,11 @@ import {
   Hamburger,
   Bike,
   House,
+  Maximize2,
 } from "lucide-react";
 import { http } from "../services/http.js";
 import toast from "react-hot-toast";
+import OrderDetailsModal from "./OrderDetailsModal.jsx";
 
 const BOARD_STATUSES = ["PENDENTE", "CONFIRMADO", "PREPARANDO", "DESPACHADO"];
 
@@ -160,6 +162,7 @@ export default function BoardPedidos() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expandedAddresses, setExpandedAddresses] = useState({});
+  const [detailTask, setDetailTask] = useState(null);
   const [confirmModal, setConfirmModal] = useState({
     open: false,
     step: 1,
@@ -392,6 +395,14 @@ export default function BoardPedidos() {
       mode: "single",
       task,
     });
+  };
+
+  const openDetailsModal = (task) => {
+    setDetailTask(task);
+  };
+
+  const closeDetailsModal = () => {
+    setDetailTask(null);
   };
 
   const openBulkFinalizeModal = () => {
@@ -865,7 +876,7 @@ export default function BoardPedidos() {
                         draggable={draggable}
                         onDragStart={(e) => handleDragStart(e, task, column.id)}
                         onTouchStart={draggable ? (e) => handleTouchStart(e, task, column.id) : undefined}
-                        className={`bg-white rounded-xl border border-neutral-200 ${draggable ? "cursor-grab active:cursor-grabbing" : "cursor-default"} ${colorClasses.hover} hover:shadow-md transition-all duration-200 ${draggable ? "active:shadow-lg active:scale-[1.02]" : ""} touch-none md:touch-auto`}
+                        className={`bg-white rounded-xl border-[3px] border-neutral-300 ${draggable ? "cursor-grab active:cursor-grabbing" : "cursor-default"} ${colorClasses.hover} hover:shadow-md transition-all duration-200 ${draggable ? "active:shadow-lg active:scale-[1.02]" : ""} touch-none md:touch-auto`}
                       >
                         {/* Header do Card */}
                         <div className="px-4 py-3 border-b border-neutral-100">
@@ -876,11 +887,22 @@ export default function BoardPedidos() {
                                 #{task.orderId}
                               </h3>
                             </div>
-                            <div className="flex items-center gap-1 text-neutral-500">
-                              <Clock className="w-3.5 h-3.5" />
-                              <span className="text-xs font-semibold">
-                                {task.createdAt}
-                              </span>
+                            <div className="flex items-center gap-2 text-neutral-500">
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-3.5 h-3.5" />
+                                <span className="text-xs font-semibold">
+                                  {task.createdAt}
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => openDetailsModal(task)}
+                                className="inline-flex items-center justify-center rounded-md border border-neutral-200 p-1 text-neutral-400 hover:text-neutral-700 hover:border-neutral-300"
+                                aria-label={`Abrir detalhes do pedido ${task.orderId}`}
+                                title="Abrir detalhes"
+                              >
+                                <Maximize2 className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -894,50 +916,76 @@ export default function BoardPedidos() {
                             </h4>
                           </div>
                           <div className="space-y-1.5">
-                            {task.items.map((item, index) => (
-                              <div
-                                key={index}
-                                className="flex justify-between items-start text-sm"
-                              >
-                                <div className="flex-1">
-                                  <p className="text-neutral-800 font-medium text-sm">
-                                    {item.quantity}× {item.hadPromotion ? "Promoção" : item.productName}
-                                  </p>
-                                  {item.observations && (
-                                    <p className="text-neutral-400 text-xs mt-0.5 italic">
-                                      {item.observations}
+                            {task.items.map((item, index) => {
+                              const rawObservations = String(item.observations || "");
+                              const meatPointMatch = rawObservations.match(
+                                /PONTO DA CARNE:\s*([^|]+)/i,
+                              );
+                              const meatPoint = meatPointMatch?.[1]?.trim();
+                              const remainingObs = rawObservations
+                                .replace(/PONTO DA CARNE:\s*[^|]+/i, "")
+                                .replace(/\s*\|\s*/g, " | ")
+                                .replace(/^\s*\|\s*|\s*\|\s*$/g, "")
+                                .trim();
+
+                              const adicionaisList = Array.isArray(item.adicionais)
+                                ? item.adicionais
+                                : [];
+
+                              return (
+                                <div
+                                  key={index}
+                                  className="flex justify-between items-start text-sm"
+                                >
+                                  <div className="flex-1">
+                                    <p className="text-neutral-800 font-medium text-sm">
+                                      {item.quantity}× {item.hadPromotion ? "Promoção" : item.productName}
                                     </p>
-                                  )}
-                                  {Array.isArray(item.adicionais) && item.adicionais.length > 0 && (
-                                    <p className="text-neutral-500 text-xs mt-1">
-                                      Adicionais: {item.adicionais.map((adicional) => {
-                                        const name =
-                                          adicional?.adicionalName ||
-                                          adicional?.name ||
-                                          `Adicional ${adicional?.adicionalId}`;
-                                        const qty = Number(adicional?.quantity ?? 0);
-                                        return qty > 1 ? `${name} x${qty}` : name;
-                                      }).join(", ")}
+                                    {meatPoint && (
+                                      <div className="mt-1 inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700">
+                                        Ponto da carne: {meatPoint}
+                                      </div>
+                                    )}
+                                    {remainingObs && (
+                                      <p className="text-neutral-500 text-xs mt-1 italic">
+                                        {remainingObs}
+                                      </p>
+                                    )}
+                                    {adicionaisList.length > 0 && (
+                                      <p className="text-xs text-neutral-600 mt-1">
+                                        <span className="font-semibold">Adicionais:</span>{" "}
+                                        {adicionaisList.map((adicional) => {
+                                          const name =
+                                            adicional?.adicionalName ||
+                                            adicional?.name ||
+                                            `Adicional ${adicional?.adicionalId}`;
+                                          const qty = Math.max(
+                                            1,
+                                            Number(adicional?.quantity ?? 1) || 1,
+                                          );
+                                          return `${name} x${qty}`;
+                                        }).join(", ")}
+                                      </p>
+                                    )}
+                                    {item.hadPromotion && (
+                                      <span className="inline-block mt-1 text-xs bg-red-50 text-red-700 px-1.5 py-0.5 rounded font-medium">
+                                        Promoção
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-right ml-2">
+                                    <p className="text-neutral-800 font-semibold text-sm">
+                                      R$ {item.subtotal.toFixed(2)}
                                     </p>
-                                  )}
-                                  {item.hadPromotion && (
-                                    <span className="inline-block mt-1 text-xs bg-red-50 text-red-700 px-1.5 py-0.5 rounded font-medium">
-                                      Promoção
-                                    </span>
-                                  )}
+                                    {item.hadPromotion && item.originalPrice && (
+                                      <p className="text-neutral-400 text-xs line-through">
+                                        R$ {item.originalPrice.toFixed(2)}
+                                      </p>
+                                    )}
+                                  </div>
                                 </div>
-                                <div className="text-right ml-2">
-                                  <p className="text-neutral-800 font-semibold text-sm">
-                                    R$ {item.subtotal.toFixed(2)}
-                                  </p>
-                                  {item.hadPromotion && item.originalPrice && (
-                                    <p className="text-neutral-400 text-xs line-through">
-                                      R$ {item.originalPrice.toFixed(2)}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
 
@@ -946,7 +994,7 @@ export default function BoardPedidos() {
                           <button
                             type="button"
                             onClick={() => toggleAddress(task.id)}
-                            className="w-full px-4 py-2.5 flex items-center justify-between text-left hover:bg-neutral-50 transition-colors"
+                            className="w-full px-4 py-2.5 flex items-center justify-between text-left bg-sky-50/80 hover:bg-sky-100/80 transition-colors"
                           >
                             <div className="flex items-center gap-1.5">
                               <MapPin className="w-3.5 h-3.5 text-neutral-400" />
@@ -1083,6 +1131,12 @@ export default function BoardPedidos() {
           </div>
         </div>
       )}
+
+      <OrderDetailsModal
+        isOpen={Boolean(detailTask)}
+        order={detailTask}
+        onClose={closeDetailsModal}
+      />
     </div>
   );
 }

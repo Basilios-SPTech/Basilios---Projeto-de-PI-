@@ -34,6 +34,7 @@ export default function Checkout() {
   const [submitting, setSubmitting] = useState(false);
   const [deletingAddress, setDeletingAddress] = useState(false);
   const [addressToDelete, setAddressToDelete] = useState(null);
+  const [deliveryObservations, setDeliveryObservations] = useState("");
   const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const navigate = useNavigate();
@@ -229,7 +230,7 @@ export default function Checkout() {
       items: itensPedido,
       deliveryFee: 0,
       discount: 0,
-      observations: "",
+      observations: String(deliveryObservations || "").trim(),
     };
 
     let req = await http.post("/orders", body);
@@ -589,6 +590,19 @@ export default function Checkout() {
 
                 <AddAddress onCreated={handleAddressCreated} />
               </div>
+            </div>
+
+            {/* Observações de Entrega */}
+            <div className="bg-white rounded-lg p-4 md:p-6 shadow-md">
+              <div className="pb-6 md:pb-8">
+                <h2 className="text-lg md:text-xl font-semibold">Observações de entrega (Opcional)</h2>
+              </div>
+              <textarea
+                value={deliveryObservations}
+                onChange={(e) => setDeliveryObservations(e.target.value)}
+                placeholder="Ex.: deixar na portaria, chamar no interfone, sem contato..."
+                className="w-full h-24 p-3 border border-gray-300 rounded-lg resize-none text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
+              />
             </div>
 
             {/* Forma de Pagamento */}

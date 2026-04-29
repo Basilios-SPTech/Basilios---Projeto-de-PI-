@@ -61,6 +61,17 @@ const DEFAULT_SUBCATEGORIES = {
   COMBO: [],
 };
 
+const ADICIONAL_SUBCATEGORIES = [
+  { value: "QUEIJO", label: "Queijo" },
+  { value: "PROTEINA", label: "Proteina" },
+  { value: "BACON", label: "Bacon" },
+  { value: "OVO", label: "Ovo" },
+  { value: "MOLHO", label: "Molho" },
+  { value: "VEGETAL", label: "Vegetal" },
+  { value: "ACOMPANHAMENTO", label: "Acompanhamento" },
+  { value: "OUTRO", label: "Outro" },
+];
+
 function getLabelToEnumMap(subcategories) {
   const map = {};
   Object.entries(subcategories).forEach(([category, options]) => {
@@ -100,6 +111,26 @@ export default function CadastrarProduto() {
 
   const [indiceEdicao, setIndiceEdicao] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+
+  const [adicionais, setAdicionais] = useState([]);
+  const [adicionaisLoading, setAdicionaisLoading] = useState(false);
+  const [adicionaisError, setAdicionaisError] = useState("");
+  const [adicionaisListOpen, setAdicionaisListOpen] = useState(true);
+  const [adicionalForm, setAdicionalForm] = useState({
+    id: null,
+    name: "",
+    description: "",
+    subcategory: "",
+    price: "",
+  });
+  const [editAdicionalForm, setEditAdicionalForm] = useState({
+    id: null,
+    name: "",
+    description: "",
+    subcategory: "",
+    price: "",
+  });
+  const [isEditAdicionalOpen, setIsEditAdicionalOpen] = useState(false);
 
   useEffect(() => {
     // Carrega categorias personalizadas do localStorage
@@ -162,6 +193,217 @@ export default function CadastrarProduto() {
   useEffect(() => {
     localStorage.setItem(CHAVE_STORAGE, JSON.stringify(produtos));
   }, [produtos]);
+
+  async function loadAdicionais() {
+    setAdicionaisLoading(true);
+    setAdicionaisError("");
+
+    try {
+      const size = 100;
+      let page = 0;
+      let last = false;
+      let all = [];
+
+      while (!last && page < 20) {
+        const { data } = await http.get("/adicionais", {
+          params: { page, size },
+        });
+
+        const content = Array.isArray(data) ? data : data?.content || [];
+        all = all.concat(content);
+
+        if (Array.isArray(data)) {
+          last = true;
+        } else {
+          last = Boolean(data?.last) || content.length < size;
+        }
+
+        page += 1;
+      }
+
+      setAdicionais(all);
+    } catch (err) {
+      console.error("Erro ao carregar adicionais:", err);
+      setAdicionais([]);
+      setAdicionaisError(err?.message || "Erro ao carregar adicionais.");
+    } finally {
+      setAdicionaisLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadAdicionais();
+  }, []);
+
+  function formatPriceInput(value) {
+    const digits = String(value || "").replace(/\D/g, "");
+    if (!digits) return "";
+
+    const padded = digits.padStart(3, "0");
+    const integer = padded.slice(0, -2).replace(/^0+(?=\d)/, "");
+    const decimal = padded.slice(-2);
+
+    return `${integer || "0"},${decimal}`;
+  }
+
+  useEffect(() => {
+    if (!isEditAdicionalOpen) return;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        closeEditAdicional();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isEditAdicionalOpen]);
+
+  function handleAdicionalChange(e) {
+    if (!e?.target) return;
+    const { name, value } = e.target;
+    setAdicionalForm((prev) => ({
+      ...prev,
+      [name]: name === "price" ? formatPriceInput(value) : value,
+    }));
+  }
+
+  function resetAdicionalForm() {
+    setAdicionalForm({
+      id: null,
+      name: "",
+      description: "",
+      subcategory: "",
+      price: "",
+    });
+  }
+
+  function resetEditAdicionalForm() {
+    setEditAdicionalForm({
+      id: null,
+      name: "",
+      description: "",
+      subcategory: "",
+      price: "",
+    });
+  }
+
+  async function handleAdicionalSubmit(e) {
+    e.preventDefault();
+
+    const name = String(adicionalForm.name || "").trim();
+    const description = String(adicionalForm.description || "").trim();
+    const subcategory = String(adicionalForm.subcategory || "").trim();
+    const parsedPrice = Number(String(adicionalForm.price || "").replace(",", "."));
+
+    if (!name || !subcategory) {
+      toast.error("Preencha nome e subcategoria do adicional.");
+      return;
+    }
+
+    if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
+      toast.error("Preco do adicional invalido.");
+      return;
+    }
+
+    const payload = {
+      name,
+      description,
+      subcategory,
+      price: parsedPrice,
+    };
+
+    try {
+      await http.post("/adicionais", payload);
+      toast.success("Adicional criado com sucesso.");
+
+      resetAdicionalForm();
+      setAdicionaisListOpen(false);
+      await loadAdicionais();
+    } catch (err) {
+      console.error("Erro ao salvar adicional:", err);
+      toast.error(err?.message || "Nao foi possivel salvar o adicional.");
+    }
+  }
+
+  function handleEditAdicionalChange(e) {
+    if (!e?.target) return;
+    const { name, value } = e.target;
+    setEditAdicionalForm((prev) => ({
+      ...prev,
+      [name]: name === "price" ? formatPriceInput(value) : value,
+    }));
+  }
+
+  function openEditAdicional(adicional) {
+    if (!adicional) return;
+    setEditAdicionalForm({
+      id: adicional.id,
+      name: adicional.name || "",
+      description: adicional.description || "",
+      subcategory: adicional.subcategory || "",
+      price: formatPriceInput(adicional.price),
+    });
+    setIsEditAdicionalOpen(true);
+  }
+
+  function closeEditAdicional() {
+    setIsEditAdicionalOpen(false);
+    resetEditAdicionalForm();
+  }
+
+  async function handleEditAdicionalSubmit(e) {
+    e.preventDefault();
+
+    const id = Number(editAdicionalForm.id);
+    const name = String(editAdicionalForm.name || "").trim();
+    const description = String(editAdicionalForm.description || "").trim();
+    const subcategory = String(editAdicionalForm.subcategory || "").trim();
+    const parsedPrice = Number(String(editAdicionalForm.price || "").replace(",", "."));
+
+    if (!id || !name || !subcategory) {
+      toast.error("Preencha nome e subcategoria do adicional.");
+      return;
+    }
+
+    if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
+      toast.error("Preco do adicional invalido.");
+      return;
+    }
+
+    const payload = {
+      name,
+      description,
+      subcategory,
+      price: parsedPrice,
+    };
+
+    try {
+      await http.patch(`/adicionais/${id}`, payload);
+      toast.success("Adicional atualizado com sucesso.");
+
+      closeEditAdicional();
+      setAdicionaisListOpen(false);
+      await loadAdicionais();
+    } catch (err) {
+      console.error("Erro ao atualizar adicional:", err);
+      toast.error(err?.message || "Nao foi possivel atualizar o adicional.");
+    }
+  }
+
+  async function handleDeletarAdicional(adicional) {
+    if (!adicional?.id) return;
+    if (!window.confirm(`Deletar o adicional "${adicional.name}"?`)) return;
+
+    try {
+      await http.delete(`/adicionais/${adicional.id}`);
+      toast.success("Adicional deletado.");
+      await loadAdicionais();
+    } catch (err) {
+      console.error("Erro ao deletar adicional:", err);
+      toast.error(err?.message || "Nao foi possivel deletar o adicional.");
+    }
+  }
 
   function handleChange(e) {
     if (!e?.target) return;
@@ -536,37 +778,37 @@ export default function CadastrarProduto() {
   }, [produtosOrdenados]);
 
   const subcatOptions = subcategorias[formData.categoria] || [];
+  const adicionaisOrdenados = useMemo(
+    () => [...adicionais].sort((a, b) => (a?.name || "").localeCompare(b?.name || "")),
+    [adicionais],
+  );
+
 
   return (
     <div className="cp-page cp-page--no-header">
       <MenuButton />
       <main className="cp-grid">
-        <section className="cp-card cp-form">
-          <h2>Informações do produto</h2>
-          <p className="cp-muted">
-            Preencha os campos. A imagem ajuda no card.
-          </p>
+        <div className="cp-left">
+          <section className="cp-card cp-form">
+            <ProdutoForm
+              formData={formData}
+              indiceEdicao={indiceEdicao}
+              onChange={handleChange}
+              onSubmit={handleSubmit}
+              onCancel={handleCancel}
+              subcatOptions={subcatOptions}
+              categorias={categorias}
+            />
 
-          <ProdutoForm
-            formData={formData}
-            indiceEdicao={indiceEdicao}
-            onChange={handleChange}
-            onSubmit={handleSubmit}
-            onCancel={handleCancel}
-            subcatOptions={subcatOptions}
-            categorias={categorias}
-          />
+            <CategoryManager
+              categories={categorias}
+              subcategories={subcategorias}
+              onAddCategory={handleAddCategory}
+              onAddSubcategory={handleAddSubcategory}
+            />
+          </section>
 
-          <CategoryManager
-            categories={categorias}
-            subcategories={subcategorias}
-            onAddCategory={handleAddCategory}
-            onAddSubcategory={handleAddSubcategory}
-          />
-        </section>
-
-        <aside className="cp-right">
-          <section className="cp-card cp-preview cp-preview--compact cp-preview--xs">
+          <section className="cp-card cp-preview cp-preview--inline">
             <h3>Pré-visualização</h3>
 
             <div className="cp-preview__card cp-preview__card--compact cp-preview__card--xs">
@@ -612,8 +854,269 @@ export default function CadastrarProduto() {
               </div>
             </div>
           </section>
+        </div>
+
+        <aside className="cp-right">
+          <section className="cp-card cp-ingredients">
+            <div className="cp-ingredients__head">
+              <h3>Cadastrar adicionais</h3>
+            </div>
+
+
+            <form className="cp-ingredients__form cp-form" onSubmit={handleAdicionalSubmit}>
+              <div className="field-row">
+                <label htmlFor="adicional-name" className="field-label">
+                  Nome do adicional
+                </label>
+                <input
+                  id="adicional-name"
+                  name="name"
+                  type="text"
+                  className="input-base"
+                  placeholder="Ex.: Extra Cheddar"
+                  value={adicionalForm.name}
+                  onChange={handleAdicionalChange}
+                  required
+                />
+              </div>
+
+              <div className="field-row">
+                <label htmlFor="adicional-description" className="field-label">
+                  Descricao
+                </label>
+                <input
+                  id="adicional-description"
+                  name="description"
+                  type="text"
+                  className="input-base"
+                  placeholder="Ex.: Fatiado ou cremoso"
+                  value={adicionalForm.description}
+                  onChange={handleAdicionalChange}
+                />
+              </div>
+
+              <div className="cp-ingredients__row">
+                <div className="field-row">
+                  <label htmlFor="adicional-subcategory" className="field-label">
+                    Subcategoria
+                  </label>
+                  <select
+                    id="adicional-subcategory"
+                    name="subcategory"
+                    className="input-base"
+                    value={adicionalForm.subcategory}
+                    onChange={handleAdicionalChange}
+                    required
+                  >
+                    <option value="" disabled>
+                      Selecione...
+                    </option>
+                    {ADICIONAL_SUBCATEGORIES.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="field-row">
+                  <label htmlFor="adicional-price" className="field-label">
+                    Preco (R$)
+                  </label>
+                  <input
+                    id="adicional-price"
+                    name="price"
+                    type="text"
+                    className="input-base"
+                    placeholder="Ex.: 3,50"
+                    inputMode="decimal"
+                    value={adicionalForm.price}
+                    onChange={handleAdicionalChange}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="cp-ingredients__actions">
+                <button type="submit" className="btn btn-primary">
+                  Salvar adicional
+                </button>
+              </div>
+            </form>
+
+            <div className="cp-ingredients__list-head">
+              <div className="cp-ingredients__list-title">
+                Lista de adicionais ({adicionaisOrdenados.length})
+              </div>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => setAdicionaisListOpen((prev) => !prev)}
+              >
+                {adicionaisListOpen ? "Recolher" : "Expandir"}
+              </button>
+            </div>
+
+            {adicionaisListOpen && (
+              <div className="cp-ingredients__list">
+                {adicionaisLoading && (
+                  <p className="cp-ingredients__status">Carregando adicionais...</p>
+                )}
+
+                {!adicionaisLoading && adicionaisError && (
+                  <p className="cp-ingredients__status cp-ingredients__status--error">
+                    {adicionaisError}
+                  </p>
+                )}
+
+                {!adicionaisLoading && !adicionaisError && adicionaisOrdenados.length === 0 && (
+                  <p className="cp-ingredients__status">Nenhum adicional cadastrado.</p>
+                )}
+
+                {!adicionaisLoading && !adicionaisError && adicionaisOrdenados.map((adicional) => (
+                  <div key={adicional.id} className="cp-ingredients__item">
+                    <div className="cp-ingredients__info">
+                      <h4>{adicional.name}</h4>
+                      {adicional.description && (
+                        <p>{adicional.description}</p>
+                      )}
+                      <div className="cp-ingredients__meta">
+                        <span className="cp-chip cp-chip--alt">
+                          {adicional.subcategory || "OUTRO"}
+                        </span>
+                        <span className="cp-ingredients__price">
+                          R$ {Number(adicional.price || 0).toFixed(2).replace(".", ",")}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="cp-ingredients__item-actions">
+                      <button
+                        type="button"
+                        className="btn btn-ghost"
+                        onClick={() => openEditAdicional(adicional)}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost"
+                        onClick={() => handleDeletarAdicional(adicional)}
+                      >
+                        Deletar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
         </aside>
       </main>
+
+      {isEditAdicionalOpen && (
+        <div
+          className="cp-modal-overlay"
+          role="button"
+          tabIndex={0}
+          onClick={closeEditAdicional}
+          onKeyDown={(e) => e.key === "Enter" && closeEditAdicional()}
+          aria-label="Fechar modal"
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="cp-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="cp-modal__header">
+              <h4>Editar adicional</h4>
+              <button
+                type="button"
+                className="cp-modal__close"
+                onClick={closeEditAdicional}
+                aria-label="Fechar"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="cp-modal__body">
+              <form onSubmit={handleEditAdicionalSubmit}>
+                <div className="field-row">
+                  <label htmlFor="edit-adicional-name">Nome do adicional</label>
+                  <input
+                    id="edit-adicional-name"
+                    name="name"
+                    type="text"
+                    placeholder="Ex.: Extra Cheddar"
+                    value={editAdicionalForm.name}
+                    onChange={handleEditAdicionalChange}
+                    required
+                    autoFocus
+                  />
+                </div>
+
+                <div className="field-row">
+                  <label htmlFor="edit-adicional-description">Descricao</label>
+                  <input
+                    id="edit-adicional-description"
+                    name="description"
+                    type="text"
+                    placeholder="Ex.: Fatiado ou cremoso"
+                    value={editAdicionalForm.description}
+                    onChange={handleEditAdicionalChange}
+                  />
+                </div>
+
+                <div className="cp-ingredients__row">
+                  <div className="field-row">
+                    <label htmlFor="edit-adicional-subcategory">Subcategoria</label>
+                    <select
+                      id="edit-adicional-subcategory"
+                      name="subcategory"
+                      value={editAdicionalForm.subcategory}
+                      onChange={handleEditAdicionalChange}
+                      required
+                    >
+                      <option value="" disabled>
+                        Selecione...
+                      </option>
+                      {ADICIONAL_SUBCATEGORIES.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="field-row">
+                    <label htmlFor="edit-adicional-price">Preco (R$)</label>
+                    <input
+                      id="edit-adicional-price"
+                      name="price"
+                      type="text"
+                      placeholder="Ex.: 3,50"
+                      inputMode="decimal"
+                      value={editAdicionalForm.price}
+                      onChange={handleEditAdicionalChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="cp-modal__footer">
+                  <button type="button" className="btn btn-secondary" onClick={closeEditAdicional}>
+                    Cancelar
+                  </button>
+                  <button type="submit" className="btn btn-primary">
+                    Atualizar adicional
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
       <section className="cp-list-wrap">
         <div className="cp-list-head">
