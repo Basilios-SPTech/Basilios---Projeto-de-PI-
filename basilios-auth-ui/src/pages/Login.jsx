@@ -93,7 +93,7 @@ export default function Login({ onGoRegister, onGoHome, onGoForgot }) {
         >
           Cadastre-se
         </button>
-        <ProgressBar visible={submitting} message="Carregando..." />
+        <ProgressBar visible={submitting} />
       </div>
     </form>
   );
