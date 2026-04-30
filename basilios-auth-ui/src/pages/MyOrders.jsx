@@ -26,6 +26,8 @@ import { http } from "../services/http.js";
 import { formatCurrency } from "../utils/formatters.js";
 
 const CHAVE_CART = "carrinho-basilios";
+const CHAVE_STORAGE = "produtos-basilios";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 const STATUS_LABELS = {
   PENDENTE: "Recebido",
@@ -222,6 +224,132 @@ function parseItemAdditions(item) {
   }));
 }
 
+function normalizeImageUrl(url) {
+  if (!url) return "";
+
+  if (typeof url !== "string") return "";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  if (url.startsWith("/")) return `${API_BASE}${url}`;
+
+  return url;
+}
+
+function resolveOrderItemImage(item) {
+  const direct =
+    item?.imageUrl ||
+    item?.imagem ||
+    item?.image ||
+    item?.productImage ||
+    item?.productImageUrl ||
+    item?.thumbnail ||
+    item?.thumb;
+
+  const normalizedDirect = normalizeImageUrl(direct);
+  if (normalizedDirect) return normalizedDirect;
+
+  const productId = Number(item?.productId);
+  if (!Number.isFinite(productId)) return "";
+
+  try {
+    const stored = JSON.parse(localStorage.getItem(CHAVE_STORAGE) || "[]");
+    const list = Array.isArray(stored) ? stored : [];
+    const matched = list.find((p) => {
+      const id = Number(p?.id ?? p?.index ?? p?.productId);
+      return Number.isFinite(id) && id === productId;
+    });
+
+    if (!matched) return "";
+
+    const fromProduct = matched.imagem || matched.image || matched.imageUrl;
+    return normalizeImageUrl(fromProduct);
+  } catch {
+    return "";
+  }
+}
+
+function extractObservationDetails(rawObservations, fallbackMeatPoint) {
+  const raw = String(rawObservations || "");
+  const match = raw.match(/PONTO DA CARNE:\s*([^|]+)/i);
+  const meatPoint = match?.[1]?.trim() || fallbackMeatPoint || null;
+  const observation = raw
+    .replace(/PONTO DA CARNE:\s*[^|]+/i, "")
+    .replace(/\s*\|\s*/g, " | ")
+    .replace(/^\s*\|\s*|\s*\|\s*$/g, "")
+    .trim();
+
+  return {
+    meatPoint,
+    observation: observation || "",
+  };
+}
+
+function normalizeAdditionEntry(entry) {
+  if (entry == null) return null;
+
+  if (typeof entry === "string" || typeof entry === "number") {
+    const name = String(entry).trim();
+    if (!name) return null;
+    return {
+      name,
+      quantity: 1,
+    };
+  }
+
+  if (typeof entry !== "object") return null;
+
+  const adicionalId = Number(entry.adicionalId ?? entry.id ?? entry.additionId);
+  const quantity = Number(entry.quantity ?? entry.qtd ?? entry.qty ?? 1) || 1;
+  const name =
+    entry.adicionalName ||
+    entry.name ||
+    entry.nome ||
+    entry.label ||
+    entry.title ||
+    (Number.isFinite(adicionalId) ? `Adicional ${adicionalId}` : "Adicional");
+  const price = Number(entry.price ?? entry.preco);
+
+  const normalized = {
+    name,
+    quantity,
+    subcategory:
+      entry.subcategory ||
+      entry.subCategoria ||
+      entry.category ||
+      entry.categoria ||
+      entry.tipo ||
+      undefined,
+  };
+
+  if (Number.isFinite(adicionalId)) {
+    normalized.adicionalId = adicionalId;
+  }
+
+  if (Number.isFinite(price)) {
+    normalized.price = price;
+  }
+
+  return normalized;
+}
+
+function buildAdditionsFromOrderItem(item) {
+  if (!item || typeof item !== "object") return [];
+
+  const sources = [
+    item.adicionais,
+    item.additions,
+    item.extras,
+    item.acrescimos,
+  ];
+
+  const additions = sources
+    .flatMap((source) => (Array.isArray(source) ? source : []))
+    .map((entry) => normalizeAdditionEntry(entry))
+    .filter(Boolean)
+    .filter((entry) => entry.quantity > 0);
+
+  return additions;
+}
+
 function buildCartFromOrder(order) {
   const now = Date.now();
   const items = Array.isArray(order?.items) ? order.items : [];
@@ -233,6 +361,13 @@ function buildCartFromOrder(order) {
       const unitPrice = Number(
         item.unitPrice ?? (item.subtotal != null ? item.subtotal / quantity : 0),
       );
+      const additions = buildAdditionsFromOrderItem(item);
+      const { meatPoint, observation } = extractObservationDetails(
+        item.observations,
+        item.meatPoint,
+      );
+
+      const imageUrl = resolveOrderItemImage(item);
 
       return {
         id: `${item.productId}-${now}-${index}`,
@@ -240,11 +375,11 @@ function buildCartFromOrder(order) {
         nome: item.productName || `Produto #${item.productId}`,
         preco: Number.isFinite(unitPrice) ? unitPrice : 0,
         qtd: quantity,
-        imagem: "/placeholder.jpg",
+        imagem: imageUrl || "/placeholder.jpg",
         categoria: "",
         descricao: "",
         isCustom: false,
-        meatPoint: null,
+        meatPoint: meatPoint || null,
         ingredients: [],
         drinks: [],
         breads: [],
@@ -253,7 +388,8 @@ function buildCartFromOrder(order) {
         selectedIngredientNames: [],
         selectedSauceIds: [],
         selectedSauceNames: [],
-        observation: item.observations || "",
+        additions,
+        observation,
       };
     });
 }
@@ -618,7 +754,7 @@ export default function MyOrders() {
                     </div>
 
                     <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
-                      {["PENDENTE", "CONFIRMADO", "PREPARANDO"].includes(normalizedStatus) && (
+                      {["PENDENTE", "CONFIRMADO", "PREPARANDO", "DESPACHADO"].includes(normalizedStatus) && (
                         <button
                           type="button"
                           onClick={() => handleTrackOrder(order.id)}

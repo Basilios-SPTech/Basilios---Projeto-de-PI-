@@ -14,6 +14,22 @@ function extractMeatPoint(observations) {
   return { meatPoint, remaining };
 }
 
+function formatPhoneNumber(value) {
+  if (!value) return value;
+
+  const digits = String(value).replace(/\D/g, "");
+
+  if (digits.length === 11) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  }
+
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
+
+  return value;
+}
+
 export default function OrderDetailsModal({ isOpen, order, onClose }) {
   useEffect(() => {
     if (!isOpen) return;
@@ -138,6 +154,21 @@ export default function OrderDetailsModal({ isOpen, order, onClose }) {
               Entrega
             </div>
             <div className="mt-2 text-sm text-neutral-600">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-neutral-400">Nome:</span>
+                  <span className="font-medium text-neutral-700">
+                    {order.customerName || "Não informado"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-neutral-400">Tel:</span>
+                  <span className="font-medium text-neutral-700 tabular-nums tracking-tight">
+                    {formatPhoneNumber(order.customerPhone) || "Não informado"}
+                  </span>
+                </div>
+              </div>
+              <div className="mt-2">
               <p>
                 {order.address?.rua}, {order.address?.numero}
                 {order.address?.complemento
@@ -150,6 +181,7 @@ export default function OrderDetailsModal({ isOpen, order, onClose }) {
               <p className="text-xs text-neutral-400 mt-1">
                 CEP {order.address?.cep}
               </p>
+              </div>
             </div>
           </div>
 

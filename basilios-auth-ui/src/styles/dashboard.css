@@ -62,7 +62,8 @@ body{
   color: rgba(17, 17, 17, 0.76);
 }
 
-.dashboard-bar__field input[type="date"] {
+.dashboard-bar__field input[type="date"],
+.dashboard-bar__field .dashboard-date-input {
   min-width: 170px;
   padding: 8px 10px;
   border-radius: var(--radius-md, 14px);
@@ -71,7 +72,8 @@ body{
   background: #fafafa;
 }
 
-.dashboard-bar__field input[type="date"]:focus-visible {
+.dashboard-bar__field input[type="date"]:focus-visible,
+.dashboard-bar__field .dashboard-date-input:focus-visible {
   outline: 2px solid var(--bsl-red, #bb3530);
   outline-offset: 1px;
   background: #fff;

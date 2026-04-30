@@ -1,10 +1,11 @@
 import CartItem from "./CartItem";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ShoppingCart, X } from "lucide-react";
 import CustomizeBurger from "./CustomizeBurger";
 import AuthRequiredModal from "./AuthRequiredModal";
 import { useNavigate } from "react-router-dom";
 import { authStorage } from "../services/storageAuth";
+import ProgressBar from "./loading/ProgressBar.jsx";
 
 const CHAVE_CART = "carrinho-basilios";
 
@@ -14,6 +15,8 @@ export default function Cart() {
   const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isRouteTransitioning, setIsRouteTransitioning] = useState(false);
+  const transitionTimerRef = useRef(null);
 
   const navigate = useNavigate();
 
@@ -93,6 +96,14 @@ export default function Cart() {
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    return () => {
+      if (transitionTimerRef.current) {
+        window.clearTimeout(transitionTimerRef.current);
+      }
+    };
+  }, []);
+
   const totalItems = cartItems.reduce((sum, item) => sum + item.qtd, 0);
   const totalPrice = cartItems.reduce(
     (sum, item) => sum + item.preco * item.qtd,
@@ -167,7 +178,14 @@ export default function Cart() {
       setShowAuthModal(true);
       return;
     }
-    navigate("/checkout");
+    if (isRouteTransitioning) return;
+
+    setIsRouteTransitioning(true);
+    setIsOpen(false);
+
+    transitionTimerRef.current = window.setTimeout(() => {
+      navigate("/checkout");
+    }, 900);
   }
 
   return (
@@ -175,7 +193,7 @@ export default function Cart() {
       {/* Botão Flutuante */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 bg-black text-white p-4 rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all z-[100] cursor-pointer"
+        className="fixed bottom-6 right-6 bg-black text-white p-4 rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all z-100 cursor-pointer"
       >
         <ShoppingCart className="w-6 h-6" />
         {totalItems > 0 && (
@@ -192,14 +210,14 @@ export default function Cart() {
           tabIndex={0}
           onClick={() => setIsOpen(false)}
           onKeyDown={(e) => e.key === "Enter" && setIsOpen(false)}
-          className="fixed inset-0 bg-black/50 z-[998] transition-opacity"
+          className="fixed inset-0 bg-black/50 z-998 transition-opacity"
           aria-label="Fechar carrinho"
         />
       )}
 
       {/* Sidebar */}
       <div
-        className={`cart-drawer fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-[999] transform transition-transform duration-300 ease-in-out ${
+        className={`cart-drawer fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-999 transform transition-transform duration-300 ease-in-out ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -487,6 +505,7 @@ export default function Cart() {
 
               <button
                 onClick={goToCheckout}
+                disabled={isRouteTransitioning}
                 className="w-full bg-black hover:bg-gray-800 text-white font-semibold py-4 rounded-lg transition-colors"
               >
                 Finalizar Compra
@@ -500,6 +519,15 @@ export default function Cart() {
       <AuthRequiredModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
+      />
+
+      <ProgressBar
+        visible={isRouteTransitioning}
+        messages={[
+          "Conferindo seu carrinho...",
+          "Preparando a ida para o checkout...",
+          "Redirecionando para a finalização do pedido...",
+        ]}
       />
 
       {/* Tela de Personalização (abre ao clicar no lápis) */}

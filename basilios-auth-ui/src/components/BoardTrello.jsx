@@ -127,6 +127,22 @@ function mapBoardStatusToApi(status) {
   return status;
 }
 
+function formatPhoneNumber(value) {
+  if (!value) return value;
+
+  const digits = String(value).replace(/\D/g, "");
+
+  if (digits.length === 11) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  }
+
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
+
+  return value;
+}
+
 export default function BoardPedidos() {
   const [columns, setColumns] = useState({
     PENDENTE: {
@@ -538,12 +554,40 @@ export default function BoardPedidos() {
 
       orders.forEach((order) => {
         const normalizedStatus = normalizeBoardStatus(order.status);
+        const customerName =
+          order.userName ||
+          order.customerName ||
+          order.clientName ||
+          order.user?.name ||
+          order.user?.nome ||
+          order.cliente?.nome ||
+          order.cliente?.name ||
+          order.nome ||
+          order.name ||
+          order.buyerName ||
+          order.buyer?.name ||
+          null;
+        const customerPhone =
+          order.userPhone ||
+          order.customerPhone ||
+          order.phone ||
+          order.telefone ||
+          order.celular ||
+          order.user?.phone ||
+          order.user?.telefone ||
+          order.user?.celular ||
+          order.cliente?.telefone ||
+          order.cliente?.celular ||
+          order.buyer?.phone ||
+          null;
         const task = {
           id: order.id,
           orderId: order.id,
           currentStatus: order.status,
           items: order.items,
           address: order.address,
+          customerName,
+          customerPhone: formatPhoneNumber(customerPhone),
           createdAt: new Date(order.createdAt).toLocaleTimeString("pt-BR", {
             hour: "2-digit",
             minute: "2-digit",
@@ -1010,17 +1054,33 @@ export default function BoardPedidos() {
                           </button>
                           {expandedAddresses[task.id] && (
                             <div className="px-4 pb-3 text-sm text-neutral-600 leading-relaxed">
-                              <p>
-                                {task.address.rua}, {task.address.numero}
-                                {task.address.complemento &&
-                                  ` — ${task.address.complemento}`}
-                              </p>
-                              <p>
-                                {task.address.bairro} · {task.address.cidade}/{task.address.estado}
-                              </p>
-                              <p className="text-xs text-neutral-400 mt-1">
-                                CEP {task.address.cep}
-                              </p>
+                              <div className="space-y-1 text-sm text-neutral-600">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-neutral-400">Nome:</span>
+                                  <span className="font-medium text-neutral-700">
+                                    {task.customerName || "Não informado"}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-neutral-400">Tel:</span>
+                                  <span className="font-medium text-neutral-700 tabular-nums tracking-tight">
+                                    {task.customerPhone || "Não informado"}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="mt-2 space-y-0.5">
+                                <p>
+                                  {task.address.rua}, {task.address.numero}
+                                  {task.address.complemento &&
+                                    ` — ${task.address.complemento}`}
+                                </p>
+                                <p>
+                                  {task.address.bairro} · {task.address.cidade}/{task.address.estado}
+                                </p>
+                                <p className="text-xs text-neutral-400 mt-1">
+                                  CEP {task.address.cep}
+                                </p>
+                              </div>
                             </div>
                           )}
                         </div>

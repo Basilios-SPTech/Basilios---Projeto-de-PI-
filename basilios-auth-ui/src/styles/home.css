@@ -183,6 +183,31 @@
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
 }
 
+@media (max-width: 768px) {
+  .hp-grid {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 8px;
+    gap: 14px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .hp-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hp-grid {
+    scrollbar-width: none;
+  }
+
+  .hp-card {
+    flex: 0 0 78%;
+    max-width: 78%;
+    scroll-snap-align: start;
+  }
+}
+
 /* ============ HOME - Cards de Produto ============ */
 .hp-card {
   display: grid;

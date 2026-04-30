@@ -1,5 +1,6 @@
 // src/pages/PromocoesPage.jsx
 import { useState, useEffect } from "react";
+import DateTimePicker from "../components/DateTimePicker.jsx";
 import { Plus, Edit2, Trash2, X, DollarSign, Calendar } from "lucide-react";
 import { http } from "../services/http.js";
 import toast from "react-hot-toast";
@@ -66,8 +67,8 @@ export default function PromocoesPage() {
       setFormData({
         productId: promo.productId || "",
         finalPrice: promo.finalPrice || "",
-        startDate: promo.startDate ? promo.startDate.substring(0, 16) : "",
-        endDate: promo.endDate ? promo.endDate.substring(0, 16) : "",
+        startDate: normalizePromoDateTime(promo.startDate),
+        endDate: normalizePromoDateTime(promo.endDate),
       });
     } else {
       setEditingId(null);
@@ -115,6 +116,48 @@ export default function PromocoesPage() {
       ...prev,
       [name]: value,
     }));
+  };
+
+  const handleDateChange = (name, value) => {
+    const nextValue = String(value || "");
+    setFormData((prev) => ({
+      ...prev,
+      [name]: nextValue,
+    }));
+  };
+
+  const parseDateTimeLocal = (value) => {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+
+    const safe = String(value).replace(" ", "T");
+    const [datePart, timePart = ""] = safe.split("T");
+    const [year, month, day] = datePart.split("-").map(Number);
+
+    if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
+      return null;
+    }
+
+    const [hour = "0", minute = "0"] = timePart.split(":");
+    const hh = Number(hour) || 0;
+    const mm = Number(minute) || 0;
+
+    return new Date(year, month - 1, day, hh, mm);
+  };
+
+  const formatDateTimeLocal = (date) => {
+    if (!(date instanceof Date)) return "";
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    const hh = String(date.getHours()).padStart(2, "0");
+    const mm = String(date.getMinutes()).padStart(2, "0");
+    return `${y}-${m}-${d}T${hh}:${mm}`;
+  };
+
+  const normalizePromoDateTime = (value) => {
+    const parsed = parseDateTimeLocal(value);
+    return parsed ? formatDateTimeLocal(parsed) : "";
   };
 
   const parseCurrencyInput = (input) => {
@@ -171,7 +214,9 @@ export default function PromocoesPage() {
       return;
     }
 
-    if (new Date(formData.startDate) >= new Date(formData.endDate)) {
+    const startDateParsed = parseDateTimeLocal(formData.startDate);
+    const endDateParsed = parseDateTimeLocal(formData.endDate);
+    if (startDateParsed && endDateParsed && startDateParsed >= endDateParsed) {
       toast.error("Data de término deve ser após data de início");
       return;
     }
@@ -190,8 +235,8 @@ export default function PromocoesPage() {
         productIds: [parseInt(formData.productId)],
         discountAmount: desconto,
         finalPrice: finalPriceNum,
-        startDate: formData.startDate.split("T")[0],
-        endDate: formData.endDate.split("T")[0],
+        startDate: formData.startDate,
+        endDate: formData.endDate,
         isActive: true,
       };
 
@@ -269,10 +314,10 @@ export default function PromocoesPage() {
     Number.isFinite(selectedProductPrice) &&
     finalPricePreview > selectedProductPrice;
 
+  const startDateValue = parseDateTimeLocal(formData.startDate);
+  const endDateValue = parseDateTimeLocal(formData.endDate);
   const hasInvalidDateRange =
-    !!formData.startDate &&
-    !!formData.endDate &&
-    new Date(formData.startDate) >= new Date(formData.endDate);
+    !!startDateValue && !!endDateValue && startDateValue >= endDateValue;
 
   return (
     <div className="promocoes-page">
@@ -534,14 +579,14 @@ export default function PromocoesPage() {
                   <Calendar size={18} />
                   Data de Início
                 </label>
-                <input
-                  type="datetime-local"
-                  name="startDate"
+                <DateTimePicker
                   value={formData.startDate}
-                  onChange={handleInputChange}
+                  onChange={(value) => handleDateChange("startDate", value)}
+                  enableTime={true}
+                  maxDate={formData.endDate || undefined}
                   disabled={loading}
-                  max={formData.endDate || undefined}
-                  className={`form-input ${hasInvalidDateRange ? "form-input--invalid" : ""}`}
+                  inputClassName={`form-input ${hasInvalidDateRange ? "form-input--invalid" : ""}`}
+                  placeholder="Selecione a data"
                 />
               </div>
 
@@ -550,14 +595,14 @@ export default function PromocoesPage() {
                   <Calendar size={18} />
                   Data de Término
                 </label>
-                <input
-                  type="datetime-local"
-                  name="endDate"
+                <DateTimePicker
                   value={formData.endDate}
-                  onChange={handleInputChange}
+                  onChange={(value) => handleDateChange("endDate", value)}
+                  enableTime={true}
+                  minDate={formData.startDate || undefined}
                   disabled={loading}
-                  min={formData.startDate || undefined}
-                  className={`form-input ${hasInvalidDateRange ? "form-input--invalid" : ""}`}
+                  inputClassName={`form-input ${hasInvalidDateRange ? "form-input--invalid" : ""}`}
+                  placeholder="Selecione a data"
                 />
                 {hasInvalidDateRange && (
                   <p className="form-help form-help--error">

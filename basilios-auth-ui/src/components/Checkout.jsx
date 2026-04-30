@@ -750,7 +750,7 @@ export default function Checkout() {
         </div>
       )}
 
-      <ProgressBar visible={submitting} message="Processando seu pedido..." />
+      <ProgressBar visible={submitting} />
 
       {/* Tela de Personalização */}
       {isCustomizeOpen && (
