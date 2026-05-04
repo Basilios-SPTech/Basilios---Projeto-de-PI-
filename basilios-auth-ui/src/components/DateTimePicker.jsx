@@ -65,6 +65,8 @@ export default function DateTimePicker({
       allowInput: true,
       minDate: minDateValue || undefined,
       maxDate: maxDateValue || undefined,
+      altInput: true,
+      altFormat: enableTime ? "d/m/Y H:i" : "d/m/Y",
       onReady: (_, __, instance) => {
         instance?.calendarContainer?.classList.add(calendarClassName);
       },

@@ -30,6 +30,25 @@ export default function PromocoesPage() {
     carregarProdutos();
   }, []);
 
+  // Atualizar status a cada minuto para verificar se promoções expiraram
+  useEffect(() => {
+    const intervalo = setInterval(() => {
+      carregarPromocoes();
+    }, 60000); // 60 segundos
+
+    return () => clearInterval(intervalo);
+  }, []);
+
+  // Forçar re-render a cada segundo para atualizar status em tempo real
+  useEffect(() => {
+    const intervalo = setInterval(() => {
+      // Força re-render sem chamar API novamente
+      setPromocoes([...promocoes]);
+    }, 1000); // 1 segundo
+
+    return () => clearInterval(intervalo);
+  }, [promocoes]);
+
   async function carregarPromocoes() {
     try {
       const response = await http.get("/promotions/current?page=0&size=100");
@@ -156,8 +175,25 @@ export default function PromocoesPage() {
   };
 
   const normalizePromoDateTime = (value) => {
-    const parsed = parseDateTimeLocal(value);
-    return parsed ? formatDateTimeLocal(parsed) : "";
+    if (!value) return "";
+    
+    const str = String(value).trim();
+    
+    // Extrair apenas a parte de data/hora: YYYY-MM-DDTHH:mm
+    // Remove timezone offset ou milissegundos se existirem
+    const match = str.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})/);
+    return match ? match[1] : "";
+  };
+
+  const convertToISO8601 = (datetimeLocalValue) => {
+    if (!datetimeLocalValue) return "";
+    // datetime-local vem no formato: 2026-05-04T10:00
+    // Converter para: 2026-05-04T10:00:00 (ISO 8601 com hora)
+    const [date, time] = datetimeLocalValue.split("T");
+    if (!time) return "";
+    
+    // Retorna como ISO string com segundos
+    return `${date}T${time}:00`;
   };
 
   const parseCurrencyInput = (input) => {
@@ -235,8 +271,8 @@ export default function PromocoesPage() {
         productIds: [parseInt(formData.productId)],
         discountAmount: desconto,
         finalPrice: finalPriceNum,
-        startDate: formData.startDate,
-        endDate: formData.endDate,
+        startDate: convertToISO8601(formData.startDate),
+        endDate: convertToISO8601(formData.endDate),
         isActive: true,
       };
 
@@ -302,6 +338,49 @@ export default function PromocoesPage() {
 
   const calcularPrecoComDesconto = (precoOrigin, desconto) => {
     return (toSafeMoney(precoOrigin) - toSafeMoney(desconto)).toFixed(2);
+  };
+
+  const parsePromoDate = (dateString) => {
+    if (!dateString) return new Date(0);
+    
+    const str = String(dateString).trim();
+    
+    // Se vem com 'Z' no final, é UTC - converter para local
+    if (str.endsWith("Z")) {
+      return new Date(str);
+    }
+    
+    // Se tem offset de timezone (ex: +03:00 ou -03:00), deixar o Date parse normalmente
+    if (str.match(/[+-]\d{2}:\d{2}$/)) {
+      return new Date(str);
+    }
+    
+    // Se é apenas data/hora sem timezone, tratar como local
+    // Formato: 2026-05-04T20:32:00
+    return new Date(str);
+  };
+
+  const formatPromoDateTime = (dateString) => {
+    if (!dateString) return "";
+    const date = parsePromoDate(dateString);
+    
+    const dia = String(date.getDate()).padStart(2, "0");
+    const mes = String(date.getMonth() + 1).padStart(2, "0");
+    const ano = date.getFullYear();
+    const hora = String(date.getHours()).padStart(2, "0");
+    const minutos = String(date.getMinutes()).padStart(2, "0");
+    
+    return `${dia}/${mes}/${ano} às ${hora}:${minutos}`;
+  };
+
+  const isPromoAtiva = (promo) => {
+    if (!promo.isActive) return false;
+    
+    const agora = new Date();
+    const dataInicio = parsePromoDate(promo.startDate);
+    const dataFim = parsePromoDate(promo.endDate);
+    
+    return agora >= dataInicio && agora < dataFim;
   };
 
   const finalPricePreview = parseCurrencyInput(formData.finalPrice);
@@ -472,14 +551,14 @@ export default function PromocoesPage() {
                   <div className="detail">
                     <span className="label">Período:</span>
                     <span className="value">
-                      {new Date(promo.startDate).toLocaleDateString("pt-BR")} até{" "}
-                      {new Date(promo.endDate).toLocaleDateString("pt-BR")}
+                      {formatPromoDateTime(promo.startDate)} até{" "}
+                      {formatPromoDateTime(promo.endDate)}
                     </span>
                   </div>
                   <div className="detail">
                     <span className="label">Status:</span>
-                    <span className={`badge ${promo.isActive ? "badge--active" : "badge--inactive"}`}>
-                      {promo.isActive ? "Ativa" : "Inativa"}
+                    <span className={`badge ${isPromoAtiva(promo) ? "badge--active" : "badge--inactive"}`}>
+                      {isPromoAtiva(promo) ? "Ativa" : "Inativa"}
                     </span>
                   </div>
                 </div>
