@@ -32,6 +32,7 @@ import RequireAuth from "./routes/RequireAuth.jsx";
 // Auth storage
 import { authStorage } from "./services/storageAuth.js";
 import ScrollToTop from "./components/ScrollToTop.jsx";
+import OrderTrackerWidget from "./components/acompanhamento/OrderTrackerWidget.jsx";
 
 /* ============================
    Guards/Routes helpers
@@ -169,6 +170,7 @@ export default function App() {
         <Router>
           <ScrollToTop />
           <Toaster position="top-center" />
+          <OrderTrackerWidget />
 
           <Routes>
             <Route path="/" element={<Navigate to="/home" replace />} />
