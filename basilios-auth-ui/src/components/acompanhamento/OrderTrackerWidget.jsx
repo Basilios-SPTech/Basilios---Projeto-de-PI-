@@ -101,7 +101,7 @@ function getStatusIcon(status, size = 16) {
 }
 
 function getEstimatedSize(collapsed) {
-  if (collapsed) return { width: 56, height: 56 };
+  if (collapsed) return { width: 48, height: 48 };
   return { width: 324, height: 208 };
 }
 
@@ -116,6 +116,31 @@ function clampPosition(next, size) {
     x: Math.min(Math.max(next.x, padding), maxX),
     y: Math.min(Math.max(next.y, padding), maxY),
   };
+}
+
+function remapPositionForSizeChange(prevPosition, fromSize, toSize) {
+  if (typeof window === "undefined") return prevPosition;
+
+  const edgeSnapThreshold = 24;
+  const rightGap = window.innerWidth - (prevPosition.x + fromSize.width);
+  const bottomGap = window.innerHeight - (prevPosition.y + fromSize.height);
+
+  let nextX = prevPosition.x;
+  let nextY = prevPosition.y;
+
+  if (prevPosition.x <= edgeSnapThreshold) {
+    nextX = prevPosition.x;
+  } else if (rightGap <= edgeSnapThreshold) {
+    nextX = window.innerWidth - toSize.width - rightGap;
+  }
+
+  if (prevPosition.y <= edgeSnapThreshold) {
+    nextY = prevPosition.y;
+  } else if (bottomGap <= edgeSnapThreshold) {
+    nextY = window.innerHeight - toSize.height - bottomGap;
+  }
+
+  return clampPosition({ x: nextX, y: nextY }, toSize);
 }
 
 function readCollapsedPreference() {
@@ -456,9 +481,26 @@ export default function OrderTrackerWidget() {
     navigate("/order-status");
   };
 
+  const setCollapsedWithPosition = (nextCollapsed) => {
+    if (nextCollapsed === collapsed) return;
+
+    setPosition((prev) => {
+      const rect = containerRef.current?.getBoundingClientRect();
+      const fromSize = {
+        width: rect?.width || getEstimatedSize(collapsed).width,
+        height: rect?.height || getEstimatedSize(collapsed).height,
+      };
+      const toSize = getEstimatedSize(nextCollapsed);
+
+      return remapPositionForSizeChange(prev, fromSize, toSize);
+    });
+
+    setCollapsed(nextCollapsed);
+  };
+
   const handleExpandFromOrb = () => {
     if (suppressClickRef.current) return;
-    setCollapsed(false);
+    setCollapsedWithPosition(false);
   };
 
   const statusTone =
@@ -505,7 +547,7 @@ export default function OrderTrackerWidget() {
             onPointerDown={startDrag}
             onClick={handleExpandFromOrb}
             title={`Pedido #${orderNumber} - ${trackerSummary}`}
-            className="relative h-14 w-14 rounded-full text-white ring-2 ring-white/70"
+            className="relative h-12 w-12 rounded-full text-white ring-2 ring-white/70"
             style={{
               touchAction: "none",
               backgroundColor: orbTheme.base,
@@ -526,7 +568,7 @@ export default function OrderTrackerWidget() {
               }}
             />
             <span className="relative z-10 inline-flex h-full w-full items-center justify-center">
-              {getStatusIcon(status, 20)}
+              {getStatusIcon(status, 17)}
             </span>
           </button>
         ) : (
@@ -543,7 +585,7 @@ export default function OrderTrackerWidget() {
               <button
                 type="button"
                 className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/15 hover:bg-white/25"
-                onClick={() => setCollapsed(true)}
+                onClick={() => setCollapsedWithPosition(true)}
                 title="Recolher"
               >
                 <Minus size={16} />

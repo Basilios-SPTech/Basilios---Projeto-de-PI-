@@ -23,6 +23,7 @@ import {
 } from "../services/addressApi.js";
 
 const CHAVE_CART = "carrinho-basilios";
+const PENDING_PIX_ORDER_KEY = "pending-pix-order";
 
 export default function Checkout() {
   const [formaPagamento, setFormaPagamento] = useState("pix");
@@ -233,12 +234,9 @@ export default function Checkout() {
       observations: String(deliveryObservations || "").trim(),
     };
 
-    let req = await http.post("/orders", body);
-
-    let lastOrderId = req.data.id;
-    localStorage.setItem("lastOrderId", lastOrderId);
-
     if (formaPagamento == "pix") {
+      localStorage.setItem(PENDING_PIX_ORDER_KEY, JSON.stringify(body));
+
       const abacatePayResp = await fetch("/api/abacate/v1/pixQrCode/create", {
         method: "POST",
         headers: {
@@ -256,7 +254,7 @@ export default function Checkout() {
             taxId: "522.361.808.45",
           },
           metadata: {
-            externalId: lastOrderId,
+            externalId: `pix-${Date.now()}`,
           },
         }),
       });
@@ -279,6 +277,11 @@ export default function Checkout() {
         navigate("/pix-checkout");
       }, 2000);
     } else {
+      let req = await http.post("/orders", body);
+
+      let lastOrderId = req.data.id;
+      localStorage.setItem("lastOrderId", String(lastOrderId));
+
       toast.success(
         "Você selecionou 'Cartão de Crédito' como forma de pagamento! Você será redirecionado para a tela de acompanhamento do pedido e deverá realizar o pagamento na entrega",
         {
@@ -295,6 +298,9 @@ export default function Checkout() {
     // localStorage.removeItem(CHAVE_CART);
     } catch (err) {
       console.error("Erro ao finalizar pedido:", err);
+      if (formaPagamento == "pix") {
+        localStorage.removeItem(PENDING_PIX_ORDER_KEY);
+      }
       if (err?.status === 401) {
         toast.error("Sessão expirada. Faça login novamente.");
         navigate("/login");

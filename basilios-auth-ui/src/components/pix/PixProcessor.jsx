@@ -5,6 +5,10 @@ import PixCode from "./PixCode";
 import PixInstructions from "./PixInstructions";
 import { useNavigate } from "react-router-dom";
 import ProgressBar from "../loading/ProgressBar.jsx";
+import { http } from "../../services/http.js";
+
+const CHAVE_CART = "carrinho-basilios";
+const PENDING_PIX_ORDER_KEY = "pending-pix-order";
 
 export default function PixProcessor({ pixData }) {
   const [loading, setLoading] = useState(false);
@@ -37,8 +41,31 @@ export default function PixProcessor({ pixData }) {
       console.log(payload?.data);
 
       if (payload?.data?.status === "PAID") {
-        console.log("pagoo");
-        localStorage.removeItem("carrinho-basilios");
+        const pendingOrderRaw = localStorage.getItem(PENDING_PIX_ORDER_KEY);
+        if (!pendingOrderRaw) {
+          throw new Error("Pagamento aprovado, mas nao foi encontrado pedido pendente.");
+        }
+
+        let pendingOrderBody = null;
+        try {
+          pendingOrderBody = JSON.parse(pendingOrderRaw);
+        } catch {
+          throw new Error("Pedido pendente invalido. Volte ao checkout e tente novamente.");
+        }
+
+        const orderResponse = await http.post("/orders", pendingOrderBody);
+        const createdOrderId = orderResponse?.data?.id;
+
+        if (!createdOrderId) {
+          throw new Error("Pagamento aprovado, mas nao foi possivel confirmar o pedido.");
+        }
+
+        localStorage.setItem("lastOrderId", String(createdOrderId));
+        localStorage.removeItem(PENDING_PIX_ORDER_KEY);
+        localStorage.removeItem(CHAVE_CART);
+        localStorage.removeItem("pixId");
+        localStorage.removeItem("qrCode");
+        localStorage.removeItem("brCode");
         navigate("/order-status");
         return;
       }
