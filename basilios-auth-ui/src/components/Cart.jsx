@@ -3,8 +3,10 @@ import React, { useState, useEffect, useRef } from "react";
 import { ShoppingCart, X } from "lucide-react";
 import CustomizeBurger from "./CustomizeBurger";
 import AuthRequiredModal from "./AuthRequiredModal";
+import StoreStatusBanner from "./StoreStatusBanner.jsx";
 import { useNavigate } from "react-router-dom";
 import { authStorage } from "../services/storageAuth";
+import { useBusinessHours } from "../hooks/useBusinessHours.js";
 import ProgressBar from "./loading/ProgressBar.jsx";
 
 const CHAVE_CART = "carrinho-basilios";
@@ -17,6 +19,7 @@ export default function Cart() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isRouteTransitioning, setIsRouteTransitioning] = useState(false);
   const transitionTimerRef = useRef(null);
+  const { status: businessStatus } = useBusinessHours();
 
   const navigate = useNavigate();
 
@@ -174,6 +177,11 @@ export default function Cart() {
   };
 
   function goToCheckout() {
+    if (businessStatus && !businessStatus.open) {
+      alert("A loja está fechada no momento. Pedidos podem ser feitos durante o horário de funcionamento.");
+      return;
+    }
+
     if (!authStorage.isAuthenticated()) {
       setShowAuthModal(true);
       return;
@@ -505,11 +513,17 @@ export default function Cart() {
 
               <button
                 onClick={goToCheckout}
-                disabled={isRouteTransitioning}
-                className="w-full bg-black hover:bg-gray-800 text-white font-semibold py-4 rounded-lg transition-colors"
+                disabled={isRouteTransitioning || (businessStatus && !businessStatus.open)}
+                className="w-full bg-black hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-lg transition-colors"
               >
                 Finalizar Compra
               </button>
+
+              {businessStatus && !businessStatus.open && (
+                <p className="mt-3 text-xs text-red-600 text-center font-medium">
+                  ⏰ A loja está fechada. Pedidos podem ser feitos durante o horário de funcionamento.
+                </p>
+              )}
             </div>
           )}
         </div>

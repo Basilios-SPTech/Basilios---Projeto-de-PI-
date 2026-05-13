@@ -601,11 +601,17 @@ export default function PromocoesPage() {
                   className="form-input"
                 >
                   <option value="">Selecione um produto</option>
-                  {produtos.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name || p.nome}
-                    </option>
-                  ))}
+                  {produtos
+                    .sort((a, b) => {
+                      const nameA = (a.name || a.nome).toLowerCase();
+                      const nameB = (b.name || b.nome).toLowerCase();
+                      return nameA.localeCompare(nameB);
+                    })
+                    .map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name || p.nome}
+                      </option>
+                    ))}
                 </select>
               </div>
 

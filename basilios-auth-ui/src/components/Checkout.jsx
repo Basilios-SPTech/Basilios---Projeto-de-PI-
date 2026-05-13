@@ -16,7 +16,9 @@ import {
 import AddAddress from "./AddAddress";
 import ProgressBar from "./loading/ProgressBar";
 import CustomizeBurger from "./CustomizeBurger";
+import StoreStatusBanner from "./StoreStatusBanner.jsx";
 import { http } from "../services/http.js";
+import { useBusinessHours } from "../hooks/useBusinessHours.js";
 import {
   listMyAddresses,
   deleteAddress as deleteAddressApi,
@@ -39,6 +41,7 @@ export default function Checkout() {
   const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const navigate = useNavigate();
+  const { status: businessStatus } = useBusinessHours();
 
   const loadAddresses = useCallback(async () => {
     setLoadingAddresses(true);
@@ -195,6 +198,11 @@ export default function Checkout() {
       return;
     }
 
+    if (businessStatus && !businessStatus.open) {
+      toast.error("A loja está fechada no momento. " + (businessStatus.message || ""));
+      return;
+    }
+
     if (submitting) return;
     setSubmitting(true);
 
@@ -332,6 +340,9 @@ export default function Checkout() {
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900 px-4 py-6 md:p-8">
       <div className="max-w-6xl mx-auto">
+        {/* Status da Loja */}
+        <StoreStatusBanner />
+
         {/* Voltar ao cardápio */}
         <button
           onClick={() => navigate("/home")}
@@ -696,7 +707,7 @@ export default function Checkout() {
 
               <button
                 onClick={endOrder}
-                disabled={!Array.isArray(itens) || itens.length === 0 || submitting || !enderecoSelecionado}
+                disabled={!Array.isArray(itens) || itens.length === 0 || submitting || !enderecoSelecionado || (businessStatus && !businessStatus.open)}
                 className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed text-white py-3 md:py-4 rounded-lg font-semibold text-base md:text-lg transition-colors"
               >
                 Finalizar Pedido
@@ -711,6 +722,12 @@ export default function Checkout() {
               {!!Array.isArray(itens) && itens.length > 0 && !enderecoSelecionado && (
                 <p className="mt-2 text-xs text-amber-600 text-center font-medium">
                   Selecione um endereço para finalizar.
+                </p>
+              )}
+
+              {businessStatus && !businessStatus.open && (
+                <p className="mt-2 text-xs text-red-600 text-center font-medium">
+                  ⏰ A loja está fechada. Pedidos podem ser feitos durante o horário de funcionamento.
                 </p>
               )}
 
