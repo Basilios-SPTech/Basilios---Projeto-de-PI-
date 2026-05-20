@@ -2,6 +2,72 @@
 import { X, Sliders, Minus, Plus } from "lucide-react";
 import { http } from "../services/http.js";
 
+const ADDITION_SUBCATEGORY_ORDER = [
+  "QUEIJO",
+  "PROTEINA",
+  "VEGETAL",
+  "PAO",
+  "MOLHO",
+  "ACOMPANHAMENTO",
+  "BEBIDA",
+];
+
+const ADDITION_SUBCATEGORY_SECTION_CONFIG = {
+  QUEIJO: {
+    title: "Deseja mais queijo?",
+    description: "Escolha até 5 por item.",
+  },
+  PROTEINA: {
+    title: "Deseja reforçar a proteína?",
+    description: "Escolha até 5 por item.",
+  },
+  ACOMPANHAMENTO: {
+    title: "Vai um acompanhamento aí?",
+    description: "Escolha até 5 por item.",
+  },
+  BEBIDA: {
+    title: "Deseja bebida?",
+  },
+  PAO: {
+    title: "Deseja trocar o pão?",
+    description: "Escolha até 1 opção.",
+  },
+  VEGETAL: {
+    title: "Deseja adicionar vegetal?",
+    description: "Escolha até 5 por item.",
+  },
+  MOLHO: {
+    title: "Deseja molho extra?",
+    description: "Escolha até 2 por item.",
+  },
+};
+
+const ADDITION_SUBCATEGORY_ALIAS_MAP = {
+  BACON: "PROTEINA",
+  OVO: "PROTEINA",
+  BEBIDAS: "BEBIDA",
+  PAES: "PAO",
+};
+
+function normalizeAdditionSubcategory(rawSubcategory) {
+  const normalized = String(rawSubcategory || "")
+    .trim()
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, "_");
+
+  if (ADDITION_SUBCATEGORY_ALIAS_MAP[normalized]) {
+    return ADDITION_SUBCATEGORY_ALIAS_MAP[normalized];
+  }
+
+  if (ADDITION_SUBCATEGORY_ORDER.includes(normalized)) {
+    return normalized;
+  }
+
+  return "";
+}
+
 export default function CustomizeBurger({ item, onClose, onSave }) {
   const [isOpen, setIsOpen] = useState(true);
   const [meatPoint, setMeatPoint] = useState("médio");
@@ -94,33 +160,32 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
     };
   }, [productId]);
 
-  const extraAdditions = useMemo(() => {
-    return availableAdditions.filter((addition) => {
-      const subcategory = String(addition?.subcategory || "").toUpperCase();
-      return !["MOLHO", "PAO", "BEBIDA"].includes(subcategory);
+  const additionsBySubcategory = useMemo(() => {
+    const grouped = ADDITION_SUBCATEGORY_ORDER.reduce((acc, subcategory) => {
+      acc[subcategory] = [];
+      return acc;
+    }, {});
+
+    availableAdditions.forEach((addition) => {
+      const normalizedSubcategory = normalizeAdditionSubcategory(
+        addition?.subcategory,
+      );
+      if (!normalizedSubcategory) return;
+      grouped[normalizedSubcategory].push(addition);
     });
+
+    return grouped;
   }, [availableAdditions]);
 
-  const sauceAdditions = useMemo(() => {
-    return availableAdditions.filter(
-      (addition) =>
-        String(addition?.subcategory || "").toUpperCase() === "MOLHO",
-    );
-  }, [availableAdditions]);
+  const ingredientAdditions = useMemo(() => {
+    return ADDITION_SUBCATEGORY_ORDER.filter(
+      (subcategory) => !["MOLHO", "PAO", "BEBIDA"].includes(subcategory),
+    ).flatMap((subcategory) => additionsBySubcategory[subcategory] || []);
+  }, [additionsBySubcategory]);
 
-  const breadAdditions = useMemo(() => {
-    return availableAdditions.filter(
-      (addition) =>
-        String(addition?.subcategory || "").toUpperCase() === "PAO",
-    );
-  }, [availableAdditions]);
-
-  const drinkAdditions = useMemo(() => {
-    return availableAdditions.filter(
-      (addition) =>
-        String(addition?.subcategory || "").toUpperCase() === "BEBIDA",
-    );
-  }, [availableAdditions]);
+  const sauceAdditions = additionsBySubcategory.MOLHO || [];
+  const breadAdditions = additionsBySubcategory.PAO || [];
+  const drinkAdditions = additionsBySubcategory.BEBIDA || [];
 
   useEffect(() => {
     if (!item) return;
@@ -146,7 +211,7 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
         const qty = Number(addition?.quantity ?? 1);
         if (!Number.isFinite(qty) || qty <= 0) return;
 
-        const subcategory = String(addition?.subcategory || "").toUpperCase();
+        const subcategory = normalizeAdditionSubcategory(addition?.subcategory);
         if (subcategory === "MOLHO") {
           sauces[id] = (sauces[id] || 0) + qty;
           return;
@@ -259,7 +324,7 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
   const finalPrice = useMemo(() => {
     const extraIngredientsPrice = Object.entries(ingredientQuantities)
       .reduce((acc, [id, qty]) => {
-        const addition = extraAdditions.find((i) => i.id === parseInt(id));
+        const addition = ingredientAdditions.find((i) => i.id === parseInt(id));
         return acc + ((addition?.price || 0) * qty);
       }, 0);
 
@@ -284,7 +349,7 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
     const basePrice = item.precoBase ?? item.preco ?? item.price ?? 0;
 
     return basePrice + extraIngredientsPrice + extraSaucesPrice + extraDrinksPrice + breadPrice;
-  }, [ingredientQuantities, sauceQuantities, drinkQuantities, selectedBreadId, item, extraAdditions, sauceAdditions, drinkAdditions, breadAdditions]);
+  }, [ingredientQuantities, sauceQuantities, drinkQuantities, selectedBreadId, item, ingredientAdditions, sauceAdditions, drinkAdditions, breadAdditions]);
 
   return (
     <>
@@ -349,234 +414,212 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
               </div>
             </div>
 
-            {/* Adicionais */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                Deseja adicional? (máx. 5 por item)
-              </h3>
+            {additionsLoading && (
+              <p className="text-sm text-gray-500">Carregando adicionais...</p>
+            )}
 
-              {additionsLoading && (
-                <p className="text-sm text-gray-500">Carregando adicionais...</p>
-              )}
+            {!additionsLoading && additionsError && (
+              <p className="text-sm text-red-600">{additionsError}</p>
+            )}
 
-              {!additionsLoading && additionsError && (
-                <p className="text-sm text-red-600">{additionsError}</p>
-              )}
+            {!additionsLoading && !additionsError && ADDITION_SUBCATEGORY_ORDER.map((subcategory) => {
+              const additions = additionsBySubcategory[subcategory] || [];
+              const sectionConfig = ADDITION_SUBCATEGORY_SECTION_CONFIG[subcategory];
 
-              {!additionsLoading && !additionsError && extraAdditions.length === 0 && (
-                <p className="text-sm text-gray-500">Nenhum adicional disponível.</p>
-              )}
+              return (
+                <div key={subcategory}>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-1">
+                    {sectionConfig?.title || subcategory}
+                  </h3>
+                  {sectionConfig?.description ? (
+                    <p className="text-sm text-gray-500 mb-3">{sectionConfig.description}</p>
+                  ) : null}
 
-              {!additionsLoading && !additionsError && extraAdditions.length > 0 && (
-                <div className="divide-y divide-gray-200">
-                  {extraAdditions.map((addition) => (
-                    <div
-                      key={addition.id}
-                      className="flex justify-between items-center py-3"
-                    >
-                      <div>
-                        <h4 className="font-medium text-gray-900">
-                          {addition.name}
-                        </h4>
-                        <p className="text-sm text-gray-500">
-                          {addition.subcategory}
-                        </p>
-                        <p className="text-sm text-orange-600 font-semibold mt-1">
-                          + R$ {Number(addition.price || 0).toFixed(2).replace(".", ",")}
-                        </p>
-                      </div>
-                      {ingredientQuantities[addition.id] ? (
-                        <div className="flex items-center gap-2 bg-orange-50 border border-orange-500 rounded-lg px-2 py-1">
-                          <button
-                            onClick={() => removeIngredient(addition.id)}
-                            className="w-6 h-6 flex items-center justify-center text-orange-500 hover:bg-orange-100 rounded transition-colors"
+                  {additions.length === 0 && (
+                    <p className="text-sm text-gray-500">Não disponível para esse produto</p>
+                  )}
+
+                  {additions.length > 0 && (
+                    <div className="divide-y divide-gray-200">
+                      {additions.map((addition) => {
+                        const additionPrice = Number(addition.price || 0)
+                          .toFixed(2)
+                          .replace(".", ",");
+
+                        if (subcategory === "PAO") {
+                          return (
+                            <div
+                              key={addition.id}
+                              className="flex justify-between items-center py-3"
+                            >
+                              <h4 className="font-medium text-gray-900">
+                                {addition.name}
+                                <span className="text-orange-600 font-semibold ml-1">
+                                  + R$ {additionPrice}
+                                </span>
+                              </h4>
+                              <button
+                                onClick={() => selectBread(addition.id)}
+                                className={`w-8 h-8 flex items-center justify-center rounded-full border text-orange-500 text-lg font-bold transition-all ${
+                                  selectedBreadId === addition.id
+                                    ? "bg-orange-500 text-white border-orange-500"
+                                    : "border-orange-500 hover:bg-orange-50"
+                                }`}
+                              >
+                                {selectedBreadId === addition.id ? "✓" : "+"}
+                              </button>
+                            </div>
+                          );
+                        }
+
+                        if (subcategory === "MOLHO") {
+                          const selectedQty = sauceQuantities[addition.id] || 0;
+
+                          return (
+                            <div
+                              key={addition.id}
+                              className="flex justify-between items-center py-3"
+                            >
+                              <h4 className="font-medium text-gray-900">
+                                {addition.name}
+                                <span className="text-orange-600 font-semibold ml-1">
+                                  + R$ {additionPrice}
+                                </span>
+                              </h4>
+
+                              {selectedQty ? (
+                                <div className="flex items-center gap-2 bg-orange-50 border border-orange-500 rounded-lg px-2 py-1">
+                                  <button
+                                    onClick={() => removeSauce(addition.id)}
+                                    className="w-6 h-6 flex items-center justify-center text-orange-500 hover:bg-orange-100 rounded transition-colors"
+                                  >
+                                    <Minus className="w-4 h-4" />
+                                  </button>
+                                  <span className="w-6 text-center font-semibold text-gray-900">
+                                    {selectedQty}
+                                  </span>
+                                  <button
+                                    onClick={() => addSauce(addition.id)}
+                                    disabled={selectedQty >= maxSauces}
+                                    className={`w-6 h-6 flex items-center justify-center rounded transition-colors ${
+                                      selectedQty >= maxSauces
+                                        ? "opacity-50 cursor-not-allowed text-gray-400"
+                                        : "text-orange-500 hover:bg-orange-100"
+                                    }`}
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => addSauce(addition.id)}
+                                  className="w-8 h-8 flex items-center justify-center rounded-full border border-orange-500 text-orange-500 text-lg font-bold transition-all hover:bg-orange-50"
+                                >
+                                  +
+                                </button>
+                              )}
+                            </div>
+                          );
+                        }
+
+                        if (subcategory === "BEBIDA") {
+                          const selectedQty = drinkQuantities[addition.id] || 0;
+
+                          return (
+                            <div
+                              key={addition.id}
+                              className="flex justify-between items-center py-3"
+                            >
+                              <h4 className="font-medium text-gray-900">
+                                {addition.name}
+                                <span className="text-orange-600 font-semibold ml-1">
+                                  + R$ {additionPrice}
+                                </span>
+                              </h4>
+
+                              {selectedQty ? (
+                                <div className="flex items-center gap-2 bg-orange-50 border border-orange-500 rounded-lg px-2 py-1">
+                                  <button
+                                    onClick={() => removeDrink(addition.id)}
+                                    className="w-6 h-6 flex items-center justify-center text-orange-500 hover:bg-orange-100 rounded transition-colors"
+                                  >
+                                    <Minus className="w-4 h-4" />
+                                  </button>
+                                  <span className="w-6 text-center font-semibold text-gray-900">
+                                    {selectedQty}
+                                  </span>
+                                  <button
+                                    onClick={() => addDrink(addition.id)}
+                                    className="w-6 h-6 flex items-center justify-center text-orange-500 hover:bg-orange-100 rounded transition-colors"
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => addDrink(addition.id)}
+                                  className="w-8 h-8 flex items-center justify-center rounded-full border border-orange-500 text-orange-500 text-lg font-bold transition-all hover:bg-orange-50"
+                                >
+                                  +
+                                </button>
+                              )}
+                            </div>
+                          );
+                        }
+
+                        const selectedQty = ingredientQuantities[addition.id] || 0;
+
+                        return (
+                          <div
+                            key={addition.id}
+                            className="flex justify-between items-center py-3"
                           >
-                            <Minus className="w-4 h-4" />
-                          </button>
-                          <span className="w-6 text-center font-semibold text-gray-900">
-                            {ingredientQuantities[addition.id]}
-                          </span>
-                          <button
-                            onClick={() => addIngredient(addition.id)}
-                            disabled={ingredientQuantities[addition.id] >= maxExtras}
-                            className={`w-6 h-6 flex items-center justify-center rounded transition-colors ${
-                              ingredientQuantities[addition.id] >= maxExtras
-                                ? "opacity-50 cursor-not-allowed text-gray-400"
-                                : "text-orange-500 hover:bg-orange-100"
-                            }`}
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => addIngredient(addition.id)}
-                          className="w-8 h-8 flex items-center justify-center rounded-full border border-orange-500 text-orange-500 text-lg font-bold transition-all hover:bg-orange-50"
-                        >
-                          +
-                        </button>
-                      )}
+                            <h4 className="font-medium text-gray-900">
+                              {addition.name}
+                              <span className="text-orange-600 font-semibold ml-1">
+                                + R$ {additionPrice}
+                              </span>
+                            </h4>
+
+                            {selectedQty ? (
+                              <div className="flex items-center gap-2 bg-orange-50 border border-orange-500 rounded-lg px-2 py-1">
+                                <button
+                                  onClick={() => removeIngredient(addition.id)}
+                                  className="w-6 h-6 flex items-center justify-center text-orange-500 hover:bg-orange-100 rounded transition-colors"
+                                >
+                                  <Minus className="w-4 h-4" />
+                                </button>
+                                <span className="w-6 text-center font-semibold text-gray-900">
+                                  {selectedQty}
+                                </span>
+                                <button
+                                  onClick={() => addIngredient(addition.id)}
+                                  disabled={selectedQty >= maxExtras}
+                                  className={`w-6 h-6 flex items-center justify-center rounded transition-colors ${
+                                    selectedQty >= maxExtras
+                                      ? "opacity-50 cursor-not-allowed text-gray-400"
+                                      : "text-orange-500 hover:bg-orange-100"
+                                  }`}
+                                >
+                                  <Plus className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => addIngredient(addition.id)}
+                                className="w-8 h-8 flex items-center justify-center rounded-full border border-orange-500 text-orange-500 text-lg font-bold transition-all hover:bg-orange-50"
+                              >
+                                +
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-                  ))}
+                  )}
                 </div>
-              )}
-            </div>
-
-            {/* Bebidas */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                Deseja bebida?
-              </h3>
-
-              {!additionsLoading && !additionsError && drinkAdditions.length === 0 && (
-                <p className="text-sm text-gray-500">Nenhuma bebida disponível.</p>
-              )}
-
-              {!additionsLoading && !additionsError && drinkAdditions.length > 0 && (
-                <div className="divide-y divide-gray-200">
-                  {drinkAdditions.map((drink) => (
-                    <div
-                      key={drink.id}
-                      className="flex justify-between items-center py-3"
-                    >
-                      <h4 className="font-medium text-gray-900">
-                        {drink.name}
-                        <span className="text-orange-600 font-semibold ml-1">
-                          + R$ {Number(drink.price || 0).toFixed(2).replace(".", ",")}
-                        </span>
-                      </h4>
-                      {drinkQuantities[drink.id] ? (
-                        <div className="flex items-center gap-2 bg-orange-50 border border-orange-500 rounded-lg px-2 py-1">
-                          <button
-                            onClick={() => removeDrink(drink.id)}
-                            className="w-6 h-6 flex items-center justify-center text-orange-500 hover:bg-orange-100 rounded transition-colors"
-                          >
-                            <Minus className="w-4 h-4" />
-                          </button>
-                          <span className="w-6 text-center font-semibold text-gray-900">
-                            {drinkQuantities[drink.id]}
-                          </span>
-                          <button
-                            onClick={() => addDrink(drink.id)}
-                            className="w-6 h-6 flex items-center justify-center text-orange-500 hover:bg-orange-100 rounded transition-colors"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => addDrink(drink.id)}
-                          className="w-8 h-8 flex items-center justify-center rounded-full border border-orange-500 text-orange-500 text-lg font-bold transition-all hover:bg-orange-50"
-                        >
-                          +
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Pães */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-1">
-                Tipo de pão
-              </h3>
-              <p className="text-sm text-gray-500 mb-3">Escolha até 1 opção.</p>
-
-              {!additionsLoading && !additionsError && breadAdditions.length === 0 && (
-                <p className="text-sm text-gray-500">Nenhum tipo de pão disponível.</p>
-              )}
-
-              {!additionsLoading && !additionsError && breadAdditions.length > 0 && (
-                <div className="divide-y divide-gray-200">
-                  {breadAdditions.map((bread) => (
-                    <div
-                      key={bread.id}
-                      className="flex justify-between items-center py-3"
-                    >
-                      <h4 className="font-medium text-gray-900">
-                        {bread.name}
-                        <span className="text-orange-600 font-semibold ml-1">
-                          + R$ {Number(bread.price || 0).toFixed(2).replace(".", ",")}
-                        </span>
-                      </h4>
-                      <button
-                        onClick={() => selectBread(bread.id)}
-                        className={`w-8 h-8 flex items-center justify-center rounded-full border text-orange-500 text-lg font-bold transition-all ${
-                          selectedBreadId === bread.id
-                            ? "bg-orange-500 text-white border-orange-500"
-                            : "border-orange-500 hover:bg-orange-50"
-                        }`}
-                      >
-                        {selectedBreadId === bread.id ? "✓" : "+"}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Molhos Extras */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                Deseja molho extra? (máx. 2 por item)
-              </h3>
-
-              {!additionsLoading && !additionsError && sauceAdditions.length === 0 && (
-                <p className="text-sm text-gray-500">Nenhum molho disponível.</p>
-              )}
-
-              {!additionsLoading && !additionsError && sauceAdditions.length > 0 && (
-                <div className="divide-y divide-gray-200">
-                  {sauceAdditions.map((sauce) => (
-                    <div
-                      key={sauce.id}
-                      className="flex justify-between items-center py-3"
-                    >
-                      <div>
-                        <h4 className="font-medium text-gray-900">{sauce.name}</h4>
-                        <p className="text-sm text-gray-500">{sauce.subcategory}</p>
-                        <p className="text-sm text-orange-600 font-semibold mt-1">
-                          + R$ {Number(sauce.price || 0).toFixed(2).replace(".", ",")}
-                        </p>
-                      </div>
-                      {sauceQuantities[sauce.id] ? (
-                        <div className="flex items-center gap-2 bg-orange-50 border border-orange-500 rounded-lg px-2 py-1">
-                          <button
-                            onClick={() => removeSauce(sauce.id)}
-                            className="w-6 h-6 flex items-center justify-center text-orange-500 hover:bg-orange-100 rounded transition-colors"
-                          >
-                            <Minus className="w-4 h-4" />
-                          </button>
-                          <span className="w-6 text-center font-semibold text-gray-900">
-                            {sauceQuantities[sauce.id]}
-                          </span>
-                          <button
-                            onClick={() => addSauce(sauce.id)}
-                            disabled={sauceQuantities[sauce.id] >= maxSauces}
-                            className={`w-6 h-6 flex items-center justify-center rounded transition-colors ${
-                              sauceQuantities[sauce.id] >= maxSauces
-                                ? "opacity-50 cursor-not-allowed text-gray-400"
-                                : "text-orange-500 hover:bg-orange-100"
-                            }`}
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => addSauce(sauce.id)}
-                          className="w-8 h-8 flex items-center justify-center rounded-full border border-orange-500 text-orange-500 text-lg font-bold transition-all hover:bg-orange-50"
-                        >
-                          +
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+              );
+            })}
 
             {/* Observações */}
             <div>

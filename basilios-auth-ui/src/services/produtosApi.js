@@ -28,23 +28,46 @@ export async function criarProduto(dto) {
  * Lista produtos.
  * GET /api/products?activeOnly=true|false&page=0&size=1000&sort=id,desc
  */
-export async function listarProdutos(activeOnly = false, page = 0, size = 10) {
-  const params = {
-    page,
-    size,
-    sort: "id,desc"
-  };
+export async function listarProdutos(activeOnly = false, page = 0, size = 100) {
+  const pageSize = Number.isFinite(Number(size)) && Number(size) > 0 ? Number(size) : 100;
+  let currentPage = Number.isFinite(Number(page)) && Number(page) >= 0 ? Number(page) : 0;
+  let last = false;
+  let totalPages = 1;
+  let safety = 0;
+  const allContent = [];
 
-  if (typeof activeOnly === "boolean") {
-    params.activeOnly = activeOnly;
+  while (!last && safety < 200) {
+    const params = {
+      page: currentPage,
+      size: pageSize,
+      sort: "id,desc",
+    };
+
+    if (typeof activeOnly === "boolean") {
+      params.activeOnly = activeOnly;
+    }
+
+    const { data } = await http.get("/products", { params });
+    const content = normalizeProductsListResponse(data);
+    allContent.push(...content);
+
+    if (Array.isArray(data)) {
+      last = true;
+      totalPages = 1;
+    } else {
+      const reportedTotalPages = Number(data?.totalPages);
+      totalPages = Number.isFinite(reportedTotalPages) ? reportedTotalPages : totalPages;
+      last = Boolean(data?.last) || currentPage >= Math.max(totalPages - 1, 0) || content.length < pageSize;
+    }
+
+    currentPage += 1;
+    safety += 1;
   }
 
-  const { data } = await http.get("/products", { params });
-
   return {
-    content: data.content || [],
-    last: data.last,
-    totalPages: data.totalPages
+    content: allContent,
+    last: true,
+    totalPages,
   };
 }
 

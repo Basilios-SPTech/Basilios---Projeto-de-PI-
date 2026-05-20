@@ -34,6 +34,10 @@ http.interceptors.response.use(
     // Preserva o status original para handlers conseguirem diferenciar
     const err = new Error(msg)
     err.status = status
+    err.data = error?.response?.data
+    err.method = error?.config?.method
+    err.url = error?.config?.url
+    err.requestData = error?.config?.data
     return Promise.reject(err)
   }
 )
