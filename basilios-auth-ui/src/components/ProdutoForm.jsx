@@ -11,6 +11,8 @@ export default function ProdutoForm({
   showCloseButton = false,
   categorias = [],
   adicionalSubcategoryOptions = [],
+  isSaving = false,
+  savingText = "",
 }) {
   const selectedAdicionalSubcategories = Array.isArray(formData.adicionalSubcategories)
     ? formData.adicionalSubcategories
@@ -47,6 +49,7 @@ export default function ProdutoForm({
             aria-label="Fechar"
             onClick={onCancel}
             className="cp-modal__close absolute right-3 top-3"
+            disabled={isSaving}
             style={{
               background: 'transparent',
               border: 'none',
@@ -58,6 +61,7 @@ export default function ProdutoForm({
             ×
           </button>
         )}
+        <fieldset className="cp-form__fieldset" disabled={isSaving}>
         <div className="grid-1-2">
           {/* Nome */}
           <div className="field-row">
@@ -252,7 +256,11 @@ export default function ProdutoForm({
         {/* Ações */}
         <div className="mt-4 flex items-center gap-3">
           <button type="submit" className="btn-salvar">
-            {indiceEdicao !== null ? "Atualizar Produto" : "Salvar Produto"}
+            {isSaving
+              ? savingText || "Salvando produto..."
+              : indiceEdicao !== null
+                ? "Atualizar Produto"
+                : "Salvar Produto"}
           </button>
 
           {indiceEdicao !== null && (
@@ -266,6 +274,7 @@ export default function ProdutoForm({
             </button>
           )}
         </div>
+        </fieldset>
       </form>
     </div>
   );

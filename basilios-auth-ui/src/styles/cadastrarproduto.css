@@ -1162,11 +1162,83 @@ body {
   padding: 24px;
 }
 
+.cp-saving-shell {
+  position: relative;
+  isolation: isolate;
+}
+
+.cp-saving-shell.is-saving > *:not(.cp-saving-overlay) {
+  filter: blur(3px);
+  transform: scale(0.995);
+  pointer-events: none;
+  user-select: none;
+}
+
+.cp-saving-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(2px);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.cp-saving-overlay__content {
+  text-align: center;
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+}
+
+.cp-saving-overlay__spinner {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 5px solid rgba(187, 53, 48, 0.24);
+  border-top-color: var(--brand);
+  border-right-color: var(--brand);
+  filter: drop-shadow(0 0 10px rgba(187, 53, 48, 0.35));
+  animation: cpSavingSpin 0.9s linear infinite;
+}
+
+.cp-saving-overlay__title {
+  margin: 0;
+  color: var(--brand-dark);
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+}
+
+.cp-saving-overlay__text {
+  margin: 0;
+  color: #7a1e1a;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+@keyframes cpSavingSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .cp-modal__body form,
 .cp-modal__body .cp-form,
 .cp-modal__body .produto-form {
   display: grid;
   gap: 20px;
+}
+
+.cp-form__fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  display: grid;
+  gap: 24px;
 }
 
 .cp-modal__body label {

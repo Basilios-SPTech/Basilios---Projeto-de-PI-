@@ -24,10 +24,10 @@ import {
 import MenuButtonAuto from "../components/MenuButtonAuto.jsx";
 import { http } from "../services/http.js";
 import { formatCurrency } from "../utils/formatters.js";
+import { resolveImageUrl } from "../utils/imageUrl.js";
 
 const CHAVE_CART = "carrinho-basilios";
 const CHAVE_STORAGE = "produtos-basilios";
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 const STATUS_LABELS = {
   PENDENTE: "Recebido",
@@ -224,16 +224,6 @@ function parseItemAdditions(item) {
   }));
 }
 
-function normalizeImageUrl(url) {
-  if (!url) return "";
-
-  if (typeof url !== "string") return "";
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  if (url.startsWith("/")) return `${API_BASE}${url}`;
-
-  return url;
-}
-
 function resolveOrderItemImage(item) {
   const direct =
     item?.imageUrl ||
@@ -244,7 +234,7 @@ function resolveOrderItemImage(item) {
     item?.thumbnail ||
     item?.thumb;
 
-  const normalizedDirect = normalizeImageUrl(direct);
+  const normalizedDirect = resolveImageUrl(direct, { fallback: "" });
   if (normalizedDirect) return normalizedDirect;
 
   const productId = Number(item?.productId);
@@ -261,7 +251,7 @@ function resolveOrderItemImage(item) {
     if (!matched) return "";
 
     const fromProduct = matched.imagem || matched.image || matched.imageUrl;
-    return normalizeImageUrl(fromProduct);
+    return resolveImageUrl(fromProduct, { fallback: "" });
   } catch {
     return "";
   }

@@ -13,9 +13,9 @@ import {
 } from "../services/produtosApi.js";
 
 import { http } from "../services/http.js";
+import { extractUploadImageUrl, resolveImageUrl } from "../utils/imageUrl.js";
 
 const CHAVE_STORAGE = "produtos-basilios";
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const BACKEND_CATEGORY_VALUES = [
   "BURGER",
   "SIDE",
@@ -217,17 +217,6 @@ function getApiErrorMessage(err, fallbackMessage) {
   return fallbackMessage;
 }
 
-// Extrai URL relativa do upload (remove baseURL se contiver)
-function extractRelativeImageUrl(fullUrl) {
-  if (!fullUrl) return null;
-  // Se contém o baseURL completo, remove e deixa só a parte relativa
-  if (fullUrl.includes(API_BASE)) {
-    return fullUrl.replace(API_BASE, '');
-  }
-  // Se já é relativa, retorna como está
-  return fullUrl;
-}
-
 function getCategoryDisplayLabel(value) {
   const raw = String(value || "").trim();
   if (!raw) return "Sem categoria";
@@ -240,6 +229,8 @@ export default function CadastrarProduto() {
   const [produtos, setProdutos] = useState([]);
   const categorias = DEFAULT_CATEGORIES;
   const subcategorias = DEFAULT_SUBCATEGORIES;
+  const [isSavingProduct, setIsSavingProduct] = useState(false);
+  const [savingProductStatus, setSavingProductStatus] = useState("");
 
   const [formData, setFormData] = useState({
     nome: "",
@@ -301,7 +292,7 @@ export default function CadastrarProduto() {
             p.adicionalSubcategories ?? p.additionalSubcategories,
           ),
           pausado: p.isPaused ?? p.paused ?? false,
-          imagem: p.imageUrl ? `${API_BASE}${p.imageUrl}` : p.imagem || "",
+          imagem: resolveImageUrl(p.imageUrl, { fallback: p.imagem || "" }),
           imageUrl: p.imageUrl || "", // Preserva a URL relativa do backend
         }));
 
@@ -668,8 +659,83 @@ export default function CadastrarProduto() {
     return Number(num.toFixed(2));
   }
 
+  async function optimizeImageForUpload(file) {
+    if (!(file instanceof File)) return file;
+    if (!String(file.type || "").startsWith("image/")) return file;
+
+    const lowerType = String(file.type || "").toLowerCase();
+    if (lowerType.includes("gif") || lowerType.includes("svg")) {
+      return file;
+    }
+
+    const maxBytes = 900 * 1024;
+    if (file.size <= maxBytes) return file;
+
+    const loadImage = (rawFile) =>
+      new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const image = new Image();
+          image.onload = () => resolve(image);
+          image.onerror = reject;
+          image.src = reader.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(rawFile);
+      });
+
+    try {
+      const image = await loadImage(file);
+
+      const maxEdge = 1600;
+      const width = image.width || 0;
+      const height = image.height || 0;
+
+      if (!width || !height) return file;
+
+      const scale = Math.min(1, maxEdge / Math.max(width, height));
+      const targetWidth = Math.max(1, Math.round(width * scale));
+      const targetHeight = Math.max(1, Math.round(height * scale));
+
+      const canvas = document.createElement("canvas");
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return file;
+
+      ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+      const outputType =
+        lowerType.includes("jpeg") || lowerType.includes("jpg") || lowerType.includes("webp")
+          ? file.type
+          : "image/jpeg";
+
+      const blob = await new Promise((resolve) => {
+        canvas.toBlob(resolve, outputType, 0.82);
+      });
+
+      if (!blob || blob.size >= file.size) return file;
+
+      const newName = outputType === "image/jpeg"
+        ? file.name.replace(/\.[^.]+$/, "") + ".jpg"
+        : file.name;
+
+      return new File([blob], newName, {
+        type: outputType,
+        lastModified: Date.now(),
+      });
+    } catch {
+      return file;
+    }
+  }
+
   async function handleSubmit(e) {
     if (e?.preventDefault) e.preventDefault();
+
+    if (isSavingProduct) {
+      return;
+    }
 
     if (!formData.nome?.trim()) {
       toast.error("Informe o nome do produto.");
@@ -736,19 +802,31 @@ export default function CadastrarProduto() {
 
     // EDIÇÃO
     if (indiceEdicao !== null) {
+      setIsSavingProduct(true);
+      setSavingProductStatus(
+        formData.imagemArquivo
+          ? "Enviando imagem para o servidor..."
+          : "Salvando alterações do produto...",
+      );
+
       try {
         let imageUrl = null;
 
         // se usuário trocou o arquivo, faz upload de novo
         if (formData.imagemArquivo) {
+          const optimizedFile = await optimizeImageForUpload(formData.imagemArquivo);
           const fd = new FormData();
-          fd.append("file", formData.imagemArquivo);
+          fd.append("file", optimizedFile);
 
           const respUpload = await http.post("/api/upload/image", fd, {
             headers: { "Content-Type": "multipart/form-data" },
           });
 
-          imageUrl = extractRelativeImageUrl(respUpload.data); // Extrai apenas /uploads/...
+          imageUrl = extractUploadImageUrl(respUpload.data?.url ?? respUpload.data);
+
+          if (!imageUrl) {
+            throw new Error("Upload da imagem sem URL válida.");
+          }
         }
 
         const resolvedImageUrl = imageUrl || formData.imageUrl || null;
@@ -765,12 +843,13 @@ export default function CadastrarProduto() {
         };
 
         console.info("[CadastrarProduto] Payload atualizar", dtoUpdate);
+        setSavingProductStatus("Salvando alterações do produto...");
 
         const atualizadoBack = await atualizarProduto(indiceEdicao, dtoUpdate);
 
         const imagemAtual =
           atualizadoBack.imageUrl
-            ? `${API_BASE}${atualizadoBack.imageUrl}`
+            ? resolveImageUrl(atualizadoBack.imageUrl)
             : produtos.find((p) => p.index === indiceEdicao)?.imagem ||
               formData.imagem ||
               "";
@@ -813,18 +892,29 @@ export default function CadastrarProduto() {
           requestData: err?.requestData,
         });
         toast.error(getApiErrorMessage(err, "Não foi possível atualizar o produto."));
+      } finally {
+        setIsSavingProduct(false);
+        setSavingProductStatus("");
       }
 
       return;
     }
 
     // CRIAÇÃO
+    setIsSavingProduct(true);
+    setSavingProductStatus(
+      formData.imagemArquivo
+        ? "Enviando imagem para o servidor..."
+        : "Salvando novo produto...",
+    );
+
     try {
       let imageUrl = null;
 
       if (formData.imagemArquivo) {
+        const optimizedFile = await optimizeImageForUpload(formData.imagemArquivo);
         const fd = new FormData();
-        fd.append("file", formData.imagemArquivo);
+        fd.append("file", optimizedFile);
 
         const respUpload = await http.post("/api/upload/image", fd, {
           headers: {
@@ -832,7 +922,11 @@ export default function CadastrarProduto() {
           },
         });
 
-        imageUrl = extractRelativeImageUrl(respUpload.data); // Extrai apenas /uploads/...
+        imageUrl = extractUploadImageUrl(respUpload.data?.url ?? respUpload.data);
+
+        if (!imageUrl) {
+          throw new Error("Upload da imagem sem URL válida.");
+        }
       }
 
       const resolvedSubcategory = String(formData.subcategoria || "").trim() || null;
@@ -848,6 +942,7 @@ export default function CadastrarProduto() {
       };
 
       console.info("[CadastrarProduto] Payload criar", dto);
+      setSavingProductStatus("Salvando novo produto...");
 
       const produtoCriadoDoBack = await criarProduto(dto);
 
@@ -870,7 +965,7 @@ export default function CadastrarProduto() {
           produtoCriadoDoBack.isPaused ??
           false,
         imagem: produtoCriadoDoBack.imageUrl
-          ? `${API_BASE}${produtoCriadoDoBack.imageUrl}`
+          ? resolveImageUrl(produtoCriadoDoBack.imageUrl)
           : formData.imagem || "",
         imageUrl: produtoCriadoDoBack.imageUrl || "", // Preserva URL relativa
       };
@@ -888,6 +983,9 @@ export default function CadastrarProduto() {
         requestData: err?.requestData,
       });
       toast.error(getApiErrorMessage(err, "Erro ao criar produto."));
+    } finally {
+      setIsSavingProduct(false);
+      setSavingProductStatus("");
     }
   }
 
@@ -919,6 +1017,7 @@ export default function CadastrarProduto() {
   }
 
   function handleCloseModal() {
+    if (isSavingProduct) return;
     setModalOpen(false);
     clearForm();
   }
@@ -1171,7 +1270,7 @@ export default function CadastrarProduto() {
       <MenuButton />
       <main className="cp-grid">
         <div className="cp-left">
-          <section className="cp-card cp-form">
+          <section className={`cp-card cp-form cp-saving-shell ${isSavingProduct ? "is-saving" : ""}`}>
             <ProdutoForm
               formData={formData}
               indiceEdicao={indiceEdicao}
@@ -1182,7 +1281,19 @@ export default function CadastrarProduto() {
               subcatOptions={subcatOptions}
               categorias={categorias}
               adicionalSubcategoryOptions={ADICIONAL_SUBCATEGORIES}
+              isSaving={isSavingProduct}
+              savingText={savingProductStatus}
             />
+
+            {isSavingProduct && (
+              <div className="cp-saving-overlay" role="status" aria-live="polite" aria-busy="true">
+                <div className="cp-saving-overlay__content">
+                  <span className="cp-saving-overlay__spinner" aria-hidden="true" />
+                  <p className="cp-saving-overlay__title">Salvando produto</p>
+                  <p className="cp-saving-overlay__text">{savingProductStatus || "Aguarde..."}</p>
+                </div>
+              </div>
+            )}
           </section>
 
           <section className="cp-card cp-preview cp-preview--inline">
@@ -1605,7 +1716,7 @@ export default function CadastrarProduto() {
             className="cp-modal"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="cp-modal__body">
+            <div className={`cp-modal__body cp-saving-shell ${isSavingProduct ? "is-saving" : ""}`}>
               <ProdutoForm
                 formData={formData}
                 indiceEdicao={indiceEdicao}
@@ -1617,7 +1728,19 @@ export default function CadastrarProduto() {
                 showCloseButton={true}
                 categorias={categorias}
                 adicionalSubcategoryOptions={ADICIONAL_SUBCATEGORIES}
+                isSaving={isSavingProduct}
+                savingText={savingProductStatus}
               />
+
+              {isSavingProduct && (
+                <div className="cp-saving-overlay" role="status" aria-live="polite" aria-busy="true">
+                  <div className="cp-saving-overlay__content">
+                    <span className="cp-saving-overlay__spinner" aria-hidden="true" />
+                    <p className="cp-saving-overlay__title">Salvando produto</p>
+                    <p className="cp-saving-overlay__text">{savingProductStatus || "Aguarde..."}</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
