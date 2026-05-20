@@ -29,22 +29,25 @@ function HighlightText({ text, term }) {
   );
 }
 
-// ── sections da navbar (espelhado do header) ──
-const NAV_SECTIONS = [
-  "Combos Individuais",
-  "Lanches Premium",
-  "Beirutes",
-  "Hot-Dog",
-  "Veganos",
-  "Porções",
-  "Sobremesas",
-  "Bebidas",
-];
+function buildSectionsFromProducts(items = []) {
+  const result = [];
+  const seen = new Set();
+
+  items.forEach((item) => {
+    const label = String(item?.categoria || "").trim();
+    if (!label || seen.has(label)) return;
+    seen.add(label);
+    result.push({ label, slug: slug(label) });
+  });
+
+  return result;
+}
 
 export default function SearchBar({ width = 250 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [products, setProducts] = useState([]);
+  const [sections, setSections] = useState([]);
   const [activeIdx, setActiveIdx] = useState(-1);
   const containerRef = useRef(null);
   const inputRef = useRef(null);
@@ -53,10 +56,60 @@ export default function SearchBar({ width = 250 }) {
   // Escuta produtos carregados pela Home
   useEffect(() => {
     const handler = (e) => {
-      if (Array.isArray(e.detail)) setProducts(e.detail);
+      if (!Array.isArray(e.detail)) return;
+      setProducts(e.detail);
+
+      setSections((prev) => {
+        if (prev.length > 0) return prev;
+        return buildSectionsFromProducts(e.detail);
+      });
     };
     window.addEventListener("productsLoaded", handler);
     return () => window.removeEventListener("productsLoaded", handler);
+  }, []);
+
+  useEffect(() => {
+    const normalizeSections = (rawSections) => {
+      if (!Array.isArray(rawSections)) return [];
+
+      const normalized = rawSections
+        .map((item) => {
+          const label = String(item?.label || "").trim();
+          if (!label) return null;
+          const sectionSlug = String(item?.slug || slug(label)).trim();
+          if (!sectionSlug) return null;
+          return { label, slug: sectionSlug };
+        })
+        .filter(Boolean);
+
+      return Array.from(
+        new Map(normalized.map((item) => [item.slug, item])).values()
+      );
+    };
+
+    const updateSections = (rawSections) => {
+      const next = normalizeSections(rawSections);
+      if (next.length === 0) return;
+      setSections(next);
+
+      try {
+        sessionStorage.setItem("homeSections", JSON.stringify(next));
+      } catch {
+        // ignore
+      }
+    };
+
+    try {
+      const cached = JSON.parse(sessionStorage.getItem("homeSections") || "[]");
+      updateSections(cached);
+    } catch {
+      // ignore
+    }
+
+    const handler = (e) => updateSections(e?.detail);
+    window.addEventListener("homeSectionsLoaded", handler);
+
+    return () => window.removeEventListener("homeSectionsLoaded", handler);
   }, []);
 
   // Fecha ao clicar fora
@@ -80,7 +133,7 @@ export default function SearchBar({ width = 250 }) {
 
   const matchedSections =
     termNorm.length >= 2
-      ? NAV_SECTIONS.filter((s) => normalize(s).includes(termNorm))
+      ? sections.filter((item) => normalize(item.label).includes(termNorm))
       : [];
 
   const matchedProducts =
@@ -96,14 +149,17 @@ export default function SearchBar({ width = 250 }) {
       : [];
 
   const allResults = [
-    ...matchedSections.map((s) => ({ type: "section", label: s })),
+    ...matchedSections.map((item) => ({ type: "section", data: item })),
     ...matchedProducts.map((p) => ({ type: "product", data: p })),
   ];
   const totalResults = allResults.length;
 
   // ── Ações ──
-  const goToSection = useCallback((label) => {
-    const target = slug(label);
+  const goToSection = useCallback((section) => {
+    const label = String(section?.label || section || "").trim();
+    const target = String(section?.slug || slug(label)).trim();
+    if (!target) return;
+
     try { sessionStorage.setItem("scrollToSection", target); } catch {}
 
     if (window.location.pathname !== "/home") {
@@ -135,7 +191,7 @@ export default function SearchBar({ width = 250 }) {
   const selectResult = useCallback((idx) => {
     const item = allResults[idx];
     if (!item) return;
-    if (item.type === "section") goToSection(item.label);
+    if (item.type === "section") goToSection(item.data);
     else goToProduct(item.data);
   }, [allResults, goToSection, goToProduct]);
 
@@ -150,7 +206,7 @@ export default function SearchBar({ width = 250 }) {
     if (!open || totalResults === 0) {
       if (e.key === "Enter" && termNorm) {
         e.preventDefault();
-        const match = NAV_SECTIONS.find((s) => normalize(s).includes(termNorm));
+        const match = sections.find((item) => normalize(item.label).includes(termNorm));
         if (match) goToSection(match);
       }
       return;
@@ -216,15 +272,15 @@ export default function SearchBar({ width = 250 }) {
               {matchedSections.length > 0 && (
                 <div className="search-group">
                   <div className="search-group-label">Categorias</div>
-                  {matchedSections.map((label, i) => (
+                  {matchedSections.map((section, i) => (
                     <button
-                      key={label}
+                      key={section.slug}
                       className={`search-result ${activeIdx === i ? "search-result--active" : ""}`}
-                      onClick={() => goToSection(label)}
+                      onClick={() => goToSection(section)}
                       onMouseEnter={() => setActiveIdx(i)}
                     >
                       <FolderOpen size={16} className="search-result-icon" />
-                      <span><HighlightText text={label} term={term} /></span>
+                      <span><HighlightText text={section.label} term={term} /></span>
                     </button>
                   ))}
                 </div>

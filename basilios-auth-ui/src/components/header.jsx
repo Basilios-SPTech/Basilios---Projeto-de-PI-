@@ -31,22 +31,26 @@ export default function Header() {
   const { isAuthenticated } = useAuthSnapshot();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState(null);
+  const [activeSection, setActiveSection] = useState("");
   const [isScrolled, setIsScrolled] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [sections, setSections] = useState([]);
 
   const toggleMenu = useCallback(() => setIsMenuOpen((s) => !s), []);
 
-  const sections = useMemo(
+  const fallbackSections = useMemo(
     () => [
-      "Combos Individuais",
-      "Lanches Premium",
-      "Beirutes",
-      "Hot-Dog",
-      "Veganos",
-      "Porções",
-      "Sobremesas",
-      "Bebidas",
+      { label: "Promoções", slug: "promocoes" },
+      { label: "Combos Individuais", slug: "combos-individuais" },
+      { label: "Lanches Premium", slug: "lanches-premium" },
+      { label: "Burguer", slug: "burguer" },
+      { label: "Acompanhamento", slug: "acompanhamento" },
+      { label: "Porções", slug: "porcoes" },
+      { label: "Bebidas", slug: "bebidas" },
+      { label: "Sobremesas", slug: "sobremesas" },
+      { label: "Hot-Dog", slug: "hot-dog" },
+      { label: "Beirutes", slug: "beirutes" },
+      { label: "Outros", slug: "outros" },
     ],
     []
   );
@@ -65,6 +69,55 @@ export default function Header() {
   const prevScrollY = useRef(window.scrollY);
 
   useEffect(() => {
+    const normalizeSections = (rawSections) => {
+      if (!Array.isArray(rawSections)) return [];
+
+      const normalized = rawSections
+        .map((item) => {
+          const label = String(item?.label || "").trim();
+          if (!label) return null;
+
+          const sectionSlug = String(item?.slug || slug(label)).trim();
+          if (!sectionSlug) return null;
+
+          return { label, slug: sectionSlug };
+        })
+        .filter(Boolean);
+
+      return Array.from(
+        new Map(normalized.map((item) => [item.slug, item])).values()
+      );
+    };
+
+    const updateSections = (rawSections) => {
+      const next = normalizeSections(rawSections);
+      if (next.length > 0) {
+        setSections(next);
+
+        try {
+          sessionStorage.setItem("homeSections", JSON.stringify(next));
+        } catch {
+          // ignore
+        }
+      }
+    };
+
+    try {
+      const cached = JSON.parse(sessionStorage.getItem("homeSections") || "[]");
+      updateSections(cached);
+    } catch {
+      // ignore
+    }
+
+    const handler = (e) => updateSections(e?.detail);
+    window.addEventListener("homeSectionsLoaded", handler);
+
+    return () => window.removeEventListener("homeSectionsLoaded", handler);
+  }, [slug]);
+
+  const sectionsToRender = sections.length > 0 ? sections : fallbackSections;
+
+  useEffect(() => {
     const onScroll = () => {
       const y = window.scrollY;
       const goingDown = y > prevScrollY.current;
@@ -73,13 +126,15 @@ export default function Header() {
       // No topo: sempre mostra. Scroll down: esconde. Scroll up: mostra.
       setIsScrolled(y > 50 && goingDown);
 
-      const nodes = document.querySelectorAll("section[data-section]");
-      let current = null;
-      nodes.forEach((section, index) => {
+      const nodes = document.querySelectorAll("[data-section]");
+      let current = "";
+      nodes.forEach((section) => {
         const rect = section.getBoundingClientRect();
-        if (rect.top <= 150 && rect.bottom >= 150) current = index;
+        if (rect.top <= 150 && rect.bottom >= 150) {
+          current = section.getAttribute("data-section") || "";
+        }
       });
-      if (current !== null) setActiveSection(current);
+      if (current) setActiveSection(current);
     };
 
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -95,8 +150,10 @@ export default function Header() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const goToSection = (label) => {
-    const target = slug(label);
+  const goToSection = (section) => {
+    const label = String(section?.label || section || "").trim();
+    const target = String(section?.slug || slug(label)).trim();
+    if (!target) return;
 
     // Save target in sessionStorage so Home can pick it up after navigation
     try {
@@ -206,19 +263,19 @@ export default function Header() {
               paddingInline: "1rem",
             }}
           >
-            {sections.map((label, i) => (
+            {sectionsToRender.map((section) => (
               <span
-                key={label}
+                key={section.slug}
                 role="button"
                 tabIndex={0}
-                className={`section-link ${activeSection === i ? "active" : ""
+                className={`section-link ${activeSection === section.slug ? "active" : ""
                   }`}
-                onClick={() => goToSection(label)}
+                onClick={() => goToSection(section)}
                 onKeyDown={(e) =>
-                  e.key === "Enter" ? goToSection(label) : null
+                  e.key === "Enter" ? goToSection(section) : null
                 }
               >
-                {label}
+                {section.label}
               </span>
             ))}
           </div>

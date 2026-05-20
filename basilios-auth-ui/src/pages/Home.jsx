@@ -82,24 +82,54 @@ export default function Home() {
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [productToCustomize, setProductToCustomize] = useState(null);
   const [promoAtual, setPromoAtual] = useState(null);
-  const [paginaAtual, setPaginaAtual] = useState(0);
-  const [tamanho, setTamanho] = useState(10);
-  const [totalPaginas, setTotalPaginas] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const catalogoRef = useRef(null);
 
   const ORDEM_CATEGORIAS = [
+    "Combo",
     "Combos Individuais",
     "Lanches Premium",
-    "Burguer",
-    "Porções",
-    "Hot-Dog",
+    "Hambúrguer",
     "Beirutes",
+    "Hot-dog",
+    "Veganos",
+    "Porções",
+    "Acompanhamento",
+    "Bebida",
+    "Bebidas",
+    "Sobremesa",
+    "Sobremesas",
+    "Outros",
   ];
+
+  const CATEGORIA_BACKEND_LABEL = {
+    BURGER: "Hambúrguer",
+    SIDE: "Acompanhamento",
+    DRINK: "Bebida",
+    DESSERT: "Sobremesa",
+    COMBO: "Combo",
+    COMBOS_INDIVIDUAIS: "Combos Individuais",
+    LANCHES_PREMIUM: "Lanches Premium",
+    BEIRUTES: "Beirutes",
+    HOT_DOG: "Hot-dog",
+    VEGANOS: "Veganos",
+    PORCOES: "Porções",
+    SOBREMESAS: "Sobremesas",
+    BEBIDAS: "Bebidas",
+  };
 
   function normalizarCategoria(cat, nome) {
     const c = (cat || "").toLowerCase();
+    const enumCat = String(cat || "").trim().toUpperCase();
     const n = (nome || "").toLowerCase();
+
+    if (CATEGORIA_BACKEND_LABEL[enumCat]) {
+      return CATEGORIA_BACKEND_LABEL[enumCat];
+    }
+
+    // Se já vier com o label final, mantém.
+    if (ORDEM_CATEGORIAS.includes(cat)) {
+      return cat;
+    }
 
     // Combos
     if (n.includes("combo")) return "Combos Individuais";
@@ -116,11 +146,11 @@ export default function Home() {
     ) return "Lanches Premium";
 
     // Burguer 
-    if (n.includes("burger") || n.includes("x-")) return "Burguer";
+    if (n.includes("burger") || n.includes("x-")) return "Hambúrguer";
 
     // Hot Dog
     if (n.includes("dog") ||
-      n.includes("Dog Maionese Batata Palha")) return "Hot-Dog";
+      n.includes("Dog Maionese Batata Palha")) return "Hot-dog";
 
     // Porções
     if (
@@ -133,6 +163,15 @@ export default function Home() {
 
     return "Outros";
   }
+
+  const toSectionSlug = useCallback((value) => {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, "-")
+      .toLowerCase()
+      .trim();
+  }, []);
 
   useEffect(() => {
     async function carregarPromocoes() {
@@ -172,8 +211,8 @@ export default function Home() {
     async function carregarProdutos() {
       setIsLoading(true);
       try {
-        // Sempre carrega TODOS os produtos (página 0, tamanho grande)
-        const response = await listarProdutos(true, 0, 1000);
+        // Carrega todos os produtos e aplica o filtro de pausa no frontend.
+        const response = await listarProdutos(false, 0, 1000);
 
         console.log("✅ Resposta da API:", response);
 
@@ -290,17 +329,15 @@ export default function Home() {
     });
   }, [produtos, q, cat, produtosEmPromocaoAtiva]);
 
-  // Calcula paginação baseada na lista linear
-  const produtosPaginados = useMemo(() => {
-    const inicio = paginaAtual * tamanho;
-    const fim = inicio + tamanho;
-    return produtosOrdenadosPorCategoria.slice(inicio, fim);
-  }, [produtosOrdenadosPorCategoria, paginaAtual, tamanho]);
+  const produtosVisiveis = useMemo(
+    () => produtosOrdenadosPorCategoria,
+    [produtosOrdenadosPorCategoria]
+  );
 
   const produtosAgrupados = useMemo(() => {
     const grupos = {};
 
-    for (const produto of produtosPaginados) {
+    for (const produto of produtosVisiveis) {
       const categoria = produto.categoria || "Outros";
 
       if (!grupos[categoria]) {
@@ -311,18 +348,94 @@ export default function Home() {
     }
 
     return grupos;
-  }, [produtosPaginados]);
+  }, [produtosVisiveis]);
 
-  // Recalcula total de páginas
-  useEffect(() => {
-    const total = Math.ceil(produtosOrdenadosPorCategoria.length / tamanho);
-    setTotalPaginas(Math.max(1, total));
-  }, [produtosOrdenadosPorCategoria, tamanho]);
+  const categoriasRenderizadas = useMemo(() => {
+    const categoriasExistentes = Object.keys(produtosAgrupados);
+    const ordenadas = ORDEM_CATEGORIAS.filter((categoria) =>
+      categoriasExistentes.includes(categoria)
+    );
 
-  // Reseta para página 0 quando muda de filtro
+    const extras = categoriasExistentes
+      .filter((categoria) => !ORDEM_CATEGORIAS.includes(categoria))
+      .sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+    return [...ordenadas, ...extras];
+  }, [produtosAgrupados]);
+
+  const navSections = useMemo(() => {
+    const sections = [];
+
+    if (promocoes.length > 0) {
+      sections.push({ label: "Promoções", slug: "promocoes" });
+    }
+
+    categoriasRenderizadas.forEach((categoria) => {
+      const label = String(categoria || "").trim();
+      if (!label) return;
+      sections.push({ label, slug: toSectionSlug(label) });
+    });
+
+    return sections;
+  }, [categoriasRenderizadas, promocoes.length, toSectionSlug]);
+
   useEffect(() => {
-    setPaginaAtual(0);
-  }, [q, cat]);
+    window.dispatchEvent(new CustomEvent("homeSectionsLoaded", { detail: navSections }));
+
+    try {
+      sessionStorage.setItem("homeSections", JSON.stringify(navSections));
+    } catch {
+      // ignore
+    }
+  }, [navSections]);
+
+  const scrollToSectionBySlug = useCallback((sectionSlug, attempt = 0) => {
+    const target = String(sectionSlug || "").trim();
+    if (!target) return;
+
+    const targetNode = document.querySelector(`[data-section="${target}"]`);
+    if (targetNode) {
+      const headerOffset = 130;
+      const y = targetNode.getBoundingClientRect().top + window.scrollY - headerOffset;
+      window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+      return;
+    }
+
+    if (attempt < 20) {
+      window.setTimeout(() => {
+        scrollToSectionBySlug(target, attempt + 1);
+      }, 80);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handler = (e) => {
+      scrollToSectionBySlug(e?.detail);
+    };
+
+    window.addEventListener("scrollToSection", handler);
+    return () => window.removeEventListener("scrollToSection", handler);
+  }, [scrollToSectionBySlug]);
+
+  useEffect(() => {
+    let target = "";
+
+    try {
+      target = sessionStorage.getItem("scrollToSection") || "";
+    } catch {
+      target = "";
+    }
+
+    if (!target) return;
+
+    scrollToSectionBySlug(target);
+
+    try {
+      sessionStorage.removeItem("scrollToSection");
+    } catch {
+      // ignore
+    }
+  }, [scrollToSectionBySlug, navSections.length]);
 
   // Destaca um card quando selecionado pela busca
   useEffect(() => {
@@ -457,39 +570,6 @@ export default function Home() {
     setPromoAtual(null);
   }
 
-  const scrollToCatalogTop = useCallback(() => {
-    const headerOffset = 120;
-    const top = catalogoRef.current
-      ? catalogoRef.current.getBoundingClientRect().top + window.scrollY - headerOffset
-      : 0;
-
-    const root = document.documentElement;
-    const body = document.body;
-    const prevRootBehavior = root.style.scrollBehavior;
-    const prevBodyBehavior = body.style.scrollBehavior;
-
-    // Forca salto instantaneo para evitar animacao de baixo para cima.
-    root.style.scrollBehavior = "auto";
-    body.style.scrollBehavior = "auto";
-    window.scrollTo(0, Math.max(0, top));
-    root.style.scrollBehavior = prevRootBehavior;
-    body.style.scrollBehavior = prevBodyBehavior;
-  }, []);
-
-  const changePagina = useCallback((nextOrUpdater) => {
-    setPaginaAtual((prev) => {
-      const next =
-        typeof nextOrUpdater === "function"
-          ? nextOrUpdater(prev)
-          : nextOrUpdater;
-
-      if (next === prev) return prev;
-
-      scrollToCatalogTop();
-      return next;
-    });
-  }, [scrollToCatalogTop]);
-
   return (
     <div className="home-page page-with-fixed-header">
       <Header />
@@ -501,10 +581,10 @@ export default function Home() {
           onSave={handleSaveCustomization}
         />
       )}
-      <section ref={catalogoRef} className="hp-grid-wrap">
+      <section className="hp-grid-wrap">
         {/* 🎉 SEÇÃO DE PROMOÇÕES */}
         {promocoes.length > 0 && (
-          <div className="hp-section" data-section="promocoes">
+          <div className="hp-section" data-section="promocoes" data-section-label="Promoções">
             <h2 className="hp-section__title">🔥 Promoções</h2>
             <div className="hp-grid">
               {promocoes.map((promo) => {
@@ -578,11 +658,14 @@ export default function Home() {
           </div>
         )}
 
-        {produtosPaginados.length > 0 ? (
-          ORDEM_CATEGORIAS
-            .filter((categoria) => produtosAgrupados[categoria])
-            .map((categoria) => (
-              <div key={categoria} className="hp-section">
+        {produtosVisiveis.length > 0 ? (
+          categoriasRenderizadas.map((categoria) => (
+              <div
+                key={categoria}
+                className="hp-section"
+                data-section={toSectionSlug(categoria)}
+                data-section-label={categoria}
+              >
                 <h2 className="hp-section__title">{categoria}</h2>
 
                 <div className="hp-grid">
@@ -622,40 +705,6 @@ export default function Home() {
           <p className="hp-empty">
             Nada por aqui… Experimente limpar filtros ou cadastrar novos itens.
           </p>
-        )}
-
-        {/* 📄 Controles de Paginação */}
-        {totalPaginas > 1 && (
-          <div className="hp-pagination">
-            <button
-              className="hp-pagination__btn hp-pagination__btn--prev"
-              onClick={() => changePagina((p) => Math.max(0, p - 1))}
-              disabled={paginaAtual === 0}
-            >
-              ← Anterior
-            </button>
-
-            <div className="hp-pagination__numbers">
-              {Array.from({ length: totalPaginas }, (_, i) => (
-                <button
-                  key={i}
-                  className={`hp-pagination__number ${paginaAtual === i ? "hp-pagination__number--active" : ""
-                    }`}
-                  onClick={() => changePagina(i)}
-                >
-                  {i + 1}
-                </button>
-              ))}
-            </div>
-
-            <button
-              className="hp-pagination__btn hp-pagination__btn--next"
-              onClick={() => changePagina((p) => Math.min(totalPaginas - 1, p + 1))}
-              disabled={paginaAtual === totalPaginas - 1}
-            >
-              Próxima →
-            </button>
-          </div>
         )}
       </section>
     </div>

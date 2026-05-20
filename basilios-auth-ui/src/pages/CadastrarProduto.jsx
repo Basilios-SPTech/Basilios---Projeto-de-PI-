@@ -4,8 +4,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import ProdutoForm from "../components/ProdutoForm.jsx";
 import MenuButton from "../components/MenuButtonAdm.jsx";
-import SidebarAdm from "../components/SidebarAdm.jsx";
-import CategoryManager from "../components/CategoryManager.jsx";
 import {
   criarProduto,
   listarProdutos,
@@ -17,17 +15,43 @@ import {
 import { http } from "../services/http.js";
 
 const CHAVE_STORAGE = "produtos-basilios";
-const CHAVE_CATEGORIAS_STORAGE = "categorias-basilios";
-const CHAVE_SUBCATEGORIAS_STORAGE = "subcategorias-basilios";
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
+const BACKEND_CATEGORY_VALUES = [
+  "BURGER",
+  "SIDE",
+  "DRINK",
+  "DESSERT",
+  "COMBO",
+  "COMBOS_INDIVIDUAIS",
+  "LANCHES_PREMIUM",
+  "BEIRUTES",
+  "HOT_DOG",
+  "VEGANOS",
+  "PORCOES",
+  "SOBREMESAS",
+  "BEBIDAS",
+];
 
 const DEFAULT_CATEGORIES = [
-  { label: "Lanches / Hambúrguer", value: "BURGER" },
-  { label: "Combo / Promoção", value: "COMBO" },
-  { label: "Acompanhamento / Side", value: "SIDE" },
-  { label: "Bebidas", value: "DRINK" },
+  { label: "Hambúrguer", value: "BURGER" },
+  { label: "Acompanhamento", value: "SIDE" },
+  { label: "Bebida", value: "DRINK" },
   { label: "Sobremesa", value: "DESSERT" },
+  { label: "Combo", value: "COMBO" },
+  { label: "Combos Individuais", value: "COMBOS_INDIVIDUAIS" },
+  { label: "Lanches Premium", value: "LANCHES_PREMIUM" },
+  { label: "Beirutes", value: "BEIRUTES" },
+  { label: "Hot-dog", value: "HOT_DOG" },
+  { label: "Veganos", value: "VEGANOS" },
+  { label: "Porções", value: "PORCOES" },
+  { label: "Sobremesas", value: "SOBREMESAS" },
+  { label: "Bebidas", value: "BEBIDAS" },
 ];
+
+const CATEGORY_LABEL_BY_VALUE = DEFAULT_CATEGORIES.reduce((acc, item) => {
+  acc[item.value] = item.label;
+  return acc;
+}, {});
 
 const DEFAULT_SUBCATEGORIES = {
   BURGER: [
@@ -59,30 +83,40 @@ const DEFAULT_SUBCATEGORIES = {
     { value: "WATER", label: "Água" },
   ],
   COMBO: [],
+  COMBOS_INDIVIDUAIS: [],
+  LANCHES_PREMIUM: [],
+  BEIRUTES: [],
+  HOT_DOG: [],
+  VEGANOS: [],
+  PORCOES: [],
+  SOBREMESAS: [],
+  BEBIDAS: [],
 };
 
 const ADICIONAL_SUBCATEGORIES = [
   { value: "QUEIJO", label: "Queijo" },
-  { value: "PROTEINA", label: "Proteina" },
-  { value: "BACON", label: "Bacon" },
-  { value: "OVO", label: "Ovo" },
-  { value: "MOLHO", label: "Molho" },
-  { value: "VEGETAL", label: "Vegetal" },
+  { value: "PROTEINA", label: "Proteína" },
   { value: "ACOMPANHAMENTO", label: "Acompanhamento" },
   { value: "BEBIDA", label: "Bebida" },
   { value: "PAO", label: "Pão" },
-  { value: "OUTRO", label: "Outro" },
+  { value: "VEGETAL", label: "Vegetal" },
+  { value: "MOLHO", label: "Molho" },
 ];
 
-function getLabelToEnumMap(subcategories) {
-  const map = {};
-  Object.entries(subcategories).forEach(([category, options]) => {
-    options.forEach(({ value, label }) => {
-      map[label] = value;
-    });
-  });
-  return map;
-}
+const ADICIONAL_SUBCATEGORY_LABEL_MAP = ADICIONAL_SUBCATEGORIES.reduce(
+  (acc, item) => {
+    acc[item.value] = item.label;
+    return acc;
+  },
+  {},
+);
+
+const ADICIONAL_SUBCATEGORY_ALIAS_MAP = {
+  BACON: "PROTEINA",
+  OVO: "PROTEINA",
+  BEBIDAS: "BEBIDA",
+  PAES: "PAO",
+};
 
 function normalizeAdicionalSubcategory(value) {
   const raw = String(value || "").trim();
@@ -96,11 +130,91 @@ function normalizeAdicionalSubcategory(value) {
 
   if (match) return match.value;
 
-  return raw
+  const normalized = raw
     .toUpperCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/\s+/g, "_");
+
+  if (ADICIONAL_SUBCATEGORY_ALIAS_MAP[normalized]) {
+    return ADICIONAL_SUBCATEGORY_ALIAS_MAP[normalized];
+  }
+
+  const isSupported = ADICIONAL_SUBCATEGORIES.some(
+    (opt) => opt.value === normalized,
+  );
+
+  return isSupported ? normalized : "";
+}
+
+function normalizeSelectedAdicionalSubcategories(values) {
+  if (!Array.isArray(values)) return [];
+
+  const normalized = values
+    .map((value) => normalizeAdicionalSubcategory(value))
+    .filter(Boolean);
+
+  return Array.from(new Set(normalized));
+}
+
+function isAdicionalAtivo(adicional) {
+  const active = adicional?.isActive ?? adicional?.active;
+  if (typeof active === "boolean") return active;
+
+  const paused = adicional?.isPaused ?? adicional?.paused;
+  if (typeof paused === "boolean") return !paused;
+
+  return true;
+}
+
+function formatFieldErrors(fieldErrors) {
+  if (!fieldErrors || typeof fieldErrors !== "object") return "";
+
+  const parts = Object.entries(fieldErrors).flatMap(([field, raw]) => {
+    if (Array.isArray(raw)) {
+      return raw.map((item) => `${field}: ${String(item)}`);
+    }
+
+    if (raw && typeof raw === "object") {
+      if (typeof raw.message === "string") {
+        return [`${field}: ${raw.message}`];
+      }
+
+      return Object.values(raw).map((item) => `${field}: ${String(item)}`);
+    }
+
+    if (raw == null) return [];
+    return [`${field}: ${String(raw)}`];
+  });
+
+  return parts.join(" | ");
+}
+
+function getApiErrorMessage(err, fallbackMessage) {
+  const data = err?.data ?? err?.response?.data;
+
+  if (typeof data === "string" && data.trim()) return data;
+
+  const fieldErrorsText = formatFieldErrors(data?.fieldErrors);
+  if (fieldErrorsText) return fieldErrorsText;
+
+  if (Array.isArray(data?.errors) && data.errors.length > 0) {
+    return data.errors
+      .map((item) => {
+        if (typeof item === "string") return item;
+        if (item?.defaultMessage) return item.defaultMessage;
+        if (item?.message) return item.message;
+        return null;
+      })
+      .filter(Boolean)
+      .join(" | ");
+  }
+
+  if (data?.message) return String(data.message);
+  if (data?.error) return String(data.error);
+  if (err?.message) return String(err.message);
+
+  return fallbackMessage;
 }
 
 // Extrai URL relativa do upload (remove baseURL se contiver)
@@ -114,18 +228,27 @@ function extractRelativeImageUrl(fullUrl) {
   return fullUrl;
 }
 
+function getCategoryDisplayLabel(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "Sem categoria";
+
+  const normalized = raw.toUpperCase();
+  return CATEGORY_LABEL_BY_VALUE[normalized] || raw;
+}
+
 export default function CadastrarProduto() {
   const [produtos, setProdutos] = useState([]);
-  const [categorias, setCategorias] = useState(DEFAULT_CATEGORIES);
-  const [subcategorias, setSubcategorias] = useState(DEFAULT_SUBCATEGORIES);
+  const categorias = DEFAULT_CATEGORIES;
+  const subcategorias = DEFAULT_SUBCATEGORIES;
 
   const [formData, setFormData] = useState({
     nome: "",
     descricao: "",
-    ingrediente: "",
     preco: "",
     categoria: "",
     subcategoria: "",
+    adicionalSubcategories: [],
+    imageUrl: "",
     imagem: "",
     imagemArquivo: null,
   });
@@ -137,6 +260,7 @@ export default function CadastrarProduto() {
   const [adicionaisLoading, setAdicionaisLoading] = useState(false);
   const [adicionaisError, setAdicionaisError] = useState("");
   const [adicionaisListOpen, setAdicionaisListOpen] = useState(true);
+  const [adicionalSubcategoryFilter, setAdicionalSubcategoryFilter] = useState("ALL");
   const [adicionalForm, setAdicionalForm] = useState({
     id: null,
     name: "",
@@ -155,43 +279,27 @@ export default function CadastrarProduto() {
   const [adicionalToDelete, setAdicionalToDelete] = useState(null);
   const [produtoToDelete, setProdutoToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    // Carrega categorias personalizadas do localStorage
-    try {
-      const categoriasLocal = JSON.parse(
-        localStorage.getItem(CHAVE_CATEGORIAS_STORAGE) || "[]"
-      );
-      if (Array.isArray(categoriasLocal) && categoriasLocal.length > 0) {
-        setCategorias([...DEFAULT_CATEGORIES, ...categoriasLocal]);
-      }
-    } catch (err) {
-      console.error("Erro ao carregar categorias do localStorage:", err);
-    }
-
-    // Carrega subcategorias personalizadas do localStorage
-    try {
-      const subcategoriasLocal = JSON.parse(
-        localStorage.getItem(CHAVE_SUBCATEGORIAS_STORAGE) || "{}"
-      );
-      setSubcategorias({ ...DEFAULT_SUBCATEGORIES, ...subcategoriasLocal });
-    } catch (err) {
-      console.error("Erro ao carregar subcategorias do localStorage:", err);
-    }
-  }, []);
+  const [categoriaFiltro, setCategoriaFiltro] = useState("ALL");
+  const [statusFiltro, setStatusFiltro] = useState("ALL");
 
   useEffect(() => {
     async function carregarProdutos() {
       try {
-        const data = await listarProdutos(false);
+        const response = await listarProdutos(false, 0, 100);
+        const produtosData = Array.isArray(response)
+          ? response
+          : response?.content || [];
 
-        const adaptados = (data || []).map((p, index) => ({
+        const adaptados = produtosData.map((p, index) => ({
           index: p.id ?? index,
           nome: p.name ?? p.nome ?? "",
           descricao: p.description ?? p.descricao ?? "",
           preco: p.price ?? p.preco ?? 0,
           categoria: p.category ?? p.categoria ?? "",
           subcategoria: p.subcategory ?? p.subcategoria ?? "",
+          adicionalSubcategories: normalizeSelectedAdicionalSubcategories(
+            p.adicionalSubcategories ?? p.additionalSubcategories,
+          ),
           pausado: p.isPaused ?? p.paused ?? false,
           imagem: p.imageUrl ? `${API_BASE}${p.imageUrl}` : p.imagem || "",
           imageUrl: p.imageUrl || "", // Preserva a URL relativa do backend
@@ -475,6 +583,7 @@ export default function CadastrarProduto() {
         setFormData((prev) => ({
           ...prev,
           imagem: ev.target.result,
+          imageUrl: "",
           imagemArquivo: file,
         }));
       };
@@ -491,54 +600,40 @@ export default function CadastrarProduto() {
       return;
     }
 
+    if (key === "preco") {
+      setFormData((prev) => ({
+        ...prev,
+        preco: formatPriceInput(value),
+      }));
+      return;
+    }
+
+    if (key === "adicionalSubcategories" && type === "checkbox") {
+      const normalized = normalizeAdicionalSubcategory(value);
+      if (!normalized) return;
+
+      setFormData((prev) => {
+        const current = normalizeSelectedAdicionalSubcategories(
+          prev.adicionalSubcategories,
+        );
+
+        const next = checked
+          ? Array.from(new Set([...current, normalized]))
+          : current.filter((item) => item !== normalized);
+
+        return {
+          ...prev,
+          adicionalSubcategories: next,
+        };
+      });
+
+      return;
+    }
+
     setFormData((prev) => ({
       ...prev,
       [key]: type === "checkbox" ? !!checked : value,
     }));
-  }
-
-  function handleAddCategory(novaCat) {
-    setCategorias((prev) => {
-      const atualizado = [...prev, novaCat];
-      // Salva no localStorage (só a parte personalizada)
-      const personalizadas = atualizado.filter(
-        (c) => !DEFAULT_CATEGORIES.some((dc) => dc.value === c.value)
-      );
-      localStorage.setItem(
-        CHAVE_CATEGORIAS_STORAGE,
-        JSON.stringify(personalizadas)
-      );
-      return atualizado;
-    });
-  }
-
-  function handleAddSubcategory(categoria, novaSubcat) {
-    setSubcategorias((prev) => {
-      const atualizado = {
-        ...prev,
-        [categoria]: [...(prev[categoria] || []), novaSubcat],
-      };
-      // Salva no localStorage (só a parte personalizada)
-      const personalizadas = {};
-      Object.entries(atualizado).forEach(([cat, opts]) => {
-        if (!DEFAULT_SUBCATEGORIES.hasOwnProperty(cat)) {
-          personalizadas[cat] = opts;
-        } else {
-          const optsNaoDefault = opts.filter(
-            (opt) =>
-              !DEFAULT_SUBCATEGORIES[cat].some((dopt) => dopt.value === opt.value)
-          );
-          if (optsNaoDefault.length > 0) {
-            personalizadas[cat] = optsNaoDefault;
-          }
-        }
-      });
-      localStorage.setItem(
-        CHAVE_SUBCATEGORIAS_STORAGE,
-        JSON.stringify(personalizadas)
-      );
-      return atualizado;
-    });
   }
 
   function clearForm() {
@@ -546,13 +641,25 @@ export default function CadastrarProduto() {
     setFormData({
       nome: "",
       descricao: "",
-      ingrediente: "",
       preco: "",
       categoria: "",
       subcategoria: "",
+      adicionalSubcategories: [],
+      imageUrl: "",
       imagem: "",
       imagemArquivo: null,
     });
+  }
+
+  function handleToggleAllAdicionalSubcategories() {
+    setFormData((prev) => ({
+      ...prev,
+      adicionalSubcategories:
+        Array.isArray(prev.adicionalSubcategories) &&
+        prev.adicionalSubcategories.length === ADICIONAL_SUBCATEGORIES.length
+          ? []
+          : ADICIONAL_SUBCATEGORIES.map((item) => item.value),
+    }));
   }
 
   function parsePreco(str) {
@@ -580,10 +687,51 @@ export default function CadastrarProduto() {
       return;
     }
 
+    if (!BACKEND_CATEGORY_VALUES.includes(formData.categoria)) {
+      toast.error("Categoria não suportada pelo backend.");
+      return;
+    }
+
+    const backendSubOpts = DEFAULT_SUBCATEGORIES[formData.categoria] || [];
+    const isSubcategoryAllowedByBackend =
+      backendSubOpts.length === 0 ||
+      backendSubOpts.some((opt) => opt.value === formData.subcategoria);
+
+    if (!isSubcategoryAllowedByBackend) {
+      toast.error("Subcategoria inválida para a categoria selecionada.");
+      return;
+    }
+
     const subOpts = subcategorias[formData.categoria] || [];
     if (subOpts.length > 0 && !formData.subcategoria) {
       toast.error("Selecione uma subcategoria.");
       return;
+    }
+
+    const selectedAdicionalSubcategories = normalizeSelectedAdicionalSubcategories(
+      formData.adicionalSubcategories,
+    );
+
+    if (selectedAdicionalSubcategories.length > 0) {
+      const availableSubcategories = new Set(
+        adicionais
+          .filter((adicional) => isAdicionalAtivo(adicional))
+          .map((adicional) => normalizeAdicionalSubcategory(adicional?.subcategory))
+          .filter(Boolean),
+      );
+
+      const missingSubcategories = selectedAdicionalSubcategories.filter(
+        (subcategory) => !availableSubcategories.has(subcategory),
+      );
+
+      if (missingSubcategories.length > 0) {
+        const labels = missingSubcategories
+          .map((subcategory) => ADICIONAL_SUBCATEGORY_LABEL_MAP[subcategory] || subcategory)
+          .join(", ");
+
+        toast.error(`Não há adicionais ativos para: ${labels}.`);
+        return;
+      }
     }
 
     // EDIÇÃO
@@ -603,22 +751,20 @@ export default function CadastrarProduto() {
           imageUrl = extractRelativeImageUrl(respUpload.data); // Extrai apenas /uploads/...
         }
 
+        const resolvedImageUrl = imageUrl || formData.imageUrl || null;
+        const resolvedSubcategory = String(formData.subcategoria || "").trim() || null;
+
         const dtoUpdate = {
           name: formData.nome.trim(),
           description: formData.descricao.trim(),
+          imageUrl: resolvedImageUrl,
+          category: formData.categoria,
+          subcategory: resolvedSubcategory,
           price: precoNum,
-          category: formData.categoria || null,
-          subcategory: formData.subcategoria || null,
-          tags: [],
-          ingredientes: formData.ingrediente
-            ? formData.ingrediente
-                .split(",")
-                .map((s) => s.trim())
-                .filter(Boolean)
-            : [],
-          ingredientsDetailed: [],
-          ...(imageUrl ? { imageUrl } : {}),
+          adicionalSubcategories: selectedAdicionalSubcategories,
         };
+
+        console.info("[CadastrarProduto] Payload atualizar", dtoUpdate);
 
         const atualizadoBack = await atualizarProduto(indiceEdicao, dtoUpdate);
 
@@ -640,6 +786,11 @@ export default function CadastrarProduto() {
           categoria: atualizadoBack.category ?? formData.categoria,
           subcategoria:
             (atualizadoBack.subcategory ?? formData.subcategoria) || "",
+          adicionalSubcategories: normalizeSelectedAdicionalSubcategories(
+            atualizadoBack.adicionalSubcategories ??
+              atualizadoBack.additionalSubcategories ??
+              selectedAdicionalSubcategories,
+          ),
           pausado: atualizadoBack.isPaused ?? !!formData.pausado,
           imagem: imagemAtual,
           imageUrl: atualizadoBack.imageUrl || "", // Preserva URL relativa
@@ -653,8 +804,15 @@ export default function CadastrarProduto() {
         setModalOpen(false);
         clearForm();
       } catch (err) {
-        console.error("Erro ao atualizar produto:", err);
-        toast.error("Não foi possível atualizar o produto.");
+        console.error("Erro ao atualizar produto:", {
+          error: err,
+          status: err?.status,
+          data: err?.data,
+          method: err?.method,
+          url: err?.url,
+          requestData: err?.requestData,
+        });
+        toast.error(getApiErrorMessage(err, "Não foi possível atualizar o produto."));
       }
 
       return;
@@ -677,22 +835,19 @@ export default function CadastrarProduto() {
         imageUrl = extractRelativeImageUrl(respUpload.data); // Extrai apenas /uploads/...
       }
 
+      const resolvedSubcategory = String(formData.subcategoria || "").trim() || null;
+
       const dto = {
         name: formData.nome.trim(),
         description: formData.descricao.trim(),
+        category: formData.categoria,
+        subcategory: resolvedSubcategory,
         price: precoNum,
-        category: formData.categoria || null,
-        subcategory: formData.subcategoria || null,
-        tags: [],
-        ingredientes: formData.ingrediente
-          ? formData.ingrediente
-              .split(",")
-              .map((s) => s.trim())
-              .filter(Boolean)
-          : [],
-        ingredientsDetailed: [],
-        imageUrl,
+        adicionalSubcategories: selectedAdicionalSubcategories,
+        ...(imageUrl ? { imageUrl } : {}),
       };
+
+      console.info("[CadastrarProduto] Payload criar", dto);
 
       const produtoCriadoDoBack = await criarProduto(dto);
 
@@ -705,6 +860,11 @@ export default function CadastrarProduto() {
           produtoCriadoDoBack.category ?? produtoCriadoDoBack.categoria,
         subcategoria:
           produtoCriadoDoBack.subcategory ?? produtoCriadoDoBack.subcategoria,
+        adicionalSubcategories: normalizeSelectedAdicionalSubcategories(
+          produtoCriadoDoBack.adicionalSubcategories ??
+            produtoCriadoDoBack.additionalSubcategories ??
+            selectedAdicionalSubcategories,
+        ),
         pausado:
           produtoCriadoDoBack.paused ??
           produtoCriadoDoBack.isPaused ??
@@ -719,10 +879,15 @@ export default function CadastrarProduto() {
       clearForm();
       toast.success("Produto criado com sucesso!");
     } catch (err) {
-      const payload = err?.response?.data ?? err?.message ?? "Erro desconhecido";
-      console.error("Erro ao criar produto:", err);
-      const msg = typeof payload === "string" ? payload : JSON.stringify(payload, null, 2);
-      toast.error(msg);
+      console.error("Erro ao criar produto:", {
+        error: err,
+        status: err?.status,
+        data: err?.data,
+        method: err?.method,
+        url: err?.url,
+        requestData: err?.requestData,
+      });
+      toast.error(getApiErrorMessage(err, "Erro ao criar produto."));
     }
   }
 
@@ -736,10 +901,16 @@ export default function CadastrarProduto() {
     setFormData({
       nome: produto.nome || "",
       descricao: produto.descricao || "",
-      ingrediente: produto.ingrediente || "",
-      preco: produto.preco || "",
+      preco:
+        produto.preco === 0 || produto.preco
+          ? formatPriceInput(produto.preco)
+          : "",
       categoria: produto.categoria || "",
       subcategoria: produto.subcategoria || "",
+      adicionalSubcategories: normalizeSelectedAdicionalSubcategories(
+        produto.adicionalSubcategories,
+      ),
+      imageUrl: produto.imageUrl || "",
       imagem: produto.imagem || "",
       imagemArquivo: null,
     });
@@ -793,6 +964,11 @@ export default function CadastrarProduto() {
         preco: atualizadoBack.finalPrice ?? atualizadoBack.price ?? alvo.preco,
         categoria: atualizadoBack.category ?? alvo.categoria,
         subcategoria: atualizadoBack.subcategory ?? alvo.subcategoria,
+        adicionalSubcategories: normalizeSelectedAdicionalSubcategories(
+          atualizadoBack.adicionalSubcategories ??
+            atualizadoBack.additionalSubcategories ??
+            alvo.adicionalSubcategories,
+        ),
         pausado: atualizadoBack.isPaused ?? novoStatus,
         imagem: imagemAtual,
         imageUrl: atualizadoBack.imageUrl ?? alvo.imageUrl,
@@ -822,21 +998,172 @@ export default function CadastrarProduto() {
     [produtos]
   );
 
+  const categoriasFiltroOptions = useMemo(() => {
+    const unique = new Set();
+
+    for (const p of produtosOrdenados) {
+      const cat = (p.categoria || "").trim() || "Sem categoria";
+      unique.add(cat);
+    }
+
+    return Array.from(unique).sort((a, b) =>
+      getCategoryDisplayLabel(a).localeCompare(getCategoryDisplayLabel(b), "pt-BR")
+    );
+  }, [produtosOrdenados]);
+
+  const produtosFiltrados = useMemo(() => {
+    return produtosOrdenados.filter((p) => {
+      const categoria = (p.categoria || "").trim() || "Sem categoria";
+
+      if (categoriaFiltro !== "ALL" && categoria !== categoriaFiltro) {
+        return false;
+      }
+
+      if (statusFiltro === "ACTIVE" && !!p.pausado) {
+        return false;
+      }
+
+      if (statusFiltro === "PAUSED" && !p.pausado) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [produtosOrdenados, categoriaFiltro, statusFiltro]);
+
   const secoesPorCategoria = useMemo(() => {
     const map = new Map();
-    for (const p of produtosOrdenados) {
+    for (const p of produtosFiltrados) {
       const cat = (p.categoria || "").trim() || "Sem categoria";
       if (!map.has(cat)) map.set(cat, []);
       map.get(cat).push(p);
     }
     return Array.from(map.entries());
-  }, [produtosOrdenados]);
+  }, [produtosFiltrados]);
 
   const subcatOptions = subcategorias[formData.categoria] || [];
   const adicionaisOrdenados = useMemo(
     () => [...adicionais].sort((a, b) => (a?.name || "").localeCompare(b?.name || "")),
     [adicionais],
   );
+  const adicionaisFiltrados = useMemo(() => {
+    if (adicionalSubcategoryFilter === "ALL") {
+      return adicionaisOrdenados;
+    }
+
+    return adicionaisOrdenados.filter((adicional) => {
+      const subcategory = normalizeAdicionalSubcategory(adicional?.subcategory);
+      return subcategory === adicionalSubcategoryFilter;
+    });
+  }, [adicionaisOrdenados, adicionalSubcategoryFilter]);
+
+  const additionalSubcategoryLabelByValue = useMemo(() => {
+    return ADICIONAL_SUBCATEGORIES.reduce((acc, item) => {
+      acc[item.value] = item.label;
+      return acc;
+    }, {});
+  }, []);
+
+  function getAdicionalSubcategoryLabel(value) {
+    const normalized = normalizeAdicionalSubcategory(value);
+    if (!normalized) return "Não informado";
+    return additionalSubcategoryLabelByValue[normalized] || normalized;
+  }
+
+  function renderProductCard(p) {
+    const linkedSubcategories = normalizeSelectedAdicionalSubcategories(
+      p.adicionalSubcategories,
+    );
+
+    return (
+      <article
+        key={p.index}
+        className={`product-card ${p.pausado ? "is-paused" : ""}`}
+      >
+        <div className="product-media">
+          {p.imagem ? (
+            <img src={p.imagem} alt={p.nome || "Produto"} />
+          ) : (
+            <div className="product-placeholder">Sem imagem</div>
+          )}
+
+          {p.pausado && (
+            <span className="product-badge">Pausado</span>
+          )}
+        </div>
+
+        <div className="product-body">
+          <h3 className="product-title">
+            {p.nome || "Sem nome"}
+          </h3>
+
+          <p className="product-desc">
+            {p.descricao || "—"}
+          </p>
+
+          <div
+            className="product-meta"
+            style={{
+              gap: ".5rem",
+              display: "flex",
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <span className="cp-chip">
+              {getCategoryDisplayLabel(p.categoria)}
+            </span>
+
+            {p.subcategoria ? (
+              <span className="cp-chip cp-chip--alt">
+                {p.subcategoria}
+              </span>
+            ) : null}
+
+            <strong className="cp-price">
+              R$ {p.preco || "0.00"}
+            </strong>
+          </div>
+
+          {linkedSubcategories.length > 0 && (
+            <div className="product-linked-additions">
+              <p className="product-linked-additions__title">Adicionais vinculados</p>
+              <div className="product-linked-additions__chips">
+                {linkedSubcategories.map((subcategory) => (
+                  <span key={`${p.index}-${subcategory}`} className="cp-chip cp-chip--warn">
+                    {ADICIONAL_SUBCATEGORY_LABEL_MAP[subcategory] || subcategory}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="product-actions">
+          <button
+            className="btn btn-ghost"
+            onClick={() => handleEditar(p)}
+          >
+            Editar
+          </button>
+
+          <button
+            className="btn btn-ghost"
+            onClick={() => handleDeletar(p)}
+          >
+            Deletar
+          </button>
+
+          <button
+            className="btn btn-ghost"
+            onClick={() => handlePausar(p.index)}
+          >
+            {p.pausado ? "Retomar" : "Pausar"}
+          </button>
+        </div>
+      </article>
+    );
+  }
 
 
   return (
@@ -851,15 +1178,10 @@ export default function CadastrarProduto() {
               onChange={handleChange}
               onSubmit={handleSubmit}
               onCancel={handleCancel}
+              onToggleAllAdicionalSubcategories={handleToggleAllAdicionalSubcategories}
               subcatOptions={subcatOptions}
               categorias={categorias}
-            />
-
-            <CategoryManager
-              categories={categorias}
-              subcategories={subcategorias}
-              onAddCategory={handleAddCategory}
-              onAddSubcategory={handleAddSubcategory}
+              adicionalSubcategoryOptions={ADICIONAL_SUBCATEGORIES}
             />
           </section>
 
@@ -895,7 +1217,7 @@ export default function CadastrarProduto() {
                   }}
                 >
                   <span className="cp-chip">
-                    {formData.categoria || "Sem categoria"}
+                    {getCategoryDisplayLabel(formData.categoria)}
                   </span>
 
                   {formData.subcategoria ? (
@@ -953,7 +1275,7 @@ export default function CadastrarProduto() {
               <div className="cp-ingredients__row">
                 <div className="field-row">
                   <label htmlFor="adicional-subcategory" className="field-label">
-                    Subcategoria
+                    Categoria
                   </label>
                   <select
                     id="adicional-subcategory"
@@ -1001,7 +1323,8 @@ export default function CadastrarProduto() {
 
             <div className="cp-ingredients__list-head">
               <div className="cp-ingredients__list-title">
-                Lista de adicionais ({adicionaisOrdenados.length})
+                Lista de adicionais ({adicionaisFiltrados.length}
+                {adicionalSubcategoryFilter !== "ALL" ? ` de ${adicionaisOrdenados.length}` : ""})
               </div>
               <button
                 type="button"
@@ -1013,55 +1336,83 @@ export default function CadastrarProduto() {
             </div>
 
             {adicionaisListOpen && (
-              <div className="cp-ingredients__list">
-                {adicionaisLoading && (
-                  <p className="cp-ingredients__status">Carregando adicionais...</p>
-                )}
+              <div className="cp-ingredients__list-wrap">
+                <div className="cp-ingredients__filter-panel">
+                  <div className="cp-ingredients__filter-title">Filtrar por categoria</div>
+                  <div className="cp-ingredients__filter-row">
+                    <label htmlFor="adicionais-filter" className="cp-ingredients__filter-label">
+                      Opção de filtro selecionada:
+                    </label>
+                    <select
+                      id="adicionais-filter"
+                      className="input-base cp-ingredients__filter-select"
+                      value={adicionalSubcategoryFilter}
+                      onChange={(e) => setAdicionalSubcategoryFilter(e.target.value)}
+                    >
+                      <option value="ALL">Todas</option>
+                      {ADICIONAL_SUBCATEGORIES.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
 
-                {!adicionaisLoading && adicionaisError && (
-                  <p className="cp-ingredients__status cp-ingredients__status--error">
-                    {adicionaisError}
-                  </p>
-                )}
+                <div className="cp-ingredients__list">
+                  {adicionaisLoading && (
+                    <p className="cp-ingredients__status">Carregando adicionais...</p>
+                  )}
 
-                {!adicionaisLoading && !adicionaisError && adicionaisOrdenados.length === 0 && (
-                  <p className="cp-ingredients__status">Nenhum adicional cadastrado.</p>
-                )}
+                  {!adicionaisLoading && adicionaisError && (
+                    <p className="cp-ingredients__status cp-ingredients__status--error">
+                      {adicionaisError}
+                    </p>
+                  )}
 
-                {!adicionaisLoading && !adicionaisError && adicionaisOrdenados.map((adicional) => (
-                  <div key={adicional.id} className="cp-ingredients__item">
-                    <div className="cp-ingredients__info">
-                      <h4>{adicional.name}</h4>
-                      {adicional.description && (
-                        <p>{adicional.description}</p>
-                      )}
-                      <div className="cp-ingredients__meta">
-                        <span className="cp-chip cp-chip--alt">
-                          {adicional.subcategory || "OUTRO"}
-                        </span>
-                        <span className="cp-ingredients__price">
-                          R$ {Number(adicional.price || 0).toFixed(2).replace(".", ",")}
-                        </span>
+                  {!adicionaisLoading && !adicionaisError && adicionaisOrdenados.length === 0 && (
+                    <p className="cp-ingredients__status">Nenhum adicional cadastrado.</p>
+                  )}
+
+                  {!adicionaisLoading && !adicionaisError && adicionaisOrdenados.length > 0 && adicionaisFiltrados.length === 0 && (
+                    <p className="cp-ingredients__status">Nenhum adicional encontrado para essa subcategoria.</p>
+                  )}
+
+                  {!adicionaisLoading && !adicionaisError && adicionaisFiltrados.map((adicional) => (
+                    <div key={adicional.id} className="cp-ingredients__item">
+                      <div className="cp-ingredients__info">
+                        <h4>{adicional.name}</h4>
+                        {adicional.description && (
+                          <p>{adicional.description}</p>
+                        )}
+                        <div className="cp-ingredients__meta">
+                          <span className="cp-chip cp-chip--alt">
+                            {getAdicionalSubcategoryLabel(adicional.subcategory)}
+                          </span>
+                          <span className="cp-ingredients__price">
+                            R$ {Number(adicional.price || 0).toFixed(2).replace(".", ",")}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="cp-ingredients__item-actions">
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          onClick={() => openEditAdicional(adicional)}
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          onClick={() => handleDeletarAdicional(adicional)}
+                        >
+                          Deletar
+                        </button>
                       </div>
                     </div>
-                    <div className="cp-ingredients__item-actions">
-                      <button
-                        type="button"
-                        className="btn btn-ghost"
-                        onClick={() => openEditAdicional(adicional)}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-ghost"
-                        onClick={() => handleDeletarAdicional(adicional)}
-                      >
-                        Deletar
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
           </section>
@@ -1125,7 +1476,7 @@ export default function CadastrarProduto() {
 
                 <div className="cp-ingredients__row">
                   <div className="field-row">
-                    <label htmlFor="edit-adicional-subcategory">Subcategoria</label>
+                    <label htmlFor="edit-adicional-subcategory">Categoria</label>
                     <select
                       id="edit-adicional-subcategory"
                       name="subcategory"
@@ -1175,100 +1526,71 @@ export default function CadastrarProduto() {
 
       <section className="cp-list-wrap">
         <div className="cp-list-head">
-          <h2>Produtos cadastrados</h2>
+          <div className="cp-list-head__top">
+            <h2>Produtos cadastrados</h2>
+            <div className="cp-list-filters">
+              <div className="cp-list-filter">
+                <label htmlFor="filtro-categoria-produtos">Categoria</label>
+                <select
+                  id="filtro-categoria-produtos"
+                  value={categoriaFiltro}
+                  onChange={(e) => setCategoriaFiltro(e.target.value)}
+                >
+                  <option value="ALL">Todas</option>
+                  {categoriasFiltroOptions.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {getCategoryDisplayLabel(cat)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="cp-list-filter">
+                <label htmlFor="filtro-status-produtos">Status</label>
+                <select
+                  id="filtro-status-produtos"
+                  value={statusFiltro}
+                  onChange={(e) => setStatusFiltro(e.target.value)}
+                >
+                  <option value="ALL">Todos</option>
+                  <option value="ACTIVE">Não pausados</option>
+                  <option value="PAUSED">Pausados</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
           <p className="cp-muted">
             Seus itens aparecem por categoria. Você pode editar, pausar e
-            excluir.
+            excluir. Mostrando {produtosFiltrados.length} de {produtosOrdenados.length}.
           </p>
         </div>
 
         {secoesPorCategoria.length === 0 ? (
           <div className="cp-empty">
-            <p>Nenhum produto ainda. Cadastre seu primeiro item!</p>
+            <p>
+              {produtosOrdenados.length === 0
+                ? "Nenhum produto ainda. Cadastre seu primeiro item!"
+                : "Nenhum produto encontrado com os filtros selecionados."}
+            </p>
           </div>
         ) : (
           secoesPorCategoria.map(([categoria, itens]) => (
             <div className="cp-cat-section" key={categoria}>
-              <h3 className="cp-cat-title">{categoria}</h3>
+              <div className="cp-cat-header">
+                <h3 className="cp-cat-title">{getCategoryDisplayLabel(categoria)}</h3>
+                <div className="cp-cat-header__line" aria-hidden="true" />
+              </div>
 
               <div className="cp-list">
-                {itens.map((p) => (
-                  <article
-                    key={p.index}
-                    className={`product-card ${
-                      p.pausado ? "is-paused" : ""
-                    }`}
-                  >
-                    <div className="product-media">
-                      {p.imagem ? (
-                        <img src={p.imagem} alt={p.nome || "Produto"} />
-                      ) : (
-                        <div className="product-placeholder">Sem imagem</div>
-                      )}
-
-                      {p.pausado && (
-                        <span className="product-badge">Pausado</span>
-                      )}
-                    </div>
-
-                    <div className="product-body">
-                      <h3 className="product-title">
-                        {p.nome || "Sem nome"}
-                      </h3>
-
-                      <p className="product-desc">
-                        {p.descricao || "—"}
-                      </p>
-
-                      <div
-                        className="product-meta"
-                        style={{
-                          gap: ".5rem",
-                          display: "flex",
-                          alignItems: "center",
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <span className="cp-chip">
-                          {p.categoria || "Sem categoria"}
-                        </span>
-
-                        {p.subcategoria ? (
-                          <span className="cp-chip cp-chip--alt">
-                            {p.subcategoria}
-                          </span>
-                        ) : null}
-
-                        <strong className="cp-price">
-                          R$ {p.preco || "0.00"}
-                        </strong>
-                      </div>
-                    </div>
-
-                    <div className="product-actions">
-                      <button
-                        className="btn btn-ghost"
-                        onClick={() => handleEditar(p)}
-                      >
-                        Editar
-                      </button>
-
-                      <button
-                        className="btn btn-ghost"
-                        onClick={() => handleDeletar(p)}
-                      >
-                        Deletar
-                      </button>
-
-                      <button
-                        className="btn btn-ghost"
-                        onClick={() => handlePausar(p.index)}
-                      >
-                        {p.pausado ? "Retomar" : "Pausar"}
-                      </button>
-                    </div>
-                  </article>
-                ))}
+                {[...itens]
+                  .sort((a, b) => {
+                    if (!!a.pausado === !!b.pausado) {
+                      return Number(b.index) - Number(a.index);
+                    }
+                    return Number(!!a.pausado) - Number(!!b.pausado);
+                  })
+                  .map((p) => renderProductCard(p))}
               </div>
             </div>
           ))
@@ -1290,8 +1612,11 @@ export default function CadastrarProduto() {
                 onChange={handleChange}
                 onSubmit={handleSubmit}
                 onCancel={handleCloseModal}
+                onToggleAllAdicionalSubcategories={handleToggleAllAdicionalSubcategories}
                 subcatOptions={subcatOptions}
                 showCloseButton={true}
+                categorias={categorias}
+                adicionalSubcategoryOptions={ADICIONAL_SUBCATEGORIES}
               />
             </div>
           </div>

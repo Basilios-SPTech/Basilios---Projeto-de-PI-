@@ -6,10 +6,19 @@ export default function ProdutoForm({
   onChange,
   onSubmit,
   onCancel,
+  onToggleAllAdicionalSubcategories,
   subcatOptions = [],
   showCloseButton = false,
   categorias = [],
+  adicionalSubcategoryOptions = [],
 }) {
+  const selectedAdicionalSubcategories = Array.isArray(formData.adicionalSubcategories)
+    ? formData.adicionalSubcategories
+    : [];
+  const allAdicionaisSelected =
+    adicionalSubcategoryOptions.length > 0 &&
+    selectedAdicionalSubcategories.length === adicionalSubcategoryOptions.length;
+
   return (
     <div>
       {/* Cabeçalho */}
@@ -84,39 +93,19 @@ export default function ProdutoForm({
             />
           </div>
 
-          {/* Ingredientes (a API ainda não usa diretamente, mas vamos coletar) */}
-          <div className="field-row">
-            <label htmlFor="ingrediente" className="field-label">
-              Ingredientes
-            </label>
-            <input
-              type="text"
-              id="ingrediente"
-              name="ingrediente"
-              placeholder="Ex.: Pão, 2x hambúrguer, queijo, molho da casa…"
-              className="input-base"
-              value={formData.ingrediente ?? ""}
-              onChange={onChange}
-            />
-            <p className="text-[12px] text-[color:var(--muted)] mt-1">
-            </p>
-          </div>
-
           {/* Preço */}
           <div className="field-row">
             <label htmlFor="preco" className="field-label">
               Preço
             </label>
             <input
-              type="number"
+              type="text"
               id="preco"
               name="preco"
-              placeholder="Ex.: 34.90"
+              placeholder="Ex.: 34,90"
               className="input-base"
               value={formData.preco}
               onChange={onChange}
-              step="0.01"
-              min="0"
               inputMode="decimal"
               required
             />
@@ -142,7 +131,7 @@ export default function ProdutoForm({
           {/* Categoria (ENUM do backend) */}
           <div className="field-row">
             <label htmlFor="categoria" className="field-label">
-              Categoria
+              Catálogo
             </label>
             <div className="relative">
               <select
@@ -180,7 +169,41 @@ export default function ProdutoForm({
                 />
               </svg>
             </div>
-            <p className="text-[12px] text-[color:var(--muted)] mt-1 leading-snug">
+            <p className="text-[12px] text-[color:var(--muted)] mt-1 leading-snug pl-1">
+              Selecione o catálogo do seu produto
+            </p>
+          </div>
+
+          {/* Subcategoria (muda conforme categoria) */}
+          <div className="field-row">
+            <label htmlFor="subcategoria" className="field-label">
+              Subcategoria (opcional)
+            </label>
+
+            <select
+              id="subcategoria"
+              name="subcategoria"
+              className="input-base"
+              value={formData.subcategoria}
+              onChange={onChange}
+              disabled={subcatOptions.length === 0}
+              required={subcatOptions.length > 0}
+            >
+              <option value="">
+                {subcatOptions.length === 0
+                  ? "Sem subcategoria para esta categoria"
+                  : "Selecione..."}
+              </option>
+
+              {subcatOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+
+            <p className="text-[12px] text-[color:var(--muted)] mt-1">
+              As opções mudam conforme o Catálogo.
             </p>
           </div>
 
@@ -188,37 +211,42 @@ export default function ProdutoForm({
           {/* Moved: this will render above the action buttons (see below) */}
         </div>
 
-        {/* Subcategoria (muda conforme categoria) */}
-        <div className="field-row">
-          <label htmlFor="subcategoria" className="field-label">
-            Subcategoria
-          </label>
+        <div className="cp-link-additions">
+          <div className="cp-link-additions__header">
+            <div>
+              <h4>Vincular adicionais</h4>
+              <p>Quais adicionais serão vinculados a este produto?</p>
+            </div>
+            <button
+              type="button"
+              className="cp-link-additions__toggle"
+              onClick={onToggleAllAdicionalSubcategories}
+            >
+              Selecionar/Limpar tudo
+            </button>
+          </div>
 
-          <select
-            id="subcategoria"
-            name="subcategoria"
-            className="input-base"
-            value={formData.subcategoria}
-            onChange={onChange}
-            disabled={subcatOptions.length === 0}
-            required={subcatOptions.length > 0}
-          >
-            <option value="">
-              {subcatOptions.length === 0
-                ? "Sem subcategoria para esta categoria"
-                : "Selecione..."}
-            </option>
+          <div className="cp-link-additions__options">
+            {adicionalSubcategoryOptions.map((option) => {
+              const checked = selectedAdicionalSubcategories.includes(option.value);
 
-            {subcatOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-
-          <p className="text-[12px] text-[color:var(--muted)] mt-1">
-            As opções mudam conforme a categoria selecionada.
-          </p>
+              return (
+                <label
+                  key={option.value}
+                  className={`cp-link-additions__option ${checked ? "is-selected" : ""}`}
+                >
+                  <input
+                    type="checkbox"
+                    name="adicionalSubcategories"
+                    value={option.value}
+                    checked={checked}
+                    onChange={onChange}
+                  />
+                  <span>{option.label}</span>
+                </label>
+              );
+            })}
+          </div>
         </div>
 
         {/* Ações */}
