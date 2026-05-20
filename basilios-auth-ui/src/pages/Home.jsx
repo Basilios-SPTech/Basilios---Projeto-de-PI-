@@ -6,10 +6,10 @@ import CustomizeBurger from "../components/CustomizeBurger.jsx";
 import { listarProdutos } from "../services/produtosApi.js";
 import { http } from "../services/http.js";
 import FooterBasilios from "../components/FooterBasilios.jsx";
+import { resolveImageUrl, sanitizeImageUrl } from "../utils/imageUrl.js";
 
 const CHAVE_STORAGE = "produtos-basilios";
 const CHAVE_CART = "carrinho-basilios";
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 
 // Mini componente para descrição expansível
@@ -236,7 +236,7 @@ export default function Home() {
             ),
             subcategoria: p.subcategory ?? p.subcategoria ?? "",
             pausado: p.isPaused ?? p.paused ?? false,
-            imagem: p.imageUrl ? `${API_BASE}${p.imageUrl}` : p.imagem || "",
+            imagem: resolveImageUrl(p.imageUrl, { fallback: p.imagem || "" }),
           };
         });
 
@@ -455,26 +455,6 @@ export default function Home() {
     window.addEventListener("highlightProduct", handler);
     return () => window.removeEventListener("highlightProduct", handler);
   }, []);
-
-  const sanitizeImageUrl = (url) => {
-    if (!url) return "/placeholder.jpg";
-
-    // Bloqueia javascript: e data: URIs maliciosos
-    if (url.startsWith("javascript:") || url.startsWith("data:text/html")) {
-      return "/placeholder.jpg";
-    }
-
-    // Aceita apenas HTTP(S) ou caminhos relativos
-    if (
-      url.startsWith("http://") ||
-      url.startsWith("https://") ||
-      url.startsWith("/")
-    ) {
-      return url;
-    }
-
-    return "/placeholder.jpg";
-  };
 
   const sanitizePrice = (price) => {
     // Remove tudo que não é número, ponto ou vírgula

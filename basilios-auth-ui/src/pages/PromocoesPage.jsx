@@ -6,8 +6,7 @@ import { http } from "../services/http.js";
 import toast from "react-hot-toast";
 import "../styles/promocoes.css";
 import MenuButton from "../components/MenuButtonAdm.jsx";
-
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
+import { resolveImageUrl } from "../utils/imageUrl.js";
 
 export default function PromocoesPage() {
   const [promocoes, setPromocoes] = useState([]);
@@ -321,14 +320,10 @@ export default function PromocoesPage() {
   const getProdutoImagem = (productId) => {
     const produto = produtos.find((p) => p.id === productId);
     if (!produto) return "";
-    
-    // Se vem como imageUrl, concatenar com API_BASE
-    if (produto.imageUrl) {
-      return `${API_BASE}${produto.imageUrl}`;
-    }
-    
-    // Se vem como image ou imagem, retornar diretamente
-    return produto.image || produto.imagem || "";
+
+    return resolveImageUrl(produto.imageUrl, {
+      fallback: produto.image || produto.imagem || "",
+    });
   };
 
   const getProdutoPreco = (productId) => {
