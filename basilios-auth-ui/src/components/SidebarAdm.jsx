@@ -1,6 +1,6 @@
 /** SidebarAdm */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Home, ListOrdered, LogOut, Package, Hamburger, LayoutDashboard, LogIn, UserRound, Gift } from "lucide-react";
+import { Home, ListOrdered, LogOut, Package, Hamburger, LayoutDashboard, LogIn, UserRound, Gift, UsersRound } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { AuthAPI } from "../services/api";
@@ -70,6 +70,7 @@ export default function SidebarAdm({ open, onClose }) {
   try { isLogged = !!authStorage.getToken(); } catch { isLogged = false; }
 
   const isFuncionario = authStorage.hasAnyRole("ROLE_FUNCIONARIO");
+  const isAdmin = authStorage.hasAnyRole("ROLE_ADMIN");
   const [newBoardOrdersCount, setNewBoardOrdersCount] = useState(0);
   const [pendingBoardOrderIds, setPendingBoardOrderIds] = useState([]);
 
@@ -139,6 +140,9 @@ export default function SidebarAdm({ open, onClose }) {
           { icon: LayoutDashboard, label: "Dashboard",    href: "/dashboard" },
           { icon: Gift, label: "Promoções",              href: "/promocoes" },
         ] : []),
+        ...((isAdmin || isFuncionario) ? [
+          { icon: UsersRound, label: "Gerenciar Usuários", href: "/gerenciar-usuarios" },
+        ] : []),
         { icon: ListOrdered, label: "Meus Pedidos",      href: "/meus-pedidos" },
         { icon: UserRound, label: "Meu Perfil",          href: "/profile" },
         { icon: Hamburger,label: "Sobre Nós",           href: "/about" },
@@ -148,7 +152,7 @@ export default function SidebarAdm({ open, onClose }) {
         { icon: Home,     label: "Início",    href: "/home" },
         { icon: Hamburger,label: "Sobre Nós", href: "/about" },
         { icon: LogIn,    label: "Entrar",    href: "/login" },
-      ]), [isFuncionario, isLogged, newBoardOrdersCount]);
+      ]), [isAdmin, isFuncionario, isLogged, newBoardOrdersCount]);
 
   if (!open) return null;
 

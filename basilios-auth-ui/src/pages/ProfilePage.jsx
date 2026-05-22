@@ -377,6 +377,12 @@ export function ProfilePage() {
               >
                 {showAdminForm ? "Fechar" : "Novo Admin"}
               </button>
+              <button
+                className="edit-btn btn--ghost"
+                onClick={() => nav("/gerenciar-usuarios")}
+              >
+                Gerenciar Usuários
+              </button>
             </div>
 
             {showAdminForm && (
