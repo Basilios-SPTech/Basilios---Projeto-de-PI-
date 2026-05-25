@@ -46,7 +46,7 @@ export default function PixQRCode() {
 
       <div className="flex justify-center items-center p-2 sm:p-4">
         <img
-          src={sanitizeQRCode(localStorage.getItem("qrCode"))}
+          src={sanitizeQRCode(localStorage.getItem("brCodeBase64"))}
           alt="QR Code PIX"
           className="w-full max-w-[250px] sm:max-w-[280px] md:max-w-[300px] h-auto border-4 border-gray-100 rounded-lg shadow-sm"
         />
