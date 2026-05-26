@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AlertCircle } from "lucide-react";
 import PixQRCode from "./PixQRCode";
 import PixCode from "./PixCode";
@@ -6,6 +6,7 @@ import PixInstructions from "./PixInstructions";
 import { useNavigate } from "react-router-dom";
 import ProgressBar from "../loading/ProgressBar.jsx";
 import { http } from "../../services/http.js";
+import toast from "react-hot-toast";
 
 const CHAVE_CART = "carrinho-basilios";
 const PENDING_PIX_ORDER_KEY = "pending-pix-order";
@@ -13,23 +14,123 @@ const PENDING_PIX_ORDER_KEY = "pending-pix-order";
 export default function PixProcessor({ pixData }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isPolling, setIsPolling] = useState(false);
   const navigate = useNavigate();
 
+  // Função para verificar o status do PIX
+  const checkPixStatus = async () => {
+    const pixId = localStorage.getItem("pixId");
+    const orderId = localStorage.getItem("lastOrderId");
+
+    if (!pixId || !orderId) return;
+
+    try {
+      const response = await fetch(
+        `/api/abacate/v1/pixQrCode/check?id=${pixId}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: "Bearer abc_dev_Xkmtb0HuqJrPW42uaNFDPSPd",
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Falha ao verificar status do PIX");
+      }
+
+      const payload = await response.json();
+      const pixStatus = payload?.data?.status;
+      const externalId = payload?.data?.metadata?.externalId;
+      
+      console.log("Status do PIX:", pixStatus);
+
+      // Se o status for diferente de PENDING, significa que houve mudança
+      if (pixStatus !== "PENDING") {
+        setIsPolling(false);
+        console.log(`Status final do PIX: ${pixStatus}`);
+        // Fazer PATCH com o externalId
+        try {
+          await http.patch(`/orders/${orderId}/payment-status`, {
+            status: "pago",
+            pixId: pixId,
+            externalId: externalId,
+          });
+        } catch (err) {
+          console.error("Erro ao atualizar pedido:", err);
+          setTimeout(() => {
+            navigate("/order-status");
+          }, 2000);
+          // Continua mesmo se falhar a atualização
+        }
+
+        if (pixStatus === "PAID") {
+          toast.success("Pagamento confirmado! Redirecionando...");
+
+        } else {
+          toast.error(`Pagamento ${pixStatus}. Tente novamente.`);
+        }
+        
+        // Limpar localStorage
+        localStorage.removeItem(CHAVE_CART);
+        localStorage.removeItem(PENDING_PIX_ORDER_KEY);
+        localStorage.removeItem("pixId");
+        localStorage.removeItem("brCodeBase64");
+        localStorage.removeItem("brCode");
+        localStorage.removeItem("pixOrderId");
+
+        setTimeout(() => {
+          navigate("/order-status");
+        }, 2000);
+      }
+    } catch (err) {
+      console.error("Erro ao verificar status do PIX:", err);
+      setError(err?.message || "Erro ao verificar status do PIX");
+    }
+  };
+
+  // Polling automático a cada 10 segundos
+  useEffect(() => {
+    const pixId = localStorage.getItem("pixId");
+    
+    if (!pixId) {
+      setError("PIX não encontrado. Volte ao checkout e tente novamente.");
+      return;
+    }
+
+    setIsPolling(true);
+    
+    // Fazer a primeira verificação imediatamente
+    checkPixStatus();
+
+    // Depois verificar a cada 10 segundos
+    const interval = setInterval(checkPixStatus, 10000);
+
+    return () => clearInterval(interval);
+  }, [navigate]);
+
   const simulatePayment = async () => {
-    const body = { metadata: {} };
     setLoading(true);
     setError(null);
 
     try {
+      const pixId = localStorage.getItem("pixId");
+
+      if (!pixId) {
+        throw new Error("PIX não encontrado");
+      }
+
+      // Chamar endpoint de simulação do AbacatePay
       const response = await fetch(
-        `/api/abacate/v1/pixQrCode/simulate-payment?id=${localStorage.getItem("pixId")}`,
+        `/api/abacate/v1/pixQrCode/simulate-payment?id=${pixId}`,
         {
           method: "POST",
           headers: {
-            Authorization: "Bearer abc_dev_J24NemeHukwqGwfe2bj63G2q",
+            Authorization: "Bearer abc_dev_Xkmtb0HuqJrPW42uaNFDPSPd",
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(body),
+          body: JSON.stringify({ metadata: {} }),
         },
       );
 
@@ -38,43 +139,15 @@ export default function PixProcessor({ pixData }) {
       }
 
       const payload = await response.json();
-      console.log(payload?.data);
+      console.log("Simulação de pagamento:", payload?.data);
 
-      if (payload?.data?.status === "PAID") {
-        const pendingOrderRaw = localStorage.getItem(PENDING_PIX_ORDER_KEY);
-        if (!pendingOrderRaw) {
-          throw new Error("Pagamento aprovado, mas nao foi encontrado pedido pendente.");
-        }
-
-        let pendingOrderBody = null;
-        try {
-          pendingOrderBody = JSON.parse(pendingOrderRaw);
-        } catch {
-          throw new Error("Pedido pendente invalido. Volte ao checkout e tente novamente.");
-        }
-
-        const orderResponse = await http.post("/orders", pendingOrderBody);
-        const createdOrderId = orderResponse?.data?.id;
-
-        if (!createdOrderId) {
-          throw new Error("Pagamento aprovado, mas nao foi possivel confirmar o pedido.");
-        }
-
-        localStorage.setItem("lastOrderId", String(createdOrderId));
-        localStorage.removeItem(PENDING_PIX_ORDER_KEY);
-        localStorage.removeItem(CHAVE_CART);
-        localStorage.removeItem("pixId");
-        localStorage.removeItem("qrCode");
-        localStorage.removeItem("brCode");
-        navigate("/order-status");
-        return;
-      }
-
-      setError("Pagamento ainda não confirmado.");
+      // Aguardar um pouco e depois verificar o status
+      setTimeout(() => {
+        checkPixStatus();
+      }, 1000);
     } catch (err) {
       console.error("Erro ao simular pagamento PIX:", err);
       setError(err?.message || "Erro ao simular pagamento PIX.");
-    } finally {
       setLoading(false);
     }
   };
@@ -111,12 +184,19 @@ export default function PixProcessor({ pixData }) {
 
         {/* Botão de simulação */}
         <button
-          className="w-full sm:w-auto sm:min-w-[280px] bg-green-500 hover:bg-green-600 active:bg-green-700 text-white font-medium rounded-lg sm:rounded-xl p-3 sm:p-4 cursor-pointer mt-6 sm:mt-10 transition-colors flex items-center justify-center mx-auto text-sm sm:text-base touch-manipulation shadow-md hover:shadow-lg"
+          className="w-full sm:w-auto sm:min-w-[280px] bg-green-500 hover:bg-green-600 active:bg-green-700 text-white font-medium rounded-lg sm:rounded-xl p-3 sm:p-4 cursor-pointer mt-6 sm:mt-10 transition-colors flex items-center justify-center mx-auto text-sm sm:text-base touch-manipulation shadow-md hover:shadow-lg disabled:opacity-50"
           onClick={simulatePayment}
           disabled={loading}
         >
-          {loading ? "Processando..." : "Simular Pagamento"}
+          {loading ? "Processando..." : "Verificar Pagamento"}
         </button>
+
+        {/* Status de polling */}
+        {isPolling && (
+          <div className="mt-4 sm:mt-6 text-center text-sm text-gray-600">
+            <p>⏱️ Verificando status do pagamento a cada 10 segundos...</p>
+          </div>
+        )}
       </div>
 
       <ProgressBar visible={loading} />

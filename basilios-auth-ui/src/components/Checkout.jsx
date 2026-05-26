@@ -243,18 +243,21 @@ export default function Checkout() {
     };
 
     if (formaPagamento == "pix") {
-      localStorage.setItem(PENDING_PIX_ORDER_KEY, JSON.stringify(body));
+      // 1. Criar o pedido PRIMEIRO no backend
+      let req = await http.post("/orders", body);
+      let orderId = req.data.id;
 
+      // 2. Chamar AbacatePay com o orderId nos metadados
       const abacatePayResp = await fetch("/api/abacate/v1/pixQrCode/create", {
         method: "POST",
         headers: {
-          Authorization: "Bearer abc_dev_J24NemeHukwqGwfe2bj63G2q",
+          Authorization: "Bearer abc_dev_Xkmtb0HuqJrPW42uaNFDPSPd",
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           amount: 3100,
           expiresIn: 600,
-          description: "Pedido teste",
+          description: `Pedido #${orderId}`,
           customer: {
             name: "Pedro Morais",
             cellphone: "(11) 4002-8922",
@@ -262,7 +265,8 @@ export default function Checkout() {
             taxId: "522.361.808.45",
           },
           metadata: {
-            externalId: `pix-${Date.now()}`,
+            orderId: String(orderId),
+            externalId: `pix-${orderId}-${Date.now()}`,
           },
         }),
       });
@@ -273,13 +277,15 @@ export default function Checkout() {
 
       const abacatePayData = await abacatePayResp.json();
 
-      localStorage.setItem("qrCode", abacatePayData.data.brCodeBase64);
-      localStorage.setItem("brCode", abacatePayData.data.brCode);
-      localStorage.setItem("pixId", abacatePayData.data.id);
+      // 3. Salvar a associação entre orderId e pixId do AbacatePay
+      localStorage.setItem("lastOrderId", String(orderId));
+      localStorage.setItem("pixId", abacatePayData.data.id); // ID do AbacatePay
+      localStorage.setItem("brCodeBase64", abacatePayData.data.brCodeBase64); // QR Code em base64
+      localStorage.setItem("brCode", abacatePayData.data.brCode); // Código PIX para copiar e colar
+      localStorage.setItem("pixOrderId", String(orderId)); // ID do nosso pedido
 
-      console.log(abacatePayData);
-      console.log(abacatePayData.data.brCodeBase64);
-      console.log(abacatePayData.data.brCode);
+      console.log("Pedido criado:", orderId);
+      console.log("PIX AbacatePay criado:", abacatePayData.data.id);
 
       setTimeout(() => {
         navigate("/pix-checkout");
