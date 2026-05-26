@@ -26,7 +26,7 @@ export default function PixProcessor({ pixData }) {
 
     try {
       const response = await fetch(
-        `https://api.abacatepay.com/v1/pixQrCode/check?id=${pixId}`,
+        `/api/abacate/v1/pixQrCode/check?id=${pixId}`,
         {
           method: "GET",
           headers: {
@@ -49,11 +49,11 @@ export default function PixProcessor({ pixData }) {
       // Se o status for diferente de PENDING, significa que houve mudança
       if (pixStatus !== "PENDING") {
         setIsPolling(false);
-        
+        console.log(`Status final do PIX: ${pixStatus}`);
         // Fazer PATCH com o externalId
         try {
           await http.patch(`/orders/${orderId}/payment-status`, {
-            status: pixStatus,
+            status: "pago",
             pixId: pixId,
             externalId: externalId,
           });
