@@ -52,18 +52,22 @@ export default function PixProcessor({ pixData }) {
         
         // Fazer PATCH com o externalId
         try {
-          await http.patch(`/orders/${orderId}`, {
+          await http.patch(`/orders/${orderId}/payment-status`, {
             status: pixStatus,
             pixId: pixId,
             externalId: externalId,
           });
         } catch (err) {
           console.error("Erro ao atualizar pedido:", err);
+          setTimeout(() => {
+            navigate("/order-status");
+          }, 2000);
           // Continua mesmo se falhar a atualização
         }
 
         if (pixStatus === "PAID") {
           toast.success("Pagamento confirmado! Redirecionando...");
+
         } else {
           toast.error(`Pagamento ${pixStatus}. Tente novamente.`);
         }
