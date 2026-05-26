@@ -51,16 +51,16 @@ export default function PixProcessor({ pixData }) {
         setIsPolling(false);
         
         // Fazer PATCH com o externalId
-        // try {
-        //   await http.patch(`/orders/${orderId}`, {
-        //     status: pixStatus,
-        //     pixId: pixId,
-        //     externalId: externalId,
-        //   });
-        // } catch (err) {
-        //   console.error("Erro ao atualizar pedido:", err);
-        //   // Continua mesmo se falhar a atualização
-        // }
+        try {
+          await http.patch(`/orders/${orderId}`, {
+            status: pixStatus,
+            pixId: pixId,
+            externalId: externalId,
+          });
+        } catch (err) {
+          console.error("Erro ao atualizar pedido:", err);
+          // Continua mesmo se falhar a atualização
+        }
 
         if (pixStatus === "PAID") {
           toast.success("Pagamento confirmado! Redirecionando...");
