@@ -187,11 +187,11 @@ export default function PromocoesPage() {
   const convertToISO8601 = (datetimeLocalValue) => {
     if (!datetimeLocalValue) return "";
     // datetime-local vem no formato: 2026-05-04T10:00
-    // Converter para: 2026-05-04T10:00:00 (ISO 8601 com hora)
+    // Converter para ISO 8601 (LocalDateTime format) - sem conversão de timezone
     const [date, time] = datetimeLocalValue.split("T");
     if (!time) return "";
     
-    // Retorna como ISO string com segundos
+    // Retorna como ISO string com segundos (yyyy-MM-ddTHH:mm:ss)
     return `${date}T${time}:00`;
   };
 
@@ -340,7 +340,7 @@ export default function PromocoesPage() {
     
     const str = String(dateString).trim();
     
-    // Se vem com 'Z' no final, é UTC - converter para local
+    // Se vem com 'Z' no final, é UTC
     if (str.endsWith("Z")) {
       return new Date(str);
     }
@@ -351,8 +351,9 @@ export default function PromocoesPage() {
     }
     
     // Se é apenas data/hora sem timezone, tratar como local
-    // Formato: 2026-05-04T20:32:00
-    return new Date(str);
+    // Formato: 2026-05-04T20:32:00 (vindo do servidor que agora usa LocalDateTime)
+    const parsed = parseDateTimeLocal(str);
+    return parsed || new Date(0);
   };
 
   const formatPromoDateTime = (dateString) => {
