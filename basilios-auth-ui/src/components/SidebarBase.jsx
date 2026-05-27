@@ -6,8 +6,11 @@ export default function SidebarBase({
   onClose,
   items = [],     // [{icon: Icon, label: 'Início', href: '#home'}]
   title = "MENU",
-  footer = { version: "1.0.0", brand: "© 2025 - Basilios" },
+  footer = { version: "1.0.0", brand: null },
 }) {
+  const currentYear = new Date().getFullYear();
+  const footerBrand = footer?.brand || `© ${currentYear} - Basilios`;
+
   if (!isOpen) return null;
 
   return (
@@ -63,7 +66,7 @@ export default function SidebarBase({
         {/* footer */}
         <div className="mt-12 border-t border-neutral-800 pt-6 text-center text-sm text-neutral-400">
           <p>Versão {footer.version}</p>
-          <p>{footer.brand}</p>
+          <p>{footerBrand}</p>
         </div>
       </aside>
 

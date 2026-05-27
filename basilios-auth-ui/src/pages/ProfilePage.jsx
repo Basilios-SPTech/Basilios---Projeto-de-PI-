@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, ShieldPlus } from "lucide-react";
 import "../styles/ProfilePage.css";
 import EditForm from "../components/EditForm.jsx";
@@ -28,11 +28,11 @@ const STORE_WEEK_DAYS = [
 
 const STORE_DAY_LABELS = {
   MONDAY: "Segunda",
-  TUESDAY: "Terca",
+  TUESDAY: "Terça",
   WEDNESDAY: "Quarta",
   THURSDAY: "Quinta",
   FRIDAY: "Sexta",
-  SATURDAY: "Sabado",
+  SATURDAY: "Sábado",
   SUNDAY: "Domingo",
 };
 
@@ -132,6 +132,10 @@ function parseCurrencyInput(value) {
   return Number.isFinite(num) ? num : NaN;
 }
 
+function onlyPhoneDigits(value) {
+  return String(value ?? "").replace(/\D/g, "");
+}
+
 export function ProfilePage() {
   const [isEditing, setIsEditing] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -166,6 +170,7 @@ export function ProfilePage() {
   const [adminLoading, setAdminLoading] = useState(false);
 
   const hasFetched = useRef(false);
+  const storeCardRef = useRef(null);
 
   useEffect(() => {
     async function fetchUserProfile() {
@@ -340,7 +345,7 @@ export function ProfilePage() {
       const payload = {
         nomeUsuario: novosDados.nomeUsuario,
         email: novosDados.email,
-        telefone: novosDados.telefone,
+        telefone: onlyPhoneDigits(novosDados.telefone),
         data_nascimento: novosDados.dataNascimento,
       };
 
@@ -390,8 +395,14 @@ export function ProfilePage() {
     e.preventDefault();
     setAdminLoading(true);
     try {
+      const adminPayload = {
+        ...adminForm,
+        telefone: onlyPhoneDigits(adminForm.telefone),
+        roles: ["ROLE_ADMIN"],
+      };
+
       // O JWT é enviado automaticamente pelo interceptor do http (axios)
-      await http.post("/users/admin", { ...adminForm, roles: ["ROLE_ADMIN"] });
+      await http.post("/users/admin", adminPayload);
       toast.success("Novo administrador cadastrado com sucesso!");
       setAdminForm({
         nomeUsuario: "",
@@ -415,6 +426,23 @@ export function ProfilePage() {
   const abrirEdicao = (secao) => setIsEditing(secao);
 
   const nav = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!canManageStore) return;
+
+    const params = new URLSearchParams(location.search || "");
+    const shouldFocusStoreCard =
+      params.get("section") === "store" || location.hash === "#informacoes-loja";
+
+    if (!shouldFocusStoreCard) return;
+
+    const timer = window.setTimeout(() => {
+      storeCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+
+    return () => window.clearTimeout(timer);
+  }, [canManageStore, location.hash, location.search, loading]);
 
   return (
     <>
@@ -478,7 +506,7 @@ export function ProfilePage() {
         </div>
 
         {canManageStore && (
-          <div className="info-card">
+          <div id="informacoes-loja" ref={storeCardRef} className="info-card">
             <div className="info-header">
               <h3>Informações da Loja</h3>
               <button
@@ -512,7 +540,7 @@ export function ProfilePage() {
                 </div>
 
                 <div className="store-hours-summary">
-                  <span>Horarios de Funcionamento</span>
+                  <span>Horários de Funcionamento</span>
                   <div className="store-hours-stack">
                     {storeHours.map((hour) => (
                       <p key={hour.day_of_week} className="store-hours-line">
@@ -555,12 +583,6 @@ export function ProfilePage() {
                 onClick={() => setShowAdminForm((v) => !v)}
               >
                 {showAdminForm ? "Fechar" : "Novo Admin"}
-              </button>
-              <button
-                className="edit-btn btn--ghost"
-                onClick={() => nav("/gerenciar-usuarios")}
-              >
-                Gerenciar Usuários
               </button>
             </div>
 

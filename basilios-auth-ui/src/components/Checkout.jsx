@@ -19,6 +19,7 @@ import CustomizeBurger from "./CustomizeBurger";
 import StoreStatusBanner from "./StoreStatusBanner.jsx";
 import { http } from "../services/http.js";
 import { useBusinessHours } from "../hooks/useBusinessHours.js";
+import { getStoreProfile } from "../services/storeApi.js";
 import {
   listMyAddresses,
   deleteAddress as deleteAddressApi,
@@ -40,8 +41,27 @@ export default function Checkout() {
   const [deliveryObservations, setDeliveryObservations] = useState("");
   const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [deliveryFee, setDeliveryFee] = useState(0);
+  const [loadingDeliveryFee, setLoadingDeliveryFee] = useState(true);
   const navigate = useNavigate();
-  const { status: businessStatus } = useBusinessHours();
+  const { status: businessStatus, checkStoreStatus } = useBusinessHours();
+
+  const loadDeliveryFee = useCallback(async () => {
+    setLoadingDeliveryFee(true);
+    try {
+      const store = await getStoreProfile();
+      const parsedFee = Number(store?.deliveryFee);
+      const nextFee = Number.isFinite(parsedFee) && parsedFee >= 0 ? parsedFee : 0;
+      setDeliveryFee(nextFee);
+      return nextFee;
+    } catch (err) {
+      console.error("Erro ao carregar taxa de entrega da loja:", err);
+      setDeliveryFee(0);
+      return 0;
+    } finally {
+      setLoadingDeliveryFee(false);
+    }
+  }, []);
 
   const loadAddresses = useCallback(async () => {
     setLoadingAddresses(true);
@@ -105,7 +125,10 @@ export default function Checkout() {
     return itens.reduce((total, item) => total + item.preco * item.qtd, 0);
   };
 
-  const calcularFrete = () => 5.0;
+  const calcularFrete = () => {
+    const fee = Number(deliveryFee);
+    return Number.isFinite(fee) && fee >= 0 ? fee : 0;
+  };
 
   const calcularTotal = () => {
     return calcularSubtotal() + calcularFrete();
@@ -198,8 +221,10 @@ export default function Checkout() {
       return;
     }
 
-    if (businessStatus && !businessStatus.open) {
-      toast.error("A loja está fechada no momento. " + (businessStatus.message || ""));
+    const latestStoreStatus = await checkStoreStatus({ force: true, showLoading: false });
+
+    if (latestStoreStatus && !latestStoreStatus.open) {
+      toast.error("A loja está fechada no momento. " + (latestStoreStatus.message || ""));
       return;
     }
 
@@ -207,6 +232,8 @@ export default function Checkout() {
     setSubmitting(true);
 
     try {
+    const currentDeliveryFee = await loadDeliveryFee();
+
     const itensPedido = itens.map((item) => {
       const additions = Array.isArray(item.additions) ? item.additions : [];
       const adicionais = additions
@@ -237,7 +264,7 @@ export default function Checkout() {
     let body = {
       addressId: Number(enderecoSelecionado),
       items: itensPedido,
-      deliveryFee: 0,
+      deliveryFee: currentDeliveryFee,
       discount: 0,
       observations: String(deliveryObservations || "").trim(),
     };
@@ -328,13 +355,14 @@ export default function Checkout() {
   useEffect(() => {
     try {
       loadAddresses();
+      loadDeliveryFee();
       const cart = JSON.parse(localStorage.getItem(CHAVE_CART) || "[]");
       setItens(Array.isArray(cart) ? cart : []);
     } catch (err) {
       console.log(err);
       setItens([]);
     }
-  }, [loadAddresses]);
+  }, [loadAddresses, loadDeliveryFee]);
 
   const handleAddressCreated = async (createdAddress) => {
     await loadAddresses();
@@ -699,7 +727,7 @@ export default function Checkout() {
                 </div>
                 <div className="flex justify-between text-sm md:text-base text-gray-600">
                   <span>Frete</span>
-                  <span>R$ {calcularFrete().toFixed(2)}</span>
+                  <span>{loadingDeliveryFee ? "Calculando..." : `R$ ${calcularFrete().toFixed(2)}`}</span>
                 </div>
                 <div className="border-t border-gray-200 pt-3">
                   <div className="flex justify-between text-lg md:text-xl font-bold">
@@ -792,7 +820,6 @@ export default function Checkout() {
             );
             setItens(atualizado);
             localStorage.setItem(CHAVE_CART, JSON.stringify(atualizado));
-            setIsCustomizeOpen(false);
           }}
         />
       )}

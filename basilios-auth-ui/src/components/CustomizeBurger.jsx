@@ -738,8 +738,9 @@ export default function CustomizeBurger({ item, onClose, onSave }) {
                   observation,
                 };
 
+                onSave(customItem);
                 setIsOpen(false);
-                setTimeout(() => onSave(customItem), 300);
+                setTimeout(onClose, 300);
               }}
               className="w-full bg-black hover:bg-gray-800 text-white font-semibold py-4 rounded-lg transition-colors"
             >

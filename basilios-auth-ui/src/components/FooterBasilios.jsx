@@ -1,8 +1,168 @@
 /** footer global do nosso site (implementar em tudo) */
+import { useEffect, useState } from "react";
 import logo from "/logoWithoutBackGround.png"; 
+import { getStoreHours, getStoreProfile } from "../services/storeApi.js";
+
+const FALLBACK_ADDRESS = "R. Basílio da Cunha, 454 - Aclimação, São Paulo - SP, 01544-001";
+const FALLBACK_PHONE_DISPLAY = "(11) 4801-4864";
+const FALLBACK_PHONE_HREF = "tel:+551148014864";
+const FALLBACK_HOURS_LINES = [
+  "Segunda: 12:00 até 23:00",
+  "Terça: 12:00 até 23:00",
+  "Quarta: 12:00 até 23:00",
+  "Quinta: 12:00 até 23:00",
+  "Sexta: 12:00 até 00:00",
+  "Sábado: 12:00 até 00:00",
+  "Domingo: até 18:00",
+];
+
+const FOOTER_WEEK_DAYS = [
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY",
+  "SATURDAY",
+  "SUNDAY",
+];
+
+const FOOTER_DAY_LABELS = {
+  MONDAY: "Segunda",
+  TUESDAY: "Terça",
+  WEDNESDAY: "Quarta",
+  THURSDAY: "Quinta",
+  FRIDAY: "Sexta",
+  SATURDAY: "Sábado",
+  SUNDAY: "Domingo",
+};
+
+let footerDataCache = null;
+let footerDataInFlight = null;
+
+function normalizeFooterTime(value) {
+  if (value == null) return "";
+
+  if (typeof value === "string") {
+    const match = value.trim().match(/^(\d{1,2}):(\d{2})/);
+    if (!match) return "";
+    return `${String(Number(match[1])).padStart(2, "0")}:${match[2]}`;
+  }
+
+  if (typeof value === "object") {
+    const hour = Number(value.hour);
+    const minute = Number(value.minute);
+    if (!Number.isFinite(hour) || !Number.isFinite(minute)) return "";
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return "";
+    return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  }
+
+  return "";
+}
+
+function buildHoursLines(hours) {
+  const source = Array.isArray(hours) ? hours : [];
+  if (source.length === 0) return FALLBACK_HOURS_LINES;
+
+  const byDay = new Map(
+    source.map((entry) => [String(entry?.day_of_week || "").toUpperCase(), entry]),
+  );
+
+  const lines = FOOTER_WEEK_DAYS.map((day) => {
+    const entry = byDay.get(day);
+    if (!entry) return `${FOOTER_DAY_LABELS[day]}: Sem horário`;
+
+    const isClosed = Boolean(entry?.is_closed ?? entry?.isClosed);
+    if (isClosed) return `${FOOTER_DAY_LABELS[day]}: Fechado`;
+
+    const opensAt = normalizeFooterTime(entry?.opens_at ?? entry?.opensAt);
+    const closesAt = normalizeFooterTime(entry?.closes_at ?? entry?.closesAt);
+    if (!opensAt || !closesAt) return `${FOOTER_DAY_LABELS[day]}: Sem horário`;
+
+    return `${FOOTER_DAY_LABELS[day]}: ${opensAt} até ${closesAt}`;
+  });
+
+  return lines;
+}
+
+function formatPhoneDisplay(rawPhone) {
+  const digits = String(rawPhone || "").replace(/\D/g, "");
+  if (!digits) return FALLBACK_PHONE_DISPLAY;
+
+  if (digits.length === 11) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  }
+
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
+
+  return String(rawPhone || FALLBACK_PHONE_DISPLAY);
+}
+
+function formatPhoneHref(rawPhone) {
+  const digits = String(rawPhone || "").replace(/\D/g, "");
+  if (!digits) return FALLBACK_PHONE_HREF;
+
+  if (digits.length === 10 || digits.length === 11) {
+    return `tel:+55${digits}`;
+  }
+
+  if (digits.startsWith("55")) {
+    return `tel:+${digits}`;
+  }
+
+  return `tel:+${digits}`;
+}
+
+async function loadFooterDynamicData() {
+  if (footerDataCache) return footerDataCache;
+  if (footerDataInFlight) return footerDataInFlight;
+
+  footerDataInFlight = (async () => {
+    const [store, hours] = await Promise.all([getStoreProfile(), getStoreHours()]);
+
+    const nextData = {
+      address: String(store?.address || "").trim() || FALLBACK_ADDRESS,
+      phoneDisplay: formatPhoneDisplay(store?.phone),
+      phoneHref: formatPhoneHref(store?.phone),
+      hoursLines: buildHoursLines(hours),
+    };
+
+    footerDataCache = nextData;
+    return nextData;
+  })()
+    .finally(() => {
+      footerDataInFlight = null;
+    });
+
+  return footerDataInFlight;
+}
 
 export default function Footer() {
   const year = new Date().getFullYear();
+  const [dynamicData, setDynamicData] = useState(() => ({
+    address: FALLBACK_ADDRESS,
+    phoneDisplay: FALLBACK_PHONE_DISPLAY,
+    phoneHref: FALLBACK_PHONE_HREF,
+    hoursLines: FALLBACK_HOURS_LINES,
+  }));
+
+  useEffect(() => {
+    let active = true;
+
+    loadFooterDynamicData()
+      .then((data) => {
+        if (!active || !data) return;
+        setDynamicData(data);
+      })
+      .catch((err) => {
+        console.error("Erro ao carregar dados dinâmicos do footer:", err);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <footer className="bg-[#111] text-white border-t border-white/10">
@@ -31,8 +191,8 @@ export default function Footer() {
             </h3>
             <ul className="space-y-2 text-sm text-gray-300">
               <li>
-                <a href="tel:+551148014864" className="hover:text-white">
-                  (11) 4801-4864
+                <a href={dynamicData.phoneHref} className="hover:text-white">
+                  {dynamicData.phoneDisplay}
                 </a>
               </li>
               <li>
@@ -102,16 +262,35 @@ export default function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                    "R. Basílio da Cunha, 454 - Aclimação, São Paulo - SP, 01544-001"
+                    dynamicData.address
                   )}`}
                 >
-                  R. Basílio da Cunha, 454 – Aclimação, São Paulo – SP, 01544-001
+                  {dynamicData.address}
                 </a>
               </li>
               <li>
-                <span className="block">Seg–Qui: 12h–23h</span>
-                <span className="block">Sex–Sáb: 12h–00h</span>
-                <span className="block">Dom: até 18h</span>
+                {dynamicData.hoursLines.map((line, index) => {
+                  const separatorIndex = line.indexOf(":");
+                  const hasDayLabel = separatorIndex > -1;
+
+                  if (!hasDayLabel) {
+                    return (
+                      <span key={`${line}-${index}`} className="block">
+                        {line}
+                      </span>
+                    );
+                  }
+
+                  const dayLabel = line.slice(0, separatorIndex).trim();
+                  const hourLabel = line.slice(separatorIndex + 1).trim();
+
+                  return (
+                    <span key={`${line}-${index}`} className="block">
+                      <strong className="font-semibold text-white">{dayLabel}:</strong>{" "}
+                      {hourLabel}
+                    </span>
+                  );
+                })}
               </li>
             </ul>
           </div>
@@ -119,7 +298,7 @@ export default function Footer() {
           {/* Navegação & Legal */}
           <div className="space-y-3">
             <h3 className="text-sm font-semibold tracking-wide text-white/90">
-              Navegação
+              Institucional
             </h3>
             <ul className="space-y-2 text-sm">
               <li>
@@ -148,7 +327,7 @@ export default function Footer() {
       {/* barra final */}
       <div className="bg-[#BB3530] text-white/95">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3 text-center text-xs">
-          Feito com <span aria-hidden>❤️</span> pelo Grupo 7 – SPtech – 2025
+          Feito com <span aria-hidden>❤️</span> pelo Grupo 7 – SPtech – {year}
         </div>
       </div>
     </footer>
