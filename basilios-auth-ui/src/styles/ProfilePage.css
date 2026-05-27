@@ -1,4 +1,4 @@
-/* === CONTAINER PRINCIPAL === */ 
+﻿/* === CONTAINER PRINCIPAL === */ 
 .perfil-container {
   background-color: transparent;
   color: #333;
@@ -173,6 +173,20 @@
   font-size: 1rem;
   color: #333;
   margin-top: 0.3rem;
+}
+
+.store-hours-summary {
+  grid-column: 1 / -1;
+}
+
+.store-hours-stack {
+  margin-top: 0.45rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.store-hours-line {
+  margin: 0;
 }
 
 /* === FORMULÁRIO DE EDIÇÃO === */
