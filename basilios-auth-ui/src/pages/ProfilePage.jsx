@@ -7,6 +7,130 @@ import { http } from "../services/http.js";
 import BackButton from "../components/BackButton.jsx";
 import MenuButtonAuto from "../components/MenuButtonAuto.jsx";
 import toast from "react-hot-toast";
+import { formatCurrency } from "../utils/formatters.js";
+import {
+  getStoreHours,
+  getStoreProfile,
+  updateStoreHours,
+  updateStoreProfile,
+} from "../services/storeApi.js";
+import { authStorage } from "../services/storageAuth.js";
+
+const STORE_WEEK_DAYS = [
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY",
+  "SATURDAY",
+  "SUNDAY",
+];
+
+const STORE_DAY_LABELS = {
+  MONDAY: "Segunda",
+  TUESDAY: "Terca",
+  WEDNESDAY: "Quarta",
+  THURSDAY: "Quinta",
+  FRIDAY: "Sexta",
+  SATURDAY: "Sabado",
+  SUNDAY: "Domingo",
+};
+
+function normalizeRoleName(role) {
+  const raw = String(role || "").trim().toUpperCase();
+  if (!raw) return "";
+  if (raw.startsWith("ROLE_")) return raw;
+  if (["ADMIN", "FUNCIONARIO", "CLIENTE"].includes(raw)) {
+    return `ROLE_${raw}`;
+  }
+  return raw;
+}
+
+function getRoleNames(roles) {
+  if (!Array.isArray(roles)) return [];
+
+  return roles
+    .map((role) => {
+      if (typeof role === "string") return normalizeRoleName(role);
+      if (!role || typeof role !== "object") return "";
+      return normalizeRoleName(
+        role.authority || role.nome || role.role || role.name || "",
+      );
+    })
+    .filter(Boolean);
+}
+
+function normalizeStoreData(store) {
+  const source = store && typeof store === "object" ? store : {};
+  const deliveryFeeNum = Number(source.deliveryFee);
+  const latitudeNum = Number(source.latitude);
+  const longitudeNum = Number(source.longitude);
+
+  return {
+    name: source.name ?? "",
+    address: source.address ?? "",
+    phone: source.phone ?? "",
+    deliveryFee: Number.isFinite(deliveryFeeNum) ? deliveryFeeNum : null,
+    latitude: Number.isFinite(latitudeNum) ? latitudeNum : null,
+    longitude: Number.isFinite(longitudeNum) ? longitudeNum : null,
+  };
+}
+
+function normalizeStoreTime(value) {
+  if (!value) return null;
+  const text = String(value).trim();
+  const match = text.match(/^(\d{2}:\d{2})/);
+  return match ? match[1] : null;
+}
+
+function createDefaultStoreHours() {
+  return STORE_WEEK_DAYS.map((day) => ({
+    day_of_week: day,
+    is_closed: true,
+    opens_at: null,
+    closes_at: null,
+  }));
+}
+
+function normalizeStoreHours(hours) {
+  const source = Array.isArray(hours) ? hours : [];
+  const byDay = new Map(
+    source.map((item) => [String(item?.day_of_week || "").toUpperCase(), item]),
+  );
+
+  return STORE_WEEK_DAYS.map((day) => {
+    const raw = byDay.get(day) || {};
+    const isClosed = Boolean(raw.is_closed);
+    const opensAt = normalizeStoreTime(raw.opens_at ?? raw.opensAt);
+    const closesAt = normalizeStoreTime(raw.closes_at ?? raw.closesAt);
+
+    return {
+      day_of_week: day,
+      is_closed: isClosed,
+      opens_at: isClosed ? null : opensAt,
+      closes_at: isClosed ? null : closesAt,
+    };
+  });
+}
+
+function formatStoreHoursLine(hour) {
+  if (!hour) return "Dados nao informados";
+  if (hour.is_closed) return "Fechado";
+  if (hour.opens_at && hour.closes_at) return `${hour.opens_at} - ${hour.closes_at}`;
+  return "Dados nao informados";
+}
+
+function parseCurrencyInput(value) {
+  const normalized = String(value ?? "")
+    .replace(/R\$/gi, "")
+    .replace(/\s/g, "")
+    .replace(/\./g, "")
+    .replace(",", ".")
+    .replace(/[^\d.-]/g, "");
+
+  const num = Number(normalized);
+  return Number.isFinite(num) ? num : NaN;
+}
 
 export function ProfilePage() {
   const [isEditing, setIsEditing] = useState(null);
@@ -23,19 +147,11 @@ export function ProfilePage() {
     roles: [],
     enabled: true,
   });
+  const [storeData, setStoreData] = useState(() => normalizeStoreData(null));
+  const [storeHours, setStoreHours] = useState(() => createDefaultStoreHours());
+  const [storeLoading, setStoreLoading] = useState(false);
+  const [storeHoursLoading, setStoreHoursLoading] = useState(false);
   const [enderecos, setEnderecos] = useState([]);
-  const [showNewAddressForm, setShowNewAddressForm] = useState(false);
-  const [newAddress, setNewAddress] = useState({
-    cep: "",
-    rua: "",
-    numero: "",
-    complemento: "",
-    bairro: "",
-    cidade: "",
-    estado: "",
-  });
-  const [savingAddress, setSavingAddress] = useState(false);
-  const [cepLoading, setCepLoading] = useState(false);
 
   // Estado do formulário de novo admin
   const [showAdminForm, setShowAdminForm] = useState(false);
@@ -86,12 +202,19 @@ export function ProfilePage() {
     fetchUserProfile();
   }, []);
 
-  // Verifica se o usuário logado é admin
-  const isAdmin = dados.roles?.some(
-    (role) => role === "ROLE_ADMIN" || role?.authority === "ROLE_ADMIN",
+  const roleNames = Array.from(
+    new Set([...getRoleNames(dados.roles), ...authStorage.getRoles()]),
   );
+  const isAdmin = roleNames.includes("ROLE_ADMIN");
+  const isFuncionario = roleNames.includes("ROLE_FUNCIONARIO");
+  const canManageStore = isAdmin || isFuncionario;
 
   useEffect(() => {
+    if (isFuncionario) {
+      setEnderecos([]);
+      return;
+    }
+
     async function fetchEnderecos() {
       try {
         const response = await http.get("/address");
@@ -103,19 +226,129 @@ export function ProfilePage() {
     }
 
     fetchEnderecos();
-  }, []);
+  }, [isFuncionario]);
 
-  const handleSave = async (novosDados) => {
+  useEffect(() => {
+    if (!canManageStore) return;
+
+    async function fetchStoreData() {
+      try {
+        setStoreLoading(true);
+        const store = await getStoreProfile();
+        setStoreData(normalizeStoreData(store));
+      } catch (err) {
+        console.error("Erro ao carregar dados da loja:", err);
+        toast.error("Não foi possível carregar os dados da loja.");
+      } finally {
+        setStoreLoading(false);
+      }
+    }
+
+    fetchStoreData();
+  }, [canManageStore]);
+
+  useEffect(() => {
+    if (!canManageStore) return;
+
+    async function fetchStoreHoursData() {
+      try {
+        setStoreHoursLoading(true);
+        const hours = await getStoreHours();
+        setStoreHours(normalizeStoreHours(hours));
+      } catch (err) {
+        console.error("Erro ao carregar horarios da loja:", err);
+        toast.error("Nao foi possivel carregar os horarios da loja.");
+      } finally {
+        setStoreHoursLoading(false);
+      }
+    }
+
+    fetchStoreHoursData();
+  }, [canManageStore]);
+
+  const handleSave = async (secao, novosDados) => {
     try {
+      if (secao === "store") {
+        if (!canManageStore) return;
+
+        const deliveryFee = parseCurrencyInput(novosDados.storeDeliveryFee);
+        const nextHours = normalizeStoreHours(novosDados.storeHours);
+        const hoursPayload = [];
+
+        if (!Number.isFinite(deliveryFee) || deliveryFee < 0) {
+          toast.error("Taxa de entrega inválida.");
+          return;
+        }
+
+        for (const item of nextHours) {
+          const dayLabel = STORE_DAY_LABELS[item.day_of_week] || item.day_of_week;
+          const opensAt = normalizeStoreTime(item.opens_at);
+          const closesAt = normalizeStoreTime(item.closes_at);
+
+          if (item.is_closed) {
+            hoursPayload.push({
+              day_of_week: item.day_of_week,
+              is_closed: true,
+              opens_at: null,
+              closes_at: null,
+            });
+            continue;
+          }
+
+          if (!opensAt || !closesAt) {
+            toast.error(`Preencha abertura e fechamento de ${dayLabel}.`);
+            return;
+          }
+
+          if (closesAt <= opensAt) {
+            toast.error(`No dia ${dayLabel}, fechamento deve ser maior que abertura.`);
+            return;
+          }
+
+          hoursPayload.push({
+            day_of_week: item.day_of_week,
+            is_closed: false,
+            opens_at: opensAt,
+            closes_at: closesAt,
+          });
+        }
+
+        const storePayload = {
+          name: String(novosDados.storeName || "").trim(),
+          address: String(novosDados.storeAddress || "").trim(),
+          phone: String(novosDados.storePhone || "").trim(),
+          deliveryFee,
+        };
+
+        if (Number.isFinite(Number(storeData.latitude))) {
+          storePayload.latitude = Number(storeData.latitude);
+        }
+
+        if (Number.isFinite(Number(storeData.longitude))) {
+          storePayload.longitude = Number(storeData.longitude);
+        }
+
+        const updatedStore = await updateStoreProfile(storePayload);
+        const updatedHours = await updateStoreHours({ hours: hoursPayload });
+        setStoreData(normalizeStoreData(updatedStore || { ...storeData, ...storePayload }));
+        setStoreHours(normalizeStoreHours(updatedHours.length ? updatedHours : hoursPayload));
+        setIsEditing(null);
+        toast.success("Informações da loja atualizadas com sucesso!");
+        return;
+      }
+
       const payload = {
         nomeUsuario: novosDados.nomeUsuario,
         email: novosDados.email,
         telefone: novosDados.telefone,
         data_nascimento: novosDados.dataNascimento,
-        endereco_principal_id: novosDados.enderecoPrincipalId
-          ? Number(novosDados.enderecoPrincipalId)
-          : null,
       };
+
+      if (Object.prototype.hasOwnProperty.call(novosDados, "enderecoPrincipalId")) {
+        payload.endereco_principal_id = novosDados.enderecoPrincipalId
+          ? Number(novosDados.enderecoPrincipalId)
+          : null;
+      }
 
       const response = await http.patch(`/users/${dados.id}`, payload);
 
@@ -138,6 +371,7 @@ export function ProfilePage() {
           prev.enderecoPrincipalId,
         enderecoPrincipal: responseEnderecoPrincipal ?? prev.enderecoPrincipal,
       }));
+
       setIsEditing(null);
       toast.success("Informações atualizadas com sucesso!");
     } catch (err) {
@@ -179,121 +413,6 @@ export function ProfilePage() {
   };
 
   const abrirEdicao = (secao) => setIsEditing(secao);
-  const buscarCep = async (cep) => {
-    const cepLimpo = cep.replace(/\D/g, "");
-    if (cepLimpo.length !== 8) return;
-
-    setCepLoading(true);
-    try {
-      const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
-      const data = await response.json();
-
-      if (data.erro) {
-        toast.error("CEP não encontrado!");
-        return;
-      }
-
-      setNewAddress((prev) => ({
-        ...prev,
-        rua: data.logradouro || "",
-        bairro: data.bairro || "",
-        cidade: data.localidade || "",
-        estado: data.uf || "",
-      }));
-    } catch (err) {
-      console.error("Erro ao buscar CEP:", err);
-      toast.error("Erro ao buscar CEP. Tente novamente.");
-    } finally {
-      setCepLoading(false);
-    }
-  };
-
-  const handleCepChange = (e) => {
-    let value = e.target.value.replace(/\D/g, "");
-
-    if (value.length > 5) {
-      value = value.slice(0, 5) + "-" + value.slice(5, 8);
-    }
-
-    setNewAddress((prev) => ({ ...prev, cep: value }));
-
-    const cepLimpo = value.replace(/\D/g, "");
-    if (cepLimpo.length === 8) {
-      buscarCep(value);
-    }
-  };
-
-  const handleNewAddressChange = (e) => {
-    const { name, value } = e.target;
-    setNewAddress((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleOpenNewAddressForm = () => setShowNewAddressForm(true);
-  const handleCloseNewAddressForm = () => {
-    setShowNewAddressForm(false);
-    setNewAddress({
-      cep: "",
-      rua: "",
-      numero: "",
-      complemento: "",
-      bairro: "",
-      cidade: "",
-      estado: "",
-    });
-  };
-
-  const handleSaveNewAddress = async (e) => {
-    e.preventDefault();
-
-    if (!newAddress.cep || !newAddress.rua || !newAddress.numero || !newAddress.bairro || !newAddress.cidade || !newAddress.estado) {
-      toast.error("Preencha todos os campos obrigatórios.");
-      return;
-    }
-
-    setSavingAddress(true);
-    try {
-      const response = await http.post("/address", {
-        cep: newAddress.cep,
-        rua: newAddress.rua,
-        numero: newAddress.numero,
-        complemento: newAddress.complemento,
-        bairro: newAddress.bairro,
-        cidade: newAddress.cidade,
-        estado: newAddress.estado,
-        latitude: -23.5505,
-        longitude: -46.6333,
-      });
-
-      const novoEndereco = response.data;
-      setEnderecos((prev) => [...prev, novoEndereco]);
-      setDados((prev) => ({
-        ...prev,
-        enderecoPrincipalId: novoEndereco.id,
-        enderecoPrincipal: novoEndereco,
-      }));
-      toast.success("Endereço cadastrado com sucesso!");
-      handleCloseNewAddressForm();
-    } catch (err) {
-      console.error("Erro ao cadastrar endereço:", err);
-      toast.error(err?.response?.data?.message || "Erro ao cadastrar endereço.");
-    } finally {
-      setSavingAddress(false);
-    }
-  };
-
-  const principalAddressId = Number(
-    dados.enderecoPrincipalId ?? dados.endereco_principal_id ?? dados.enderecoPrincipal?.id ?? ""
-  );
-  const enderecoPrincipalSelecionado = enderecos.find(
-    (endereco) => Number(endereco.id) === principalAddressId
-  );
-  const enderecoPrincipalLabel = enderecoPrincipalSelecionado
-    ? `${enderecoPrincipalSelecionado.rua}, ${enderecoPrincipalSelecionado.numero}${enderecoPrincipalSelecionado.complemento ? `, ${enderecoPrincipalSelecionado.complemento}` : ""} - ${enderecoPrincipalSelecionado.bairro}, ${enderecoPrincipalSelecionado.cidade}/${enderecoPrincipalSelecionado.estado}`
-    : dados.enderecoPrincipal
-    ? `${dados.enderecoPrincipal.rua}, ${dados.enderecoPrincipal.numero}${dados.enderecoPrincipal.complemento ? `, ${dados.enderecoPrincipal.complemento}` : ""} - ${dados.enderecoPrincipal.bairro}, ${dados.enderecoPrincipal.cidade}/${dados.enderecoPrincipal.estado}`
-    : Number.isFinite(principalAddressId) && principalAddressId > 0
-    ? `ID ${principalAddressId}`
-    : "Não informado";
 
   const nav = useNavigate();
 
@@ -355,10 +474,70 @@ export function ProfilePage() {
               <span>Telefone</span>
               <p>{dados.telefone}</p>
             </div>
-
-            
           </div>
         </div>
+
+        {canManageStore && (
+          <div className="info-card">
+            <div className="info-header">
+              <h3>Informações da Loja</h3>
+              <button
+                className="edit-btn"
+                onClick={() => abrirEdicao("store")}
+              >
+                Editar
+              </button>
+            </div>
+
+            <div className="info-grid">
+                <div>
+                  <span>Nome da Loja</span>
+                  <p>{storeData.name || "Dados não informados"}</p>
+                </div>
+                <div>
+                  <span>Endereço da Loja</span>
+                  <p>{storeData.address || "Dados não informados"}</p>
+                </div>
+                <div>
+                  <span>Telefone da Loja</span>
+                  <p>{storeData.phone || "Dados não informados"}</p>
+                </div>
+                <div>
+                  <span>Taxa de Entrega</span>
+                  <p>
+                    {storeData.deliveryFee != null
+                      ? formatCurrency(storeData.deliveryFee)
+                      : "Dados não informados"}
+                  </p>
+                </div>
+
+                <div className="store-hours-summary">
+                  <span>Horarios de Funcionamento</span>
+                  <div className="store-hours-stack">
+                    {storeHours.map((hour) => (
+                      <p key={hour.day_of_week} className="store-hours-line">
+                        <strong>{STORE_DAY_LABELS[hour.day_of_week]}:</strong>{" "}
+                        {formatStoreHoursLine(hour)}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+
+                {storeLoading && (
+                  <div>
+                    <span>Status</span>
+                    <p>Carregando informações da loja...</p>
+                  </div>
+                )}
+                {storeHoursLoading && (
+                  <div>
+                    <span>Status</span>
+                    <p>Carregando horarios da loja...</p>
+                  </div>
+                )}
+            </div>
+          </div>
+        )}
 
         {/* SEÇÃO DE NOVO ADMIN — só renderiza se for ROLE_ADMIN */}
         {isAdmin && (
@@ -470,130 +649,6 @@ export function ProfilePage() {
             )}
           </div>
         )}
-        <div className="info-card">
-          <div className="info-header">
-            <h3>Endereço Principal da Hamburgueria</h3>
-            {!showNewAddressForm ? (
-              <button
-                type="button"
-                className="save-btn"
-                onClick={handleOpenNewAddressForm}
-              >
-                Cadastrar Novo Endereço
-              </button>
-            ) : null}
-          </div>
-
-          {showNewAddressForm && (
-            <form className="edit-form" onSubmit={handleSaveNewAddress}>
-              <div className="info-grid">
-                <div>
-                  <label htmlFor="cep">CEP</label>
-                  <input
-                    id="cep"
-                    name="cep"
-                    type="text"
-                    value={newAddress.cep}
-                    onChange={handleCepChange}
-                    placeholder="00000-000"
-                    disabled={cepLoading || savingAddress}
-                  />
-                  {cepLoading && (
-                    <p className="cep-loading-text">Buscando endereço...</p>
-                  )}
-                </div>
-                <div>
-                  <label htmlFor="rua">Rua</label>
-                  <input
-                    id="rua"
-                    name="rua"
-                    type="text"
-                    value={newAddress.rua}
-                    onChange={handleNewAddressChange}
-                    placeholder="Rua exemplo"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="numero">Número</label>
-                  <input
-                    id="numero"
-                    name="numero"
-                    type="text"
-                    value={newAddress.numero}
-                    onChange={handleNewAddressChange}
-                    placeholder="123"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="complemento">Complemento</label>
-                  <input
-                    id="complemento"
-                    name="complemento"
-                    type="text"
-                    value={newAddress.complemento}
-                    onChange={handleNewAddressChange}
-                    placeholder="Opcional"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="bairro">Bairro</label>
-                  <input
-                    id="bairro"
-                    name="bairro"
-                    type="text"
-                    value={newAddress.bairro}
-                    onChange={handleNewAddressChange}
-                    placeholder="Centro"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="cidade">Cidade</label>
-                  <input
-                    id="cidade"
-                    name="cidade"
-                    type="text"
-                    value={newAddress.cidade}
-                    onChange={handleNewAddressChange}
-                    placeholder="São Paulo"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="estado">Estado</label>
-                  <input
-                    id="estado"
-                    name="estado"
-                    type="text"
-                    value={newAddress.estado}
-                    onChange={handleNewAddressChange}
-                    placeholder="SP"
-                  />
-                </div>
-              </div>
-              <div className="form-actions">
-                <button
-                  type="button"
-                  className="cancel-btn"
-                  onClick={handleCloseNewAddressForm}
-                >
-                  Cancelar
-                </button>
-                <button type="submit" className="save-btn" disabled={savingAddress}>
-                  {savingAddress ? "Salvando..." : "Salvar endereço"}
-                </button>
-              </div>
-            </form>
-          )}
-
-          {!showNewAddressForm && (
-            <div className="info-grid">
-              <div>
-                <span>Endereço cadastrado</span>
-                <p>{enderecoPrincipalLabel}</p>
-              </div>
-            </div>
-          )}
-        </div>
-
         {/* MODAIS */}
         {isEditing && (
           <EditForm
@@ -601,16 +656,10 @@ export function ProfilePage() {
             dados={dados}
             enderecos={enderecos}
             onSave={handleSave}
-            onNewAddressSaved={(novoEndereco) => {
-              if (novoEndereco?.id) {
-                setEnderecos((prev) => [...prev, novoEndereco]);
-                setDados((prev) => ({
-                  ...prev,
-                  enderecoPrincipalId: novoEndereco.id,
-                  enderecoPrincipal: novoEndereco,
-                }));
-              }
-            }}
+            isFuncionario={isFuncionario}
+            canManageStore={canManageStore}
+            storeData={storeData}
+            storeHours={storeHours}
             onCancel={() => setIsEditing(null)}
           />
         )}
