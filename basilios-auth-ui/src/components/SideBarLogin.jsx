@@ -4,6 +4,7 @@ import ThemeSwitcher from "./ThemeSwitcher";
 import "../styles/side-bar.css";
 
 export default function SidebarUser({ open, onClose }) {
+  const currentYear = new Date().getFullYear();
   if (!open) return null;
 
   const menuItems = [
@@ -56,7 +57,7 @@ export default function SidebarUser({ open, onClose }) {
         <div className="sidebar-user__footer">
           <ThemeSwitcher />
           <p style={{ margin: "0.5rem 0" }}>Versão 1.0.0</p>
-          <p style={{ margin: "0.5rem 0" }}>© 2025 - Basilios</p>
+          <p style={{ margin: "0.5rem 0" }}>© {currentYear} - Basilios</p>
         </div>
       </div>
 

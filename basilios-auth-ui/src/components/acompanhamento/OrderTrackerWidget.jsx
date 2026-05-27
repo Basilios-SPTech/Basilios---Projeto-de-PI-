@@ -15,6 +15,8 @@ import { authStorage } from "../../services/storageAuth.js";
 import OrderStatusSoundNotifier from "./OrderStatusSoundNotifier.jsx";
 
 const ORDER_ID_KEY = "lastOrderId";
+const PIX_ID_KEY = "pixId";
+const PIX_ORDER_ID_KEY = "pixOrderId";
 const COLLAPSED_KEY = "order-tracker-widget.collapsed.v1";
 const POSITION_KEY = "order-tracker-widget.position.v1";
 const ACTIVE_STATUSES = ["PENDENTE", "CONFIRMADO", "PREPARANDO", "DESPACHADO"];
@@ -216,6 +218,7 @@ export default function OrderTrackerWidget() {
   });
   const [order, setOrder] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasPendingPix, setHasPendingPix] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(() =>
     authStorage.isAuthenticated(),
   );
@@ -233,7 +236,11 @@ export default function OrderTrackerWidget() {
   const isInProgress = ACTIVE_STATUSES.includes(status);
 
   const shouldHideByRoute = location.pathname === "/order-status";
-  const shouldShow = Boolean(orderId) && isAuthenticated && !shouldHideByRoute;
+  const shouldShow =
+    Boolean(orderId) &&
+    isAuthenticated &&
+    !shouldHideByRoute &&
+    !hasPendingPix;
 
   const orderNumber = order?.id ?? orderId;
   const createdAtLabel = formatCreatedAt(order?.createdAt);
@@ -257,16 +264,32 @@ export default function OrderTrackerWidget() {
     const syncOrderId = () => {
       try {
         const next = localStorage.getItem(ORDER_ID_KEY);
+        const pixId = localStorage.getItem(PIX_ID_KEY);
+        const pixOrderId = localStorage.getItem(PIX_ORDER_ID_KEY);
+
         setOrderId((prev) => (prev === next ? prev : next));
+
+        const hasPendingPixForOrder =
+          Boolean(pixId) &&
+          Boolean(next) &&
+          (!pixOrderId || String(pixOrderId) === String(next));
+
+        setHasPendingPix(hasPendingPixForOrder);
       } catch {
         setOrderId(null);
+        setHasPendingPix(false);
       }
     };
 
     syncOrderId();
 
     const storageHandler = (event) => {
-      if (!event || event.key === ORDER_ID_KEY) {
+      if (
+        !event ||
+        event.key === ORDER_ID_KEY ||
+        event.key === PIX_ID_KEY ||
+        event.key === PIX_ORDER_ID_KEY
+      ) {
         syncOrderId();
       }
     };
@@ -279,6 +302,12 @@ export default function OrderTrackerWidget() {
       window.removeEventListener("storage", storageHandler);
     };
   }, [isAuthenticated, location.pathname]);
+
+  useEffect(() => {
+    if (isAuthenticated) return;
+
+    setHasPendingPix(false);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (!orderId || !isAuthenticated) {

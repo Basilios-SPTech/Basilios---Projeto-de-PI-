@@ -35,8 +35,18 @@ export default function Cart() {
       const salvo = JSON.parse(localStorage.getItem(CHAVE_CART) || "[]");
       setCartItems(Array.isArray(salvo) ? salvo : []);
     };
+
+    const abrirCarrinho = () => {
+      setIsOpen(true);
+    };
+
     window.addEventListener("cartUpdated", atualizar);
-    return () => window.removeEventListener("cartUpdated", atualizar);
+    window.addEventListener("openCart", abrirCarrinho);
+
+    return () => {
+      window.removeEventListener("cartUpdated", atualizar);
+      window.removeEventListener("openCart", abrirCarrinho);
+    };
   }, []);
 
   useEffect(() => {
@@ -216,8 +226,15 @@ export default function Cart() {
         <div
           role="button"
           tabIndex={0}
-          onClick={() => setIsOpen(false)}
-          onKeyDown={(e) => e.key === "Enter" && setIsOpen(false)}
+          onClick={() => {
+            if (isCustomizeOpen) return;
+            setIsOpen(false);
+          }}
+          onKeyDown={(e) => {
+            if (e.key !== "Enter") return;
+            if (isCustomizeOpen) return;
+            setIsOpen(false);
+          }}
           className="fixed inset-0 bg-black/50 z-998 transition-opacity"
           aria-label="Fechar carrinho"
         />
@@ -286,6 +303,7 @@ export default function Cart() {
                       // open customize modal for this cart item
                       const full = cartItems.find((c) => c.id === it.id);
                       if (full) {
+                        setIsOpen(true);
                         setSelectedItem(full);
                         setIsCustomizeOpen(true);
                       }
@@ -539,7 +557,7 @@ export default function Cart() {
         visible={isRouteTransitioning}
         messages={[
           "Conferindo seu carrinho...",
-          "Preparando a ida para o checkout...",
+          "Preparando pedido com muito carinho...",
           "Redirecionando para a finalização do pedido...",
         ]}
       />
@@ -548,7 +566,10 @@ export default function Cart() {
       {isCustomizeOpen && (
         <CustomizeBurger
           item={selectedItem}
-          onClose={() => setIsCustomizeOpen(false)}
+          onClose={() => {
+            setIsCustomizeOpen(false);
+            setIsOpen(true);
+          }}
           onSave={(customizedItem) => {
             const atualizado = cartItems.map((p) =>
               p.id === customizedItem.id ? { ...p, ...customizedItem } : p,
@@ -556,7 +577,7 @@ export default function Cart() {
             setCartItems(atualizado);
             localStorage.setItem(CHAVE_CART, JSON.stringify(atualizado));
             window.dispatchEvent(new Event("cartUpdated"));
-            setIsCustomizeOpen(false);
+            setIsOpen(true);
           }}
         />
       )}

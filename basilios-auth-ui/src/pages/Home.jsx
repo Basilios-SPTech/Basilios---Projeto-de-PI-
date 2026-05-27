@@ -539,9 +539,9 @@ export default function Home() {
   function handleSaveCustomization(customItem) {
     // O item customizado já contém o preço correto (com ou sem desconto)
     addToCart(productToCustomize, { isCustom: true, ...customItem });
-    setIsCustomizing(false);
-    setProductToCustomize(null);
-    setPromoAtual(null);
+
+    // Garante que o usuário volte para o drawer do carrinho após salvar.
+    window.dispatchEvent(new Event("openCart"));
   }
 
   function handleCloseCustomization() {

@@ -424,7 +424,7 @@ export default function EditForm({
                     className="profile-edit-address-btn"
                     onClick={openStoreAddressModal}
                   >
-                    Editar endereço com CEP
+                    Editar endereço
                   </button>
                 </div>
               </div>

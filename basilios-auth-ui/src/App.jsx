@@ -25,7 +25,6 @@ import Dashboard from "./pages/Dashboard.jsx";
 import MyOrders from "./pages/MyOrders.jsx";
 import PromocoesPage from "./pages/PromocoesPage.jsx";
 import { ProfilePage } from "./pages/ProfilePage.jsx";
-import UserManagement from "./pages/UserManagement.jsx";
 // Layouts
 import AuthLayout from "./layouts/AuthLayout.jsx";
 import RequireAuth from "./routes/RequireAuth.jsx";
@@ -279,21 +278,6 @@ export default function App() {
                   <ProdutoLayout>
                     <PromocoesPage />
                   </ProdutoLayout>
-                }
-              />
-            </Route>
-
-            {/* Rotas de gestão (FUNCIONARIO e ADMIN) */}
-            <Route element={<RequireAuth roles={["ROLE_FUNCIONARIO", "ROLE_ADMIN"]} />}>
-              <Route
-                path="/gerenciar-usuarios"
-                element={
-                  <>
-                    <ProdutoLayout>
-                      <UserManagement />
-                    </ProdutoLayout>
-                    <FooterBasilios />
-                  </>
                 }
               />
             </Route>

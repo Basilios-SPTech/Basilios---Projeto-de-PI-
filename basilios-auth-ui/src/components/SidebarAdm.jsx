@@ -1,6 +1,6 @@
 /** SidebarAdm */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Home, ListOrdered, LogOut, Package, Hamburger, LayoutDashboard, LogIn, UserRound, Gift, UsersRound } from "lucide-react";
+import { Home, ListOrdered, LogOut, Package, Hamburger, LayoutDashboard, LogIn, UserRound, Gift, Store } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { AuthAPI } from "../services/api";
@@ -65,6 +65,7 @@ function writeSeenPendingOrderIds(ids) {
 export default function SidebarAdm({ open, onClose }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const currentYear = new Date().getFullYear();
 
   let isLogged = false;
   try { isLogged = !!authStorage.getToken(); } catch { isLogged = false; }
@@ -131,30 +132,62 @@ export default function SidebarAdm({ open, onClose }) {
     markBoardOrdersAsSeen();
   }, [location.pathname, markBoardOrdersAsSeen, open]);
 
-  const items = useMemo(() => (isLogged
-    ? [
-        { icon: Home,     label: "Início",              href: "/home" },
-        ...(isFuncionario ? [
-          { icon: Package,  label: "Cadastrar Produto",   href: "/cadastro" },
-          { icon: ListOrdered, label: "Pedidos (Board)",  href: "/board", badgeCount: newBoardOrdersCount },
-          { icon: LayoutDashboard, label: "Dashboard",    href: "/dashboard" },
-          { icon: Gift, label: "Promoções",              href: "/promocoes" },
-        ] : []),
-        ...((isAdmin || isFuncionario) ? [
-          { icon: UsersRound, label: "Gerenciar Usuários", href: "/gerenciar-usuarios" },
-        ] : []),
-        { icon: ListOrdered, label: "Meus Pedidos",      href: "/meus-pedidos" },
-        { icon: UserRound, label: "Meu Perfil",          href: "/profile" },
-        { icon: Hamburger,label: "Sobre Nós",           href: "/about" },
-        { icon: LogOut,   label: "Sair",                href: "#logout" },
-      ]
-    : [
-        { icon: Home,     label: "Início",    href: "/home" },
-        { icon: Hamburger,label: "Sobre Nós", href: "/about" },
-        { icon: LogIn,    label: "Entrar",    href: "/login" },
-      ]), [isAdmin, isFuncionario, isLogged, newBoardOrdersCount]);
+  const menuSections = useMemo(() => {
+    if (!isLogged) {
+      return {
+        guestItems: [
+          { icon: Home, label: "Início", href: "/home" },
+          { icon: Hamburger, label: "Sobre Nós", href: "/about" },
+          { icon: LogIn, label: "Entrar", href: "/login" },
+        ],
+      };
+    }
+
+    const topItems = [
+      { icon: Home, label: "Início", href: "/home" },
+    ];
+
+    const adminItems = [
+      ...(isFuncionario
+        ? [
+            { icon: Package, label: "Cadastrar Produto", href: "/cadastro" },
+            { icon: ListOrdered, label: "Pedidos (Board)", href: "/board", badgeCount: newBoardOrdersCount },
+            { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
+            { icon: Gift, label: "Promoções", href: "/promocoes" },
+            { icon: Store, label: "Informações da Loja", href: "/profile?section=store" },
+          ]
+        : []),
+    ];
+
+    const clientItems = [
+      { icon: ListOrdered, label: "Meus Pedidos", href: "/meus-pedidos" },
+      { icon: UserRound, label: "Meu Perfil", href: "/profile" },
+      { icon: Hamburger, label: "Sobre Nós", href: "/about" },
+    ];
+
+    const bottomItems = [
+      { icon: LogOut, label: "Sair", href: "#logout" },
+    ];
+
+    return { topItems, adminItems, clientItems, bottomItems };
+  }, [isAdmin, isFuncionario, isLogged, newBoardOrdersCount]);
 
   if (!open) return null;
+
+  const renderMenuItem = (item, indexKey) => {
+    const Icon = item.icon;
+    return (
+      <a key={indexKey} href={item.href} className="menu-item" onClick={(e) => handleClick(item, e)}>
+        <Icon />
+        <span>{item.label}</span>
+        {Number(item.badgeCount) > 0 ? (
+          <span className="menu-item__badge" aria-label={`${item.badgeCount} novo(s) pedido(s)`}>
+            {item.badgeCount}
+          </span>
+        ) : null}
+      </a>
+    );
+  };
 
   const handleClick = (item, e) => {
     e.preventDefault();
@@ -192,26 +225,34 @@ export default function SidebarAdm({ open, onClose }) {
         </div>
 
         <nav className="sidebar-user__nav">
-          {items.map((item, i) => {
-            const Icon = item.icon;
-            return (
-              <a key={i} href={item.href} className="menu-item" onClick={(e) => handleClick(item, e)}>
-                <Icon />
-                <span>{item.label}</span>
-                {Number(item.badgeCount) > 0 ? (
-                  <span className="menu-item__badge" aria-label={`${item.badgeCount} novo(s) pedido(s)`}>
-                    {item.badgeCount}
-                  </span>
-                ) : null}
-              </a>
-            );
-          })}
+          {isLogged ? (
+            <>
+              {menuSections.topItems.map((item, i) => renderMenuItem(item, `top-${i}`))}
+
+              {menuSections.adminItems.length > 0 ? (
+                <>
+                  <div className="sidebar-user__section-divider" />
+                  <p className="sidebar-user__section-label">Telas de administrador</p>
+                  {menuSections.adminItems.map((item, i) => renderMenuItem(item, `admin-${i}`))}
+                </>
+              ) : null}
+
+              <div className="sidebar-user__section-divider" />
+              <p className="sidebar-user__section-label">Telas de cliente</p>
+              {menuSections.clientItems.map((item, i) => renderMenuItem(item, `client-${i}`))}
+
+              <div className="sidebar-user__section-divider" />
+              {menuSections.bottomItems.map((item, i) => renderMenuItem(item, `bottom-${i}`))}
+            </>
+          ) : (
+            menuSections.guestItems.map((item, i) => renderMenuItem(item, `guest-${i}`))
+          )}
         </nav>
 
         <div className="sidebar-user__footer">
           <ThemeSwitcher />
           <p style={{ margin: "0.5rem 0" }}>Versão 1.0.0</p>
-          <p style={{ margin: "0.5rem 0" }}>© 2025 - Basilios</p>
+          <p style={{ margin: "0.5rem 0" }}>© {currentYear} - Basilios</p>
         </div>
       </div>
 
