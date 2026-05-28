@@ -46,38 +46,38 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: react-build
-          path: basilios-auth-ui/dist    # Vite → dist | CRA → build
+          path: dist    # Vite → dist | CRA → build (working-directory: basilios-auth-ui)
           retention-days: 1
 
   # ============================================================
   # JOB 2: Deploy no WebServer via self-hosted runner
   # ============================================================
-  # deploy:
-  #   name: 🚀 Deploy no WebServer
-  #   runs-on: [self-hosted, webserver, react-deploy]
-  #   needs: build
+  deploy:
+    name: 🚀 Deploy no WebServer
+    runs-on: self-hosted
+    needs: build
 
-  #   steps:
-  #     - name: Download do artefato de build
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: react-build
-  #         path: /tmp/react-build
+    steps:
+      - name: Download do artefato de build
+        uses: actions/download-artifact@v4
+        with:
+          name: react-build
+          path: /tmp/react-build
 
-  #     - name: Limpar diretório anterior e copiar novo build
-  #       run: |
-  #         sudo rm -rf /var/www/basilios/*
-  #         sudo cp -r /tmp/react-build/. /var/www/basilios/
-  #         sudo chown -R www-data:www-data /var/www/basilios
-  #         sudo chmod -R 755 /var/www/basilios
+      - name: Limpar diretório anterior e copiar novo build
+        run: |
+          sudo rm -rf /var/www/basilios/*
+          sudo cp -r /tmp/react-build/. /var/www/basilios/
+          sudo chown -R www-data:www-data /var/www/basilios
+          sudo chmod -R 755 /var/www/basilios
 
-  #     - name: Recarregar Nginx
-  #       run: sudo systemctl reload nginx
+      - name: Recarregar Nginx
+        run: sudo systemctl reload nginx
 
-  #     - name: Limpar artefato temporário
-  #       run: rm -rf /tmp/react-build
+      - name: Limpar artefato temporário
+        run: rm -rf /tmp/react-build
 
-  #     - name: Verificação do deploy
-  #       run: |
-  #         echo "✅ Deploy do React concluído!"
-  #         echo "URL: http://$(curl -s http://169.254.169.254/latest/meta-data/public-hostname)"
+      - name: Verificação do deploy
+        run: |
+          echo "✅ Deploy do React concluído!"
+          echo "URL: http://$(curl -s http://169.254.169.254/latest/meta-data/public-hostname)"
