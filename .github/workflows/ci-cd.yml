@@ -7,7 +7,7 @@ on:
       - feat/pipe-main
     # paths:
       # - 'basilios-auth-ui/**'   # ajuste para o caminho da sua pasta React
-      
+
 defaults:
   run:
     working-directory: basilios-auth-ui   # ajuste se necessário
@@ -17,7 +17,7 @@ jobs:
   # JOB 1: Build do React (roda em runner hospedado pelo GitHub)
   # ============================================================
   build:
-    name: 🔨 Build React
+    name: 🔨 Build Front
     runs-on: ubuntu-latest
 
     steps:
