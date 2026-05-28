@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - feat/pipe-main
     paths:
       - 'basilios-auth-ui/**'   # ajuste para o caminho da sua pasta React
   workflow_dispatch:    # permite rodar manualmente pelo GitHub
