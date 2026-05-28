@@ -1,0 +1,82 @@
+name: 🌐 Deploy React — WebServer
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'basilios-auth-ui/**'   # ajuste para o caminho da sua pasta React
+  workflow_dispatch:    # permite rodar manualmente pelo GitHub
+
+defaults:
+  run:
+    working-directory: basilios-auth-ui   # ajuste se necessário
+
+jobs:
+  # ============================================================
+  # JOB 1: Build do React (roda em runner hospedado pelo GitHub)
+  # ============================================================
+  build:
+    name: 🔨 Build React
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: basilios-auth-ui/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Build de produção
+        run: npm run build
+        env:
+          # Adicione suas variáveis de ambiente do React aqui
+          # VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          CI: false   # evita que warnings virem erros no build
+
+      - name: Upload do artefato de build
+        uses: actions/upload-artifact@v4
+        with:
+          name: react-build
+          path: basilios-auth-ui/dist    # Vite → dist | CRA → build
+          retention-days: 1
+
+  # ============================================================
+  # JOB 2: Deploy no WebServer via self-hosted runner
+  # ============================================================
+  # deploy:
+  #   name: 🚀 Deploy no WebServer
+  #   runs-on: [self-hosted, webserver, react-deploy]
+  #   needs: build
+
+  #   steps:
+  #     - name: Download do artefato de build
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: react-build
+  #         path: /tmp/react-build
+
+  #     - name: Limpar diretório anterior e copiar novo build
+  #       run: |
+  #         sudo rm -rf /var/www/basilios/*
+  #         sudo cp -r /tmp/react-build/. /var/www/basilios/
+  #         sudo chown -R www-data:www-data /var/www/basilios
+  #         sudo chmod -R 755 /var/www/basilios
+
+  #     - name: Recarregar Nginx
+  #       run: sudo systemctl reload nginx
+
+  #     - name: Limpar artefato temporário
+  #       run: rm -rf /tmp/react-build
+
+  #     - name: Verificação do deploy
+  #       run: |
+  #         echo "✅ Deploy do React concluído!"
+  #         echo "URL: http://$(curl -s http://169.254.169.254/latest/meta-data/public-hostname)"
