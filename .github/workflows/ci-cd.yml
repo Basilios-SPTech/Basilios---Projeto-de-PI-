@@ -66,10 +66,10 @@ jobs:
 
       - name: Limpar diretório anterior e copiar novo build
         run: |
-          sudo rm -rf /var/www/basilios/*
-          sudo cp -r /tmp/react-build/. /var/www/basilios/
-          sudo chown -R www-data:www-data /var/www/basilios
-          sudo chmod -R 755 /var/www/basilios
+          sudo rm -rf /var/www/html/*
+          sudo cp -r /tmp/react-build/. /var/www/html/
+          sudo chown -R www-data:www-data /var/www/html
+          sudo chmod -R 755 /var/www/html
 
       - name: Recarregar Nginx
         run: sudo systemctl reload nginx
