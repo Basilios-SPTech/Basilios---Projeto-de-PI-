@@ -43,6 +43,8 @@ export default function Checkout() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [loadingDeliveryFee, setLoadingDeliveryFee] = useState(true);
+  const [hasActiveOrder, setHasActiveOrder] = useState(false);
+  const [loadingActiveOrder, setLoadingActiveOrder] = useState(true);
   const navigate = useNavigate();
   const { status: businessStatus, checkStoreStatus } = useBusinessHours();
 
@@ -110,6 +112,26 @@ export default function Checkout() {
       setLoadingAddresses(false);
     }
   }, [navigate]);
+
+  const checkActiveOrders = useCallback(async () => {
+    setLoadingActiveOrder(true);
+    try {
+      const response = await http.get("/orders/me?page=0&size=1");
+      const orders = response.data?.content || [];
+      
+      // Verificar se há algum pedido ativo (não ENTREGUE e não CANCELADO)
+      const active = orders.some(order => 
+        order.status !== "ENTREGUE" && order.status !== "CANCELADO"
+      );
+      
+      setHasActiveOrder(active);
+    } catch (err) {
+      console.error("Erro ao verificar pedidos ativos:", err);
+      setHasActiveOrder(false);
+    } finally {
+      setLoadingActiveOrder(false);
+    }
+  }, []);
 
   const getAddressLabel = (endereco) => {
     if (endereco?.enderecoCompleto) return endereco.enderecoCompleto;
@@ -218,6 +240,11 @@ export default function Checkout() {
   const endOrder = async () => {
     if (!enderecoSelecionado) {
       toast.error("Selecione um endereço antes de finalizar o pedido.");
+      return;
+    }
+
+    if (hasActiveOrder) {
+      toast.error("Você possui um pedido ativo que precisa ser concluído ou cancelado antes de fazer um novo pedido.");
       return;
     }
 
@@ -356,13 +383,14 @@ export default function Checkout() {
     try {
       loadAddresses();
       loadDeliveryFee();
+      checkActiveOrders();
       const cart = JSON.parse(localStorage.getItem(CHAVE_CART) || "[]");
       setItens(Array.isArray(cart) ? cart : []);
     } catch (err) {
       console.log(err);
       setItens([]);
     }
-  }, [loadAddresses, loadDeliveryFee]);
+  }, [loadAddresses, loadDeliveryFee, checkActiveOrders]);
 
   const handleAddressCreated = async (createdAddress) => {
     await loadAddresses();
@@ -741,7 +769,7 @@ export default function Checkout() {
 
               <button
                 onClick={endOrder}
-                disabled={!Array.isArray(itens) || itens.length === 0 || submitting || !enderecoSelecionado || (businessStatus && !businessStatus.open)}
+                disabled={!Array.isArray(itens) || itens.length === 0 || submitting || !enderecoSelecionado || (businessStatus && !businessStatus.open) || hasActiveOrder}
                 className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed text-white py-3 md:py-4 rounded-lg font-semibold text-base md:text-lg transition-colors"
               >
                 Finalizar Pedido
@@ -762,6 +790,18 @@ export default function Checkout() {
               {businessStatus && !businessStatus.open && (
                 <p className="mt-2 text-xs text-red-600 text-center font-medium">
                   ⏰ A loja está fechada. Pedidos podem ser feitos durante o horário de funcionamento.
+                </p>
+              )}
+
+              {hasActiveOrder && (
+                <p className="mt-2 text-xs text-red-600 text-center font-medium">
+                  ⚠️ Você possui um pedido ativo. 
+                  <button 
+                    onClick={() => navigate("/my-orders")}
+                    className="ml-1 underline text-red-700 hover:text-red-800"
+                  >
+                    Clique aqui para gerenciar seus pedidos.
+                  </button>
                 </p>
               )}
 
