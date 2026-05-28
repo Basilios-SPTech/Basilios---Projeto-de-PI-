@@ -7,8 +7,7 @@ on:
       - feat/pipe-main
     # paths:
       # - 'basilios-auth-ui/**'   # ajuste para o caminho da sua pasta React
-  workflow_dispatch:    # permite rodar manualmente pelo GitHub
-
+      
 defaults:
   run:
     working-directory: basilios-auth-ui   # ajuste se necessário
