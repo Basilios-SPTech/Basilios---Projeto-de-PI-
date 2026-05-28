@@ -45,7 +45,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: react-build
-          path: dist    # Vite → dist | CRA → build (working-directory: basilios-auth-ui)
+          path: basilios-auth-ui/dist
           retention-days: 1
 
   # ============================================================
