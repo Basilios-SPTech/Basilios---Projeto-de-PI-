@@ -11,6 +11,9 @@ import {
 import { http } from "../../services/http.js";
 import { formatCurrency } from "../../utils/formatters.js";
 
+const ORDER_ID_KEY = "lastOrderId";
+const PIX_ORDER_ID_KEY = "pixOrderId";
+
 const STATUS_STEPS = [
   {
     key: "PENDENTE",
@@ -101,7 +104,7 @@ export default function OrderStatus() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const orderId = localStorage.getItem("lastOrderId");
+  const orderId = localStorage.getItem(ORDER_ID_KEY);
   const orderDate = order?.createdAt ? new Date(order.createdAt) : null;
   const items = Array.isArray(order?.items) ? order.items : [];
   const normalizedStatus = normalizeStatus(order?.status);
@@ -129,12 +132,20 @@ export default function OrderStatus() {
 
   const fetchOrderData = async () => {
     try {
-      const response = await http.get(`/orders/${orderId}`);
+      const response = await http.get(`/orders/me/${orderId}`);
 
       setOrder(response.data);
       setLoading(false);
     } catch (err) {
       console.error("Erro ao buscar pedido:", err);
+      if ([401, 403, 404].includes(Number(err?.status))) {
+        try {
+          localStorage.removeItem(ORDER_ID_KEY);
+          localStorage.removeItem(PIX_ORDER_ID_KEY);
+        } catch {
+          // noop
+        }
+      }
       setError("Erro ao carregar dados do pedido");
       setLoading(false);
     }

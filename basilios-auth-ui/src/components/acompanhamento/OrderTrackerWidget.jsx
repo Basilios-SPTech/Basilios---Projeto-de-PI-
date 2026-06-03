@@ -238,6 +238,7 @@ export default function OrderTrackerWidget() {
   const shouldHideByRoute = location.pathname === "/order-status";
   const shouldShow =
     Boolean(orderId) &&
+    Boolean(order) &&
     isAuthenticated &&
     !shouldHideByRoute &&
     !hasPendingPix;
@@ -322,7 +323,7 @@ export default function OrderTrackerWidget() {
       if (!cancelled) setIsLoading(true);
 
       try {
-        const response = await http.get(`/orders/${orderId}`);
+        const response = await http.get(`/orders/me/${orderId}`);
         if (cancelled) return;
 
         const payload = response?.data;
@@ -343,9 +344,10 @@ export default function OrderTrackerWidget() {
       } catch (err) {
         if (cancelled) return;
 
-        if (err?.status === 404) {
+        if ([401, 403, 404].includes(Number(err?.status))) {
           try {
             localStorage.removeItem(ORDER_ID_KEY);
+            localStorage.removeItem(PIX_ORDER_ID_KEY);
           } catch {
             // noop
           }
