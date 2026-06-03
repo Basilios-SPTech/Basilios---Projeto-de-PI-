@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
@@ -27,6 +27,28 @@ import {
 
 const CHAVE_CART = "carrinho-basilios";
 const PENDING_PIX_ORDER_KEY = "pending-pix-order";
+const CARD_PAYMENT_VALUES = ["cartao", "cartao_credito", "cartao_debito", "vale_refeicao"];
+
+function mapCheckoutPaymentMethod(formaPagamento) {
+  if (formaPagamento === "cartao_credito") return "CARTAO_CREDITO";
+  if (formaPagamento === "cartao_debito") return "CARTAO_DEBITO";
+  if (formaPagamento === "vale_refeicao") return "VALE_REFEICAO";
+  if (formaPagamento === "cartao") return "CARTAO";
+  if (["CARTAO", "CARTAO_CREDITO", "CARTAO_DEBITO", "VALE_REFEICAO"].includes(formaPagamento)) {
+    return formaPagamento;
+  }
+  return "PIX";
+}
+
+function isCardPaymentSelection(formaPagamento) {
+  return CARD_PAYMENT_VALUES.includes(formaPagamento);
+}
+
+function getCardPaymentLabel(formaPagamento) {
+  if (formaPagamento === "cartao_debito") return "Cartão de Débito";
+  if (formaPagamento === "vale_refeicao") return "Vale refeição";
+  return "Cartão de Crédito";
+}
 
 export default function Checkout() {
   const [formaPagamento, setFormaPagamento] = useState("pix");
@@ -45,8 +67,10 @@ export default function Checkout() {
   const [loadingDeliveryFee, setLoadingDeliveryFee] = useState(true);
   const [hasActiveOrder, setHasActiveOrder] = useState(false);
   const [loadingActiveOrder, setLoadingActiveOrder] = useState(true);
+  const submitLockRef = useRef(false);
   const navigate = useNavigate();
   const { status: businessStatus, checkStoreStatus } = useBusinessHours();
+  const isCardPayment = isCardPaymentSelection(formaPagamento);
 
   const loadDeliveryFee = useCallback(async () => {
     setLoadingDeliveryFee(true);
@@ -125,9 +149,11 @@ export default function Checkout() {
       );
       
       setHasActiveOrder(active);
+      return active;
     } catch (err) {
       console.error("Erro ao verificar pedidos ativos:", err);
       setHasActiveOrder(false);
+      return false;
     } finally {
       setLoadingActiveOrder(false);
     }
@@ -238,13 +264,38 @@ export default function Checkout() {
   };
 
   const endOrder = async () => {
+    let createdOrderId = null;
+
+    if (submitLockRef.current) return;
+    submitLockRef.current = true;
+
+    if (submitting) {
+      submitLockRef.current = false;
+      return;
+    }
+
+    setSubmitting(true);
+
     if (!enderecoSelecionado) {
       toast.error("Selecione um endereço antes de finalizar o pedido.");
+      setSubmitting(false);
+      submitLockRef.current = false;
       return;
     }
 
     if (hasActiveOrder) {
       toast.error("Você possui um pedido ativo que precisa ser concluído ou cancelado antes de fazer um novo pedido.");
+      setSubmitting(false);
+      submitLockRef.current = false;
+      return;
+    }
+
+    // Revalida no backend no momento do clique para evitar condição de corrida.
+    const activeOrderNow = await checkActiveOrders();
+    if (activeOrderNow) {
+      toast.error("Você possui um pedido ativo que precisa ser concluído ou cancelado antes de fazer um novo pedido.");
+      setSubmitting(false);
+      submitLockRef.current = false;
       return;
     }
 
@@ -252,11 +303,10 @@ export default function Checkout() {
 
     if (latestStoreStatus && !latestStoreStatus.open) {
       toast.error("A loja está fechada no momento. " + (latestStoreStatus.message || ""));
+      setSubmitting(false);
+      submitLockRef.current = false;
       return;
     }
-
-    if (submitting) return;
-    setSubmitting(true);
 
     try {
     const currentDeliveryFee = await loadDeliveryFee();
@@ -291,6 +341,7 @@ export default function Checkout() {
     let body = {
       addressId: Number(enderecoSelecionado),
       items: itensPedido,
+      metodoPagamento: mapCheckoutPaymentMethod(formaPagamento),
       deliveryFee: currentDeliveryFee,
       discount: 0,
       observations: String(deliveryObservations || "").trim(),
@@ -300,6 +351,13 @@ export default function Checkout() {
       // 1. Criar o pedido PRIMEIRO no backend
       let req = await http.post("/orders", body);
       let orderId = req.data.id;
+      createdOrderId = Number.isFinite(Number(orderId)) ? Number(orderId) : null;
+
+      const backendTotal = Number(req?.data?.total);
+      const fallbackTotal = Number(calcularTotal());
+      const totalValue = Number.isFinite(backendTotal) ? backendTotal : fallbackTotal;
+      // AbacatePay trabalha com centavos. Ex.: R$ 45,00 => 4500
+      const pixAmount = Math.max(1, Math.round(totalValue * 100));
 
       // 2. Chamar AbacatePay com o orderId nos metadados
       const abacatePayResp = await fetch("/api/abacate/v1/pixQrCode/create", {
@@ -309,7 +367,7 @@ export default function Checkout() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          amount: 3100,
+          amount: 100,
           expiresIn: 600,
           description: `Pedido #${orderId}`,
           customer: {
@@ -325,11 +383,16 @@ export default function Checkout() {
         }),
       });
 
-      if (!abacatePayResp.ok) {
-        throw new Error("Falha ao gerar QR Code PIX");
-      }
+      const abacatePayData = await abacatePayResp.json().catch(() => null);
 
-      const abacatePayData = await abacatePayResp.json();
+      if (!abacatePayResp.ok) {
+        const pixErrorMessage =
+          abacatePayData?.error?.message ||
+          abacatePayData?.message ||
+          abacatePayData?.errors?.[0]?.message ||
+          `status ${abacatePayResp.status}`;
+        throw new Error(`Falha ao gerar QR Code PIX (${pixErrorMessage})`);
+      }
 
       // 3. Salvar a associação entre orderId e pixId do AbacatePay
       localStorage.setItem("lastOrderId", String(orderId));
@@ -350,8 +413,10 @@ export default function Checkout() {
       let lastOrderId = req.data.id;
       localStorage.setItem("lastOrderId", String(lastOrderId));
 
+      const cardLabel = getCardPaymentLabel(formaPagamento);
+
       toast.success(
-        "Você selecionou 'Cartão de Crédito' como forma de pagamento! Você será redirecionado para a tela de acompanhamento do pedido e deverá realizar o pagamento na entrega",
+        `Você selecionou '${cardLabel}' como forma de pagamento! Você será redirecionado para a tela de acompanhamento do pedido e deverá realizar o pagamento na entrega`,
         {
           duration: 6000,
         },
@@ -366,16 +431,36 @@ export default function Checkout() {
     // localStorage.removeItem(CHAVE_CART);
     } catch (err) {
       console.error("Erro ao finalizar pedido:", err);
+
       if (formaPagamento == "pix") {
         localStorage.removeItem(PENDING_PIX_ORDER_KEY);
+
+        if (createdOrderId) {
+          try {
+            await http.patch(`/orders/${createdOrderId}/status`, { status: "CANCELADO" });
+            await checkActiveOrders();
+            toast.error("Não foi possível gerar o PIX. O pedido foi cancelado automaticamente.");
+          } catch (cancelErr) {
+            console.error("Erro ao cancelar pedido após falha no PIX:", cancelErr);
+            toast.error("Falha ao gerar PIX e também não foi possível cancelar o pedido automaticamente.");
+          }
+        }
       }
+
       if (err?.status === 401) {
         toast.error("Sessão expirada. Faça login novamente.");
         navigate("/login");
+        setSubmitting(false);
+        submitLockRef.current = false;
         return;
       }
-      toast.error("Erro ao finalizar pedido. Tente novamente.");
+
+      if (!(formaPagamento == "pix" && createdOrderId)) {
+        toast.error(err?.message || "Erro ao finalizar pedido. Tente novamente.");
+      }
+
       setSubmitting(false);
+      submitLockRef.current = false;
     }
   };
 
@@ -709,23 +794,70 @@ export default function Checkout() {
                 </button>
 
                 <button
-                  onClick={() => setFormaPagamento("cartao")}
+                  onClick={() =>
+                    setFormaPagamento((prev) =>
+                      isCardPaymentSelection(prev) ? prev : "cartao_credito",
+                    )
+                  }
                   className={`p-4 md:p-6 rounded-lg border-2 transition-all cursor-pointer ${
-                    formaPagamento === "cartao"
+                    isCardPayment
                       ? "bg-gray-800 text-white border-gray-700"
                       : "bg-gray-50 border-gray-200 hover:border-gray-400"
                   }`}
                 >
                   <CreditCard size={36} className="mx-auto mb-2 md:mb-3 md:w-12! md:h-12!" />
-                  <p className="font-semibold text-base md:text-lg">Cartão de Crédito</p>
+                  <p className="font-semibold text-base md:text-lg">Cartão</p>
                   <p
-                    className={`text-sm mt-1 ${formaPagamento === "cartao" ? "text-gray-300" : "text-gray-600"}`}
-                  ></p>
+                    className={`text-sm mt-1 ${isCardPayment ? "text-gray-300" : "text-gray-600"}`}
+                  >
+                    Crédito/débito/VR
+                  </p>
                 </button>
               </div>
 
-              {formaPagamento === "cartao" && (
+              {isCardPayment && (
                 <div className="mt-4 md:mt-6 bg-gray-50 p-4 md:p-6 rounded-lg border-2 border-gray-300">
+                  <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-3">
+                    Tipo de cartão
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setFormaPagamento("cartao_credito")}
+                      className={`rounded-lg border px-4 py-3 text-center transition-colors ${
+                        formaPagamento === "cartao_credito"
+                          ? "border-gray-800 bg-gray-800 text-white"
+                          : "border-gray-300 bg-white text-gray-700 hover:border-gray-500"
+                      }`}
+                    >
+                      <p className="font-semibold text-sm">Cartão de Crédito</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setFormaPagamento("cartao_debito")}
+                      className={`rounded-lg border px-4 py-3 text-center transition-colors ${
+                        formaPagamento === "cartao_debito"
+                          ? "border-gray-800 bg-gray-800 text-white"
+                          : "border-gray-300 bg-white text-gray-700 hover:border-gray-500"
+                      }`}
+                    >
+                      <p className="font-semibold text-sm">Cartão de Débito</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setFormaPagamento("vale_refeicao")}
+                      className={`rounded-lg border px-4 py-3 text-center transition-colors ${
+                        formaPagamento === "vale_refeicao"
+                          ? "border-gray-800 bg-gray-800 text-white"
+                          : "border-gray-300 bg-white text-gray-700 hover:border-gray-500"
+                      }`}
+                    >
+                      <p className="font-semibold text-sm">Vale refeição</p>
+                    </button>
+                  </div>
+
                   <div className="flex items-start gap-3">
                     <div className="text-2xl">ℹ️</div>
                     <div>
@@ -735,7 +867,7 @@ export default function Checkout() {
                       <p className="text-gray-600 text-sm">
                         O pagamento com cartão será processado no momento da
                         entrega. Tenha seu cartão em mãos para finalizar a
-                        transação.
+                        transação ({getCardPaymentLabel(formaPagamento)}).
                       </p>
                     </div>
                   </div>
@@ -797,7 +929,7 @@ export default function Checkout() {
                 <p className="mt-2 text-xs text-red-600 text-center font-medium">
                   ⚠️ Você possui um pedido ativo. 
                   <button 
-                    onClick={() => navigate("/my-orders")}
+                    onClick={() => navigate("/order-status")}
                     className="ml-1 underline text-red-700 hover:text-red-800"
                   >
                     Clique aqui para gerenciar seus pedidos.

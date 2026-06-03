@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { MapPin, Package, Clock, X } from "lucide-react";
+import { getPaymentStatusPresentation } from "../utils/orderPayment.js";
 
 function extractMeatPoint(observations) {
   const raw = String(observations || "");
@@ -47,6 +48,7 @@ export default function OrderDetailsModal({ isOpen, order, onClose }) {
   if (!isOpen || !order) return null;
 
   const items = Array.isArray(order.items) ? order.items : [];
+  const paymentInfo = getPaymentStatusPresentation(order);
 
   return (
     <div
@@ -84,6 +86,9 @@ export default function OrderDetailsModal({ isOpen, order, onClose }) {
           <div className="flex items-center gap-2 text-sm text-neutral-500">
             <Clock className="w-4 h-4" />
             <span>{order.createdAt}</span>
+          </div>
+          <div className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-xs font-semibold text-neutral-700">
+            Pagamento: {paymentInfo.text}
           </div>
 
           <div className="space-y-3">

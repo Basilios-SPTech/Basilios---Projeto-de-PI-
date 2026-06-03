@@ -13,6 +13,7 @@ import {
 import { http } from "../../services/http.js";
 import { authStorage } from "../../services/storageAuth.js";
 import OrderStatusSoundNotifier from "./OrderStatusSoundNotifier.jsx";
+import { getPaymentStatusPresentation } from "../../utils/orderPayment.js";
 
 const ORDER_ID_KEY = "lastOrderId";
 const PIX_ID_KEY = "pixId";
@@ -230,6 +231,7 @@ export default function OrderTrackerWidget() {
   const previousStatusRef = useRef(null);
 
   const status = normalizeStatus(order?.status);
+  const paymentInfo = getPaymentStatusPresentation(order);
   const orbTheme = STATUS_ORB_THEME[status] || STATUS_ORB_THEME.PENDENTE;
   const statusLabel = STATUS_LABELS[status] || "Aguardando confirmacao";
   const statusIndex = Math.max(0, STATUS_STEPS.findIndex((step) => step === status));
@@ -632,6 +634,9 @@ export default function OrderTrackerWidget() {
                 {createdAtLabel ? (
                   <p className="mt-0.5 text-xs text-zinc-500">Criado em {createdAtLabel}</p>
                 ) : null}
+                <p className="mt-1 text-xs font-medium text-zinc-600">
+                  Pagamento: {paymentInfo.text}
+                </p>
               </div>
 
               <div>

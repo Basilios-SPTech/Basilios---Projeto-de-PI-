@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { http } from "../../services/http.js";
 import { formatCurrency } from "../../utils/formatters.js";
+import { getPaymentStatusPresentation } from "../../utils/orderPayment.js";
 
 const ORDER_ID_KEY = "lastOrderId";
 const PIX_ORDER_ID_KEY = "pixOrderId";
@@ -113,6 +114,7 @@ export default function OrderStatus() {
   );
   const currentStepIndex = stepIndex >= 0 ? stepIndex : 0;
   const statusLabel = STATUS_LABELS[normalizedStatus] || "Aguardando confirmação";
+  const paymentInfo = getPaymentStatusPresentation(order);
   const subtotalValue = Number(order?.subtotal ?? 0) || 0;
   const deliveryFeeValue = Number(order?.deliveryFee ?? 0) || 0;
   const discountValue = Number(order?.discount ?? 0) || 0;
@@ -242,6 +244,9 @@ export default function OrderStatus() {
                       minute: "2-digit",
                     })
                   : "Data não disponível"}
+              </p>
+              <p className="mt-1 text-xs sm:text-sm font-medium text-gray-600">
+                Pagamento: {paymentInfo.text}
               </p>
             </div>
           </div>

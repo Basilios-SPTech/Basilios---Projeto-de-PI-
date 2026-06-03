@@ -25,6 +25,7 @@ import MenuButtonAuto from "../components/MenuButtonAuto.jsx";
 import { http } from "../services/http.js";
 import { formatCurrency } from "../utils/formatters.js";
 import { resolveImageUrl } from "../utils/imageUrl.js";
+import { getPaymentStatusPresentation } from "../utils/orderPayment.js";
 
 const CHAVE_CART = "carrinho-basilios";
 const CHAVE_STORAGE = "produtos-basilios";
@@ -625,6 +626,7 @@ export default function MyOrders() {
                 const statusClass =
                   STATUS_STYLES[normalizedStatus] ||
                   "bg-gray-100 text-gray-700 border-gray-300";
+                const paymentInfo = getPaymentStatusPresentation(order);
 
                 const orderItems = Array.isArray(order.items) ? order.items : [];
                 const isItemsExpanded = !!expandedItemsByOrder[order.id];
@@ -648,14 +650,19 @@ export default function MyOrders() {
                         </p>
                       </div>
 
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${statusClass}`}
-                      >
-                        <span className={STATUS_ICON_STYLES[normalizedStatus] || "text-zinc-700"}>
-                          <StatusIcon status={normalizedStatus} size={13} />
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        <span className="inline-flex items-center rounded-full border border-zinc-300 bg-zinc-50 px-3 py-1 text-xs font-semibold text-zinc-700">
+                          Pagamento: {paymentInfo.text}
                         </span>
-                        {statusLabel}
-                      </span>
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${statusClass}`}
+                        >
+                          <span className={STATUS_ICON_STYLES[normalizedStatus] || "text-zinc-700"}>
+                            <StatusIcon status={normalizedStatus} size={13} />
+                          </span>
+                          {statusLabel}
+                        </span>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 gap-3 text-sm text-zinc-700 md:grid-cols-3">
@@ -797,6 +804,9 @@ export default function MyOrders() {
                   </h3>
                   <p className="mt-0.5 text-sm font-medium text-zinc-600">
                     {formatOrderDate(selectedOrder.createdAt)} • {formatCurrency(selectedOrder.total)}
+                  </p>
+                  <p className="mt-1 text-xs font-semibold text-zinc-600">
+                    Pagamento: {getPaymentStatusPresentation(selectedOrder).text}
                   </p>
                 </div>
 

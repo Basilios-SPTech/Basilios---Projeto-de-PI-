@@ -46,6 +46,116 @@ function canDragTask(task) {
   return ["PENDENTE", "CONFIRMADO", "PREPARANDO"].includes(task?.currentStatus);
 }
 
+function normalizePaymentMethod(method) {
+  const normalized = String(method || "")
+    .trim()
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, "_");
+
+  if (normalized === "PIX") return "PIX";
+  if (normalized === "CARTAO") return "CARTAO";
+  if (normalized === "CARTAO_CREDITO") return "CARTAO_CREDITO";
+  if (normalized === "CARTAO_DEBITO") return "CARTAO_DEBITO";
+  if (normalized === "VALE_REFEICAO") return "VALE_REFEICAO";
+  if (normalized === "VR") return "VALE_REFEICAO";
+  if (normalized.includes("VALE") || normalized.includes("REFEICAO")) {
+    return "VALE_REFEICAO";
+  }
+  if (normalized === "DINHEIRO") return "DINHEIRO";
+
+  return normalized || "";
+}
+
+function normalizePaymentStatus(status) {
+  const normalized = String(status || "")
+    .trim()
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, "_");
+
+  if (["PENDENTE", "PAGO", "CARTAO"].includes(normalized)) return normalized;
+
+  return normalized || "";
+}
+
+function isCardPaymentMethod(method) {
+  return ["CARTAO", "CARTAO_CREDITO", "CARTAO_DEBITO", "VALE_REFEICAO"].includes(method);
+}
+
+function getPaymentMethodLabel(method) {
+  if (method === "PIX") return "Pix";
+  if (method === "CARTAO_CREDITO") return "Cartão de crédito";
+  if (method === "CARTAO_DEBITO") return "Cartão de débito";
+  if (method === "VALE_REFEICAO") return "Vale refeição";
+  if (method === "CARTAO") return "Cartão";
+  if (method === "DINHEIRO") return "Dinheiro";
+  return method || "Não informado";
+}
+
+function getEffectivePaymentStatus(method, status) {
+  if (method === "PIX") {
+    return status === "PAGO" ? "PAGO" : "PENDENTE";
+  }
+
+  return status;
+}
+
+function getPaymentStatusLabel(status) {
+  if (status === "PENDENTE") return "Pendente";
+  if (status === "PAGO") return "Pago";
+  if (status === "CARTAO") return "Cartão";
+  return status || "";
+}
+
+function getPaymentStatusBadgeClass(status) {
+  if (status === "PAGO") {
+    return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  }
+
+  if (status === "PENDENTE") {
+    return "border-rose-200 bg-rose-50 text-rose-700";
+  }
+
+  return "border-neutral-200 bg-neutral-100 text-neutral-700";
+}
+
+function getPaymentMethodBadgeClass(method) {
+  if (method === "PIX") {
+    return "border-indigo-200 bg-indigo-50 text-indigo-700";
+  }
+
+  if (["CARTAO", "CARTAO_CREDITO", "CARTAO_DEBITO"].includes(method)) {
+    return "border-sky-200 bg-sky-50 text-sky-700";
+  }
+
+  if (method === "VALE_REFEICAO") {
+    return "border-violet-200 bg-violet-50 text-violet-700";
+  }
+
+  if (method === "DINHEIRO") {
+    return "border-amber-200 bg-amber-50 text-amber-700";
+  }
+
+  return "border-neutral-200 bg-neutral-100 text-neutral-700";
+}
+
+function canMoveTaskByPayment(task) {
+  const method = normalizePaymentMethod(task?.metodoPagamento);
+  const status = normalizePaymentStatus(task?.statusPagamento);
+
+  if (method === "PIX" && status !== "PAGO") {
+    return {
+      allowed: false,
+      reason: `Pedido #${task?.orderId}: pagamento PIX pendente.`,
+    };
+  }
+
+  return { allowed: true, reason: "" };
+}
+
 function isTransitionAllowed(fromStatus, toStatus) {
   if (!fromStatus || !toStatus) return false;
   const allowed = ALLOWED_TRANSITIONS[fromStatus] || [];
@@ -405,6 +515,12 @@ export default function BoardPedidos() {
   const dispatchedTasks = columns?.DESPACHADO?.tasks || [];
 
   const openSingleFinalizeModal = (task) => {
+    const moveRule = canMoveTaskByPayment(task);
+    if (!moveRule.allowed) {
+      toast.error(moveRule.reason);
+      return;
+    }
+
     setConfirmModal({
       open: true,
       step: 1,
@@ -485,8 +601,23 @@ export default function BoardPedidos() {
     try {
       setFinalizingAll(true);
 
+      const eligibleTasks = tasksToFinalize.filter((task) =>
+        canMoveTaskByPayment(task).allowed,
+      );
+      const blockedCount = tasksToFinalize.length - eligibleTasks.length;
+
+      if (!eligibleTasks.length) {
+        toast.error("Todos os pedidos selecionados estão com PIX pendente.");
+        setConfirmModal({ open: false, step: 1, mode: null, task: null });
+        return;
+      }
+
+      if (blockedCount > 0) {
+        toast.error(`${blockedCount} pedido(s) não foram finalizados por PIX pendente.`);
+      }
+
       const results = await Promise.allSettled(
-        tasksToFinalize.map((task) =>
+        eligibleTasks.map((task) =>
           http.patch(`/orders/${task.id}/status`, { status: "ENTREGUE" }).then(() => task.id),
         ),
       );
@@ -554,6 +685,8 @@ export default function BoardPedidos() {
 
       orders.forEach((order) => {
         const normalizedStatus = normalizeBoardStatus(order.status);
+        const paymentMethod = normalizePaymentMethod(order.metodoPagamento);
+        const paymentStatus = normalizePaymentStatus(order.statusPagamento);
         const customerName =
           order.userName ||
           order.customerName ||
@@ -583,7 +716,7 @@ export default function BoardPedidos() {
         const task = {
           id: order.id,
           orderId: order.id,
-          currentStatus: order.status,
+          currentStatus: normalizedStatus,
           items: order.items,
           address: order.address,
           customerName,
@@ -592,6 +725,8 @@ export default function BoardPedidos() {
             hour: "2-digit",
             minute: "2-digit",
           }),
+          metodoPagamento: paymentMethod,
+          statusPagamento: paymentStatus,
           subtotal: order.subtotal,
           deliveryFee: order.deliveryFee,
           discount: order.discount,
@@ -600,7 +735,7 @@ export default function BoardPedidos() {
           totalItems: order.totalItems,
         };
 
-        const boardColumn = getBoardColumnForStatus(order.status);
+        const boardColumn = getBoardColumnForStatus(normalizedStatus);
         if (boardColumn && newColumns[boardColumn]) {
           newColumns[boardColumn].tasks.push(task);
         }
@@ -715,6 +850,14 @@ export default function BoardPedidos() {
       toast.error(
         `Não é possível mover de \"${statusLabel(fromStatus)}\" para \"${statusLabel(toStatus)}\".`
       );
+      setDraggedTask(null);
+      setDraggedFrom(null);
+      return;
+    }
+
+    const moveRule = canMoveTaskByPayment(task);
+    if (!moveRule.allowed) {
+      toast.error(moveRule.reason);
       setDraggedTask(null);
       setDraggedFrom(null);
       return;
@@ -913,6 +1056,21 @@ export default function BoardPedidos() {
                   ) : (
                     column.tasks.map((task) => {
                       const draggable = canDragTask(task);
+                      const paymentMethod = task.metodoPagamento || "";
+                      const paymentStatus = getEffectivePaymentStatus(
+                        paymentMethod,
+                        task.statusPagamento,
+                      );
+                      const isPixPayment = paymentMethod === "PIX";
+                      const pixStatusLabel = paymentStatus === "PAGO" ? "Pago" : "Pendente";
+                      const paymentDisplay = isPixPayment
+                        ? `Pix/${pixStatusLabel}`
+                        : getPaymentMethodLabel(paymentMethod);
+                      const paymentDisplayClass = isPixPayment
+                        ? paymentStatus === "PAGO"
+                          ? "text-emerald-700"
+                          : "text-rose-700"
+                        : "text-slate-700";
 
                       return (
                       <div
@@ -1094,6 +1252,16 @@ export default function BoardPedidos() {
                             </p>
                           </div>
                         )}
+
+                        {/* Pagamento */}
+                        <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/80">
+                          <p className="text-sm font-semibold text-slate-600">
+                            Pagamento:{" "}
+                            <span className={`font-bold ${paymentDisplayClass}`}>
+                              {paymentDisplay}
+                            </span>
+                          </p>
+                        </div>
 
                         {/* Total */}
                         <div className="px-4 py-3 bg-neutral-50 rounded-b-xl">
