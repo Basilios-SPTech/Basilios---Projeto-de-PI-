@@ -117,6 +117,11 @@ function getTokenRaw() {
 export const authStorage = {
   // token cru (string)
   getToken() {
+    // Sempre verifica se o token no localStorage mudou (ex: outro tab, register/login)
+    const tokenFromStorage = getTokenRaw()
+    if (tokenFromStorage !== _cachedToken) {
+      recomputeCaches(tokenFromStorage)
+    }
     return _cachedToken
   },
 

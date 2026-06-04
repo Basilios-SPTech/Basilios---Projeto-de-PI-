@@ -94,13 +94,13 @@ const DEFAULT_SUBCATEGORIES = {
 };
 
 const ADICIONAL_SUBCATEGORIES = [
-  { value: "QUEIJO", label: "Queijo" },
-  { value: "PROTEINA", label: "Proteína" },
-  { value: "ACOMPANHAMENTO", label: "Acompanhamento" },
-  { value: "BEBIDA", label: "Bebida" },
-  { value: "PAO", label: "Pão" },
-  { value: "VEGETAL", label: "Vegetal" },
-  { value: "MOLHO", label: "Molho" },
+  { value: "QUEIJO", label: "Queijo", id: 1 },
+  { value: "PROTEINA", label: "Proteína", id: 2 },
+  { value: "ACOMPANHAMENTO", label: "Acompanhamento", id: 3 },
+  { value: "BEBIDA", label: "Bebida", id: 4 },
+  { value: "PAO", label: "Pão", id: 5 },
+  { value: "VEGETAL", label: "Vegetal", id: 6 },
+  { value: "MOLHO", label: "Molho", id: 7 },
 ];
 
 const ADICIONAL_SUBCATEGORY_LABEL_MAP = ADICIONAL_SUBCATEGORIES.reduce(
@@ -270,6 +270,7 @@ export default function CadastrarProduto() {
   const [adicionalToDelete, setAdicionalToDelete] = useState(null);
   const [produtoToDelete, setProdutoToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
   const [categoriaFiltro, setCategoriaFiltro] = useState("ALL");
   const [statusFiltro, setStatusFiltro] = useState("ALL");
 
@@ -383,12 +384,16 @@ export default function CadastrarProduto() {
   }, [isEditAdicionalOpen]);
 
   useEffect(() => {
-    if (!adicionalToDelete && !produtoToDelete) return;
+    if (!adicionalToDelete && !produtoToDelete) {
+      setDeleteError(null);
+      return;
+    }
 
     const handleKeyDown = (event) => {
       if (event.key === "Escape" && !isDeleting) {
         setAdicionalToDelete(null);
         setProdutoToDelete(null);
+        setDeleteError(null);
       }
     };
 
@@ -443,22 +448,37 @@ export default function CadastrarProduto() {
       return;
     }
 
+    // Tenta encontrar o ID da subcategoria
+    const subcategoryObj = ADICIONAL_SUBCATEGORIES.find(
+      (opt) => opt.value === subcategory
+    );
+    const subcategoryId = subcategoryObj?.id;
+
     const payload = {
       name,
-      description,
-      subcategory,
+      ...(description ? { description } : {}),
+      // Tenta enviar como ID numerico primeiro, se falhar tenta string
+      subcategory: subcategoryId || subcategory,
       price: parsedPrice,
     };
 
+    console.log("📤 Payload enviado para POST /adicionais:", payload);
+
     try {
       await http.post("/adicionais", payload);
-      toast.success("Adicional criado com sucesso.");
+      toast.success("Adicional criado com sucesso!");
 
       resetAdicionalForm();
       setAdicionaisListOpen(false);
       await loadAdicionais();
     } catch (err) {
       console.error("Erro ao salvar adicional:", err);
+      console.error("🔍 Detalhes do erro:", {
+        message: err?.message,
+        status: err?.status,
+        data: err?.data,
+        requestData: err?.requestData,
+      });
       toast.error(err?.message || "Nao foi possivel salvar o adicional.");
     }
   }
@@ -508,10 +528,17 @@ export default function CadastrarProduto() {
       return;
     }
 
+    // Tenta encontrar o ID da subcategoria
+    const subcategoryObj = ADICIONAL_SUBCATEGORIES.find(
+      (opt) => opt.value === subcategory
+    );
+    const subcategoryId = subcategoryObj?.id;
+
     const payload = {
       name,
-      description,
-      subcategory,
+      ...(description ? { description } : {}),
+      // Tenta enviar como ID numerico primeiro, se falhar tenta string
+      subcategory: subcategoryId || subcategory,
       price: parsedPrice,
     };
 
@@ -1031,13 +1058,38 @@ export default function CadastrarProduto() {
     if (!produtoToDelete?.index || isDeleting) return;
 
     setIsDeleting(true);
+    setDeleteError(null);
     try {
       await deletarProduto(produtoToDelete.index);
       setProdutos((prev) => prev.filter((p) => p.index !== produtoToDelete.index));
       setProdutoToDelete(null);
+      toast.success("Produto deletado com sucesso.");
     } catch (err) {
       console.error("Erro ao deletar produto:", err);
-      toast.error("Não foi possível deletar o produto.");
+      const errorMsg = err?.message || "Não foi possível deletar o produto.";
+      setDeleteError(errorMsg);
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
+  async function handleDesativarProduto() {
+    if (!produtoToDelete?.index || isDeleting) return;
+
+    setIsDeleting(true);
+    try {
+      await atualizarStatusProduto(produtoToDelete.index, true);
+      setProdutos((prev) =>
+        prev.map((p) =>
+          p.index === produtoToDelete.index ? { ...p, pausado: true } : p
+        )
+      );
+      setProdutoToDelete(null);
+      setDeleteError(null);
+      toast.success("Produto desativado com sucesso.");
+    } catch (err) {
+      console.error("Erro ao desativar produto:", err);
+      toast.error("Não foi possível desativar o produto.");
     } finally {
       setIsDeleting(false);
     }
@@ -1789,11 +1841,25 @@ export default function CadastrarProduto() {
             </div>
 
             <div className="cp-modal__body">
-              <p>
-                {adicionalToDelete
-                  ? `Deseja apagar o adicional "${adicionalToDelete.name}"?`
-                  : `Deseja apagar o produto "${produtoToDelete?.nome || "Produto"}"?`}
-              </p>
+              {deleteError && produtoToDelete ? (
+                <>
+                  <div style={{ padding: "1rem", backgroundColor: "#fff3cd", borderRadius: "0.5rem", marginBottom: "1rem", border: "1px solid #ffc107" }}>
+                    <p style={{ marginBottom: "0.5rem", fontWeight: "bold", color: "#856404" }}>
+                      ⚠️ Não foi possível deletar o produto
+                    </p>
+                    <p style={{ marginBottom: "0", color: "#856404" }}>{deleteError}</p>
+                  </div>
+                  <p style={{ marginTop: "1rem", fontSize: "0.95rem" }}>
+                    💡 <strong>Alternativa:</strong> Você pode desativar o produto em vez de deletá-lo. Produtos desativados não aparecem no menu, mas o histórico de vendas é preservado.
+                  </p>
+                </>
+              ) : (
+                <p>
+                  {adicionalToDelete
+                    ? `Deseja apagar o adicional "${adicionalToDelete.name}"?`
+                    : `Deseja apagar o produto "${produtoToDelete?.nome || "Produto"}"?`}
+                </p>
+              )}
 
               <div className="cp-modal__footer">
                 <button
@@ -1803,26 +1869,38 @@ export default function CadastrarProduto() {
                     if (!isDeleting) {
                       setAdicionalToDelete(null);
                       setProdutoToDelete(null);
+                      setDeleteError(null);
                     }
                   }}
                   disabled={isDeleting}
                 >
                   Cancelar
                 </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={() => {
-                    if (adicionalToDelete) {
-                      confirmDeleteAdicional();
-                      return;
-                    }
-                    confirmDeleteProduto();
-                  }}
-                  disabled={isDeleting}
-                >
-                  {isDeleting ? "Excluindo..." : "Excluir"}
-                </button>
+                {deleteError && produtoToDelete ? (
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={handleDesativarProduto}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? "Desativando..." : "Desativar Produto"}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => {
+                      if (adicionalToDelete) {
+                        confirmDeleteAdicional();
+                        return;
+                      }
+                      confirmDeleteProduto();
+                    }}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? "Excluindo..." : "Excluir"}
+                  </button>
+                )}
               </div>
             </div>
           </div>

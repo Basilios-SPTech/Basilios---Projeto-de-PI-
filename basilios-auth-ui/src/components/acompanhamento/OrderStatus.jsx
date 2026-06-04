@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Package,
   CheckCircle,
@@ -104,6 +105,8 @@ export default function OrderStatus() {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [errorStatus, setErrorStatus] = useState(null);
+  const navigate = useNavigate();
 
   const orderId = localStorage.getItem(ORDER_ID_KEY);
   const orderDate = order?.createdAt ? new Date(order.createdAt) : null;
@@ -138,8 +141,10 @@ export default function OrderStatus() {
 
       setOrder(response.data);
       setLoading(false);
+      setErrorStatus(null);
     } catch (err) {
       console.error("Erro ao buscar pedido:", err);
+
       if ([401, 403, 404].includes(Number(err?.status))) {
         try {
           localStorage.removeItem(ORDER_ID_KEY);
@@ -148,7 +153,20 @@ export default function OrderStatus() {
           // noop
         }
       }
-      setError("Erro ao carregar dados do pedido");
+
+      let errorMsg = "Erro ao carregar dados do pedido";
+
+      if (err?.status === 403) {
+        errorMsg =
+          "Você não tem permissão para acessar este pedido. Faça login novamente.";
+      } else if (err?.status === 404) {
+        errorMsg = "Pedido não encontrado.";
+      } else if (err?.status === 401) {
+        errorMsg = "Sua sessão expirou. Faça login novamente.";
+      }
+
+      setError(errorMsg);
+      setErrorStatus(err?.status);
       setLoading(false);
     }
   };
@@ -182,12 +200,40 @@ export default function OrderStatus() {
           />
           <h2 className="text-xl sm:text-2xl font-bold mb-2">Erro</h2>
           <p className="text-sm sm:text-base text-gray-600 mb-6">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="w-full sm:w-auto bg-gray-800 hover:bg-gray-900 text-white px-6 py-3 rounded-lg font-semibold transition-colors touch-manipulation"
-          >
-            Tentar Novamente
-          </button>
+
+          <div className="flex flex-col gap-3">
+            {(errorStatus === 403 || errorStatus === 401) ? (
+              <>
+                <button
+                  onClick={() => navigate("/login")}
+                  className="w-full bg-gray-800 hover:bg-gray-900 text-white px-6 py-3 rounded-lg font-semibold transition-colors touch-manipulation"
+                >
+                  Fazer Login
+                </button>
+                <button
+                  onClick={() => window.location.href = "/"}
+                  className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-lg font-semibold transition-colors touch-manipulation"
+                >
+                  Voltar para Home
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="w-full bg-gray-800 hover:bg-gray-900 text-white px-6 py-3 rounded-lg font-semibold transition-colors touch-manipulation"
+                >
+                  Tentar Novamente
+                </button>
+                <button
+                  onClick={() => window.location.href = "/"}
+                  className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-lg font-semibold transition-colors touch-manipulation"
+                >
+                  Voltar para Home
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -237,12 +283,12 @@ export default function OrderStatus() {
               <p className="text-xs sm:text-sm text-gray-500">
                 {orderDate
                   ? orderDate.toLocaleDateString("pt-BR", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
                   : "Data não disponível"}
               </p>
               <p className="mt-1 text-xs sm:text-sm font-medium text-gray-600">
@@ -297,28 +343,25 @@ export default function OrderStatus() {
                   <li key={step.key} className="flex gap-3">
                     <div className="flex flex-col items-center">
                       <div
-                        className={`h-10 w-10 rounded-full border-2 flex items-center justify-center transition-colors ${
-                          isActive
+                        className={`h-10 w-10 rounded-full border-2 flex items-center justify-center transition-colors ${isActive
                             ? "bg-[#BB3530] border-[#BB3530] text-white"
                             : "bg-white border-gray-300 text-gray-400"
-                        }`}
+                          }`}
                       >
                         <Icon size={18} />
                       </div>
                       {index !== STATUS_STEPS.length - 1 && (
                         <div
-                          className={`mt-2 w-[2px] h-8 sm:h-10 ${
-                            lineActive ? "bg-[#BB3530]" : "bg-gray-200"
-                          }`}
+                          className={`mt-2 w-[2px] h-8 sm:h-10 ${lineActive ? "bg-[#BB3530]" : "bg-gray-200"
+                            }`}
                         />
                       )}
                     </div>
                     <div className="flex-1 pb-1">
                       <div className="flex items-center gap-2">
                         <p
-                          className={`text-sm sm:text-base font-semibold ${
-                            isActive ? "text-gray-900" : "text-gray-500"
-                          }`}
+                          className={`text-sm sm:text-base font-semibold ${isActive ? "text-gray-900" : "text-gray-500"
+                            }`}
                         >
                           {step.label}
                         </p>

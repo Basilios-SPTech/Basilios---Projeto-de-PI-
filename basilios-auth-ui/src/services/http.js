@@ -2,6 +2,24 @@
 import axios from 'axios'
 import { authStorage } from './storageAuth'
 
+// Função auxiliar para debugar token
+function debugToken(token) {
+  if (!token) return
+  try {
+    const parts = token.split('.')
+    if (parts.length === 3) {
+      const payload = JSON.parse(atob(parts[1]))
+      console.debug('[Auth] Token claims:', { 
+        userId: payload.sub || payload.userId || payload.id,
+        email: payload.email,
+        roles: payload.roles || payload.authorities
+      })
+    }
+  } catch (e) {
+    // silently fail on debug
+  }
+}
+
 const http = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080',
   timeout: 15000,
@@ -9,7 +27,10 @@ const http = axios.create({
 
 http.interceptors.request.use((config) => {
   const token = authStorage.getToken()
-  if (token) config.headers.Authorization = `Bearer ${token}`
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+    debugToken(token)
+  }
   return config
 })
 
