@@ -25,12 +25,13 @@ export default function PixProcessor({ pixData }) {
     if (!pixId || !orderId) return;
 
     try {
+      const token = import.meta.env.VITE_ABACATEPAY_TOKEN;
       const response = await fetch(
         `/api/abacate/v1/pixQrCode/check?id=${pixId}`,
         {
           method: "GET",
           headers: {
-            Authorization: "Bearer abc_dev_Xkmtb0HuqJrPW42uaNFDPSPd",
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         },
@@ -122,12 +123,13 @@ export default function PixProcessor({ pixData }) {
       }
 
       // Chamar endpoint de simulação do AbacatePay
+      const token = import.meta.env.VITE_ABACATEPAY_TOKEN;
       const response = await fetch(
         `/api/abacate/v1/pixQrCode/simulate-payment?id=${pixId}`,
         {
           method: "POST",
           headers: {
-            Authorization: "Bearer abc_dev_Xkmtb0HuqJrPW42uaNFDPSPd",
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ metadata: {} }),

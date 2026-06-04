@@ -360,14 +360,15 @@ export default function Checkout() {
       const pixAmount = Math.max(1, Math.round(totalValue * 100));
 
       // 2. Chamar AbacatePay com o orderId nos metadados
+      const token = import.meta.env.VITE_ABACATEPAY_TOKEN;
       const abacatePayResp = await fetch("/api/abacate/v1/pixQrCode/create", {
         method: "POST",
         headers: {
-          Authorization: "Bearer abc_dev_Xkmtb0HuqJrPW42uaNFDPSPd",
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          amount: 100,
+          amount: pixAmount,
           expiresIn: 600,
           description: `Pedido #${orderId}`,
           customer: {
