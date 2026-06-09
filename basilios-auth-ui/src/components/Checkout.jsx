@@ -363,7 +363,7 @@ export default function Checkout() {
       const abacatePayResp = await fetch("/api/abacate/v1/pixQrCode/create", {
         method: "POST",
         headers: {
-          Authorization: "Bearer abc_dev_Xkmtb0HuqJrPW42uaNFDPSPd",
+          Authorization: `Bearer ${import.meta.env.VITE_ABACATEPAY_TOKEN}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
