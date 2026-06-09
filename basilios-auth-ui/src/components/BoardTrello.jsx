@@ -212,8 +212,17 @@ function normalizeBoardStatus(status) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
-  if (["RECEBIDO", "PENDENTE", "CONFIRMADO"].includes(normalized)) {
+  if (["RECEBIDO", "PENDENTE"].includes(normalized)) {
     return "PENDENTE";
+  }
+
+  if (
+    normalized === "CONFIRMADO" ||
+    normalized.includes("CONFIRM") ||
+    normalized.includes("APROV") ||
+    normalized.includes("ACEIT")
+  ) {
+    return "CONFIRMADO";
   }
 
   if (["EM_PREPARO", "PREPARANDO"].includes(normalized)) {
